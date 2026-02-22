@@ -1,0 +1,39 @@
+@import "tailwindcss";
+
+/* Design tokens (Figma) – use in components via Tailwind or CSS vars */
+/* Primary: #901CDB | Text: #141416, #353945, #777E90 | Border: #E6E8EC | Success: #34C759 | Error: #FF3B30 | Background: #FCFDFC, #F4F5F6 */
+
+@keyframes scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-scroll {
+  animation: scroll 20s linear infinite;
+}
+
+.bg-gradient-radial {
+  background: radial-gradient(circle at 88% 66%, rgba(144, 28, 219, 1) 14%, rgba(77, 15, 117, 1) 100%);
+}
+
+/* Font families - using system fonts as fallback */
+.font-olivera {
+  font-family: 'Olivera', serif;
+}
+
+.font-kodchasan {
+  font-family: 'Kodchasan', sans-serif;
+}
+
+/* Hide scrollbar for category horizontal scroll on mobile */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
