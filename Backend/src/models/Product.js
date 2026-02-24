@@ -9,15 +9,34 @@ const productSchema = new mongoose.Schema(
     },
 
     type: {
-      type: String,
-      required: true,
-      enum: ["RING", "NECKLACE", "EARRING", "BRACELET", "BANGLE", "CHAIN", "OTHER","ANKLET"]
-    },
+  type: String,
+  required: true,
+  enum: [
+    // Traditional
+    "ONE_GRAM_GOLD_NECKLACES",
+    "PEARL_NECKLACES",
+    "RUBY_NECKLACES",
+    "EARINGS_JUMKA",
+    "BANGLES",
+    "MANGALSUTRA",
+    "RINGS",
+    "MODERN_MINIMUM_NECKLACES",
+    "NOSE_PINS",
+
+    // Fashion
+    "FASHION_NECKLACES",
+    "FASHION_EARINGS_JUMKA",
+    "BRACELET_BANGLES",
+    "FASHION_RINGS",
+    "ANKLETS",
+    "HAIR_ACCESSORIES"
+  ]
+},
 
     variantType:{
       type:String,
       required:true,
-      enum:["WESTERN","TRADITIONAL"]
+      enum:["FASHION","TRADITIONAL"]
     },
 
     description: {
@@ -84,16 +103,6 @@ const productSchema = new mongoose.Schema(
 /**
  * Auto-calculate final price
  */
-productSchema.pre("save", function () {
-  if (this.discountRate > 0) {
-    this.finalPrice =
-      this.rate - (this.rate * this.discountRate) / 100;
-  } else {
-    this.finalPrice = this.rate;
-  }
-
-  console.log("Product pre-save middleware hit");
-});
 
 
 

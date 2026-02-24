@@ -8,41 +8,76 @@ const Edit = ({ token }) => {
   const { id } = useParams();
   const navigate = useNavigate();
 
+  /* ---------------- CATEGORY MAP ---------------- */
+
+  const categoryMap = {
+    TRADITIONAL: [
+      { value: "ONE_GRAM_GOLD_NECKLACES", label: "One Gram Gold Necklaces" },
+      { value: "PEARL_NECKLACES", label: "Pearl Necklaces" },
+      { value: "RUBY_NECKLACES", label: "Ruby Necklaces" },
+      { value: "EARINGS_JUMKA", label: "Earings & Jumka" },
+      { value: "BANGLES", label: "Bangles" },
+      { value: "MANGALSUTRA", label: "Mangalsutra" },
+      { value: "RINGS", label: "Rings" },
+      { value: "MODERN_MINIMUM_NECKLACES", label: "Modern Minimum Necklaces" },
+      { value: "NOSE_PINS", label: "Nose Pins" }
+    ],
+    FASHION: [
+      { value: "FASHION_NECKLACES", label: "Necklaces" },
+      { value: "FASHION_EARINGS_JUMKA", label: "Earings & Jumka" },
+      { value: "BRACELET_BANGLES", label: "Bracelet & Bangles" },
+      { value: "FASHION_RINGS", label: "Rings" },
+      { value: "ANKLETS", label: "Anklets" },
+      { value: "HAIR_ACCESSORIES", label: "Hair Accessories" }
+    ]
+  };
+
+  /* ---------------- STATE ---------------- */
+
   const [name, setName] = useState("");
-  const [type, setType] = useState("RING");
+  const [variantType, setVariantType] = useState("TRADITIONAL");
+  const [type, setType] = useState(categoryMap.TRADITIONAL[0].value);
   const [description, setDescription] = useState("");
+
   const [rate, setRate] = useState("");
+  const [finalPrice, setFinalPrice] = useState("");
   const [discountRate, setDiscountRate] = useState(0);
+
   const [stock, setStock] = useState("");
   const [isActive, setIsActive] = useState(true);
-  const[bestSeller, setBestSeller] = useState(false);
-  const[mostGifted, setMostGifted] = useState(false);
+  const [bestSeller, setBestSeller] = useState(false);
+  const [mostGifted, setMostGifted] = useState(false);
+
   const [existingImages, setExistingImages] = useState([]);
   const [newImages, setNewImages] = useState([]);
 
-  // Fetch product data
+  /* ---------------- FETCH PRODUCT ---------------- */
+
   const fetchProduct = async () => {
     try {
       const res = await axios.get(
         `${backendUrl}/api/products/${id}`,
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
-      
+
       const product = res.data;
 
       setName(product.name);
+      setVariantType(product.variantType);
       setType(product.type);
       setDescription(product.description);
+
       setRate(product.rate);
+      setFinalPrice(product.finalPrice);
       setDiscountRate(product.discountRate);
+
       setStock(product.stock);
       setIsActive(product.isActive);
-      setExistingImages(product.images || []);
       setBestSeller(product.isBestSeller);
       setMostGifted(product.isMostGifted);
-    } catch (error) {
+      setExistingImages(product.images || []);
+
+    } catch {
       toast.error("Failed to load product");
     }
   };
@@ -51,7 +86,19 @@ const Edit = ({ token }) => {
     fetchProduct();
   }, []);
 
-  // Update handler
+  /* ---------------- AUTO CALCULATE DISCOUNT ---------------- */
+
+  useEffect(() => {
+    if (rate && finalPrice && Number(rate) > 0) {
+      const discount =
+        ((Number(rate) - Number(finalPrice)) / Number(rate)) * 100;
+
+      setDiscountRate(Math.round(discount));
+    }
+  }, [rate, finalPrice]);
+
+  /* ---------------- UPDATE HANDLER ---------------- */
+
   const updateHandler = async (e) => {
     e.preventDefault();
 
@@ -59,16 +106,17 @@ const Edit = ({ token }) => {
       const formData = new FormData();
 
       formData.append("name", name);
+      formData.append("variantType", variantType);
       formData.append("type", type);
       formData.append("description", description);
       formData.append("rate", rate);
+      formData.append("finalPrice", finalPrice);
       formData.append("discountRate", discountRate);
       formData.append("stock", stock);
       formData.append("isActive", isActive);
       formData.append("isBestSeller", bestSeller);
       formData.append("isMostGifted", mostGifted);
 
-      // Append new images ONLY if selected
       if (newImages.length > 0) {
         newImages.forEach((img) => {
           formData.append("images", img);
@@ -78,27 +126,27 @@ const Edit = ({ token }) => {
       await axios.put(
         `${backendUrl}/api/products/${id}`,
         formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
       toast.success("Product updated successfully");
       navigate("/list");
+
     } catch (error) {
       toast.error(error.response?.data?.message || "Update failed");
     }
   };
 
+  /* ---------------- UI ---------------- */
+
   return (
     <form onSubmit={updateHandler} className="flex flex-col gap-4 max-w-lg">
+
       <h2 className="text-xl font-bold">Edit Product</h2>
 
-      {/* Existing Images Preview */}
+      {/* Existing Images */}
       <div>
-        <p className="mb-2">Current Images</p>
+        <p>Current Images</p>
         <div className="flex gap-2">
           {existingImages.map((img, index) => (
             <img
@@ -111,36 +159,37 @@ const Edit = ({ token }) => {
         </div>
       </div>
 
-      {/* Upload New Images (Optional) */}
-      <div>
-        <p className="mb-2">Replace Images (Optional)</p>
-        <input
-          type="file"
-          multiple
-          onChange={(e) =>
-            setNewImages(Array.from(e.target.files))
-          }
-        />
-      </div>
-
       <input
         value={name}
         onChange={(e) => setName(e.target.value)}
         className="border p-2"
       />
 
+      {/* Variant Type */}
+      <select
+        value={variantType}
+        onChange={(e) => {
+          const newVariant = e.target.value;
+          setVariantType(newVariant);
+          setType(categoryMap[newVariant][0].value);
+        }}
+        className="border p-2"
+      >
+        <option value="TRADITIONAL">Traditional Jewellery</option>
+        <option value="FASHION">Fashion Jewellery</option>
+      </select>
+
+      {/* Type */}
       <select
         value={type}
         onChange={(e) => setType(e.target.value)}
         className="border p-2"
       >
-        <option value="RING">Ring</option>
-        <option value="NECKLACE">Necklace</option>
-        <option value="EARRING">Earring</option>
-        <option value="BRACELET">Bracelet</option>
-        <option value="BANGLE">Bangle</option>
-        <option value="CHAIN">Chain</option>
-        <option value="OTHER">Other</option>
+        {categoryMap[variantType].map((item) => (
+          <option key={item.value} value={item.value}>
+            {item.label}
+          </option>
+        ))}
       </select>
 
       <textarea
@@ -149,8 +198,10 @@ const Edit = ({ token }) => {
         className="border p-2"
       />
 
+      {/* Pricing */}
       <input
         type="number"
+        placeholder="Actual Price"
         value={rate}
         onChange={(e) => setRate(e.target.value)}
         className="border p-2"
@@ -158,10 +209,15 @@ const Edit = ({ token }) => {
 
       <input
         type="number"
-        value={discountRate}
-        onChange={(e) => setDiscountRate(e.target.value)}
+        placeholder="Final Price"
+        value={finalPrice}
+        onChange={(e) => setFinalPrice(e.target.value)}
         className="border p-2"
       />
+
+      <p className="text-sm text-gray-600">
+        Discount: {discountRate}%
+      </p>
 
       <input
         type="number"
@@ -170,6 +226,7 @@ const Edit = ({ token }) => {
         className="border p-2"
       />
 
+      {/* Toggles */}
       <label className="flex gap-2">
         <input
           type="checkbox"
@@ -179,7 +236,7 @@ const Edit = ({ token }) => {
         Active
       </label>
 
-       <label className="flex gap-2">
+      <label className="flex gap-2">
         <input
           type="checkbox"
           checked={bestSeller}
@@ -188,7 +245,7 @@ const Edit = ({ token }) => {
         BestSeller
       </label>
 
-       <label className="flex gap-2">
+      <label className="flex gap-2">
         <input
           type="checkbox"
           checked={mostGifted}
@@ -200,6 +257,7 @@ const Edit = ({ token }) => {
       <button className="bg-black text-white py-2 rounded">
         Update Product
       </button>
+
     </form>
   );
 };

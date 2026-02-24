@@ -81,21 +81,33 @@ const List = ({ token }) => {
         />
 
         <select
-          className="border p-2 text-sm rounded"
-          onChange={(e) =>
-            setFilters({ ...filters, type: e.target.value })
-          }
-        >
-          <option value="">All Types</option>
-          <option value="RING">Ring</option>
-          <option value="NECKLACE">Necklace</option>
-          <option value="EARRING">Earring</option>
-          <option value="BRACELET">Bracelet</option>
-          <option value="BANGLE">Bangle</option>
-          <option value="CHAIN">Chain</option>
-          <option value="ANKLET">anklet</option>
-          <option value="OTHER">Other</option>
-        </select>
+  className="border p-2 text-sm rounded"
+  onChange={(e) =>
+    setFilters({ ...filters, type: e.target.value })
+  }
+>
+  <option value="">All Types</option>
+
+  {/* Traditional Jewellery */}
+  <option value="ONE_GRAM_GOLD_NECKLACES">One Gram Gold Necklaces</option>
+  <option value="PEARL_NECKLACES">Pearl Necklaces</option>
+  <option value="RUBY_NECKLACES">Ruby Necklaces</option>
+  <option value="EARINGS_JUMKA">Earings & Jumka</option>
+  <option value="BANGLES">Bangles</option>
+  <option value="MANGALSUTRA">Mangalsutra</option>
+  <option value="RINGS">Rings (Traditional)</option>
+  <option value="MODERN_MINIMUM_NECKLACES">Modern Minimum Necklaces</option>
+  <option value="NOSE_PINS">Nose Pins</option>
+
+  {/* Fashion Jewellery */}
+  <option value="FASHION_NECKLACES">Necklaces (Fashion)</option>
+  <option value="FASHION_EARINGS_JUMKA">Earings & Jumka (Fashion)</option>
+  <option value="BRACELET_BANGLES">Bracelet & Bangles</option>
+  <option value="FASHION_RINGS">Rings (Fashion)</option>
+  <option value="ANKLETS">Anklets</option>
+  <option value="HAIR_ACCESSORIES">Hair Accessories</option>
+
+</select>
 
         <select
           className="border p-2 text-sm rounded"

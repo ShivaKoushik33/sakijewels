@@ -5,17 +5,40 @@ import { backendUrl } from '../App';
 import { toast } from 'react-toastify';
 
 const Add = ({ token }) => {
+  const categoryMap = {
+  TRADITIONAL: [
+    { value: "ONE_GRAM_GOLD_NECKLACES", label: "One Gram Gold Necklaces" },
+    { value: "PEARL_NECKLACES", label: "Pearl Necklaces" },
+    { value: "RUBY_NECKLACES", label: "Ruby Necklaces" },
+    { value: "EARINGS_JUMKA", label: "Earings & Jumka" },
+    { value: "BANGLES", label: "Bangles" },
+    { value: "MANGALSUTRA", label: "Mangalsutra" },
+    { value: "RINGS", label: "Rings" },
+    { value: "MODERN_MINIMUM_NECKLACES", label: "Modern Minimum Necklaces" },
+    { value: "NOSE_PINS", label: "Nose Pins" }
+  ],
+
+  FASHION: [
+    { value: "FASHION_NECKLACES", label: "Necklaces" },
+    { value: "FASHION_EARINGS_JUMKA", label: "Earings & Jumka" },
+    { value: "BRACELET_BANGLES", label: "Bracelet & Bangles" },
+    { value: "FASHION_RINGS", label: "Rings" },
+    { value: "ANKLETS", label: "Anklets" },
+    { value: "HAIR_ACCESSORIES", label: "Hair Accessories" }
+  ]
+};
   const [image1, setImage1] = useState(false);
   const [image2, setImage2] = useState(false);
   const [image3, setImage3] = useState(false);
   const [image4, setImage4] = useState(false);
 
   const [name, setName] = useState("");
-  const [type, setType] = useState("RING");
+  const [type, setType] = useState(categoryMap.TRADITIONAL[0].value);
   const [variantType , setVariantType] = useState("TRADITIONAL");
   const [description, setDescription] = useState("");
   const [rate, setRate] = useState("");
-  const [discountRate, setDiscountRate] = useState(0);
+  const [finalPrice, setFinalPrice] = useState("");
+const [discountRate, setDiscountRate] = useState(0);
   const [stock, setStock] = useState("");
 
   const [isLoading, setIsLoading] = useState(false); // ✅ Added
@@ -29,13 +52,29 @@ const Add = ({ token }) => {
       setIsLoading(true); // ✅ start loading
 
       const formData = new FormData();
+      const actual = Number(rate);
+const final = Number(finalPrice);
+
+if (final > actual) {
+  toast.error("Final price cannot be greater than actual price");
+  setIsLoading(false);
+  return;
+}
+
+const calculatedDiscount =
+  actual > 0
+    ? Math.round(((actual - final) / actual) * 100)
+    : 0;
+
+setDiscountRate(calculatedDiscount);
 
       formData.append("name", name);
       formData.append("type", type);
       formData.append("variantType",variantType);
       formData.append("description", description);
-      formData.append("rate", rate);
-      formData.append("discountRate", discountRate);
+      formData.append("rate", actual);
+formData.append("finalPrice", final);
+formData.append("discountRate", calculatedDiscount);
       formData.append("stock", stock);
 
       if (image1) formData.append("images", image1);
@@ -57,6 +96,7 @@ const Add = ({ token }) => {
         setName("");
         setDescription("");
         setRate("");
+        setFinalPrice("");
         setDiscountRate(0);
         setStock("");
         setImage1(false);
@@ -128,36 +168,39 @@ const Add = ({ token }) => {
         />
       </div>
 
-      {/* Product Type */}
-      <div>
-        <p className="mb-2">Product Type</p>
-        <select
-          value={type}
-          onChange={(e) => setType(e.target.value)}
-          className="px-3 py-2 border"
-        >
-          <option value="RING">Ring</option>
-          <option value="NECKLACE">Necklace</option>
-          <option value="EARRING">Earring</option>
-          <option value="BRACELET">Bracelet</option>
-          <option value="BANGLE">Bangle</option>
-          <option value="CHAIN">Chain</option>
-          <option value="ANKLET">anklet</option>
-          <option value="OTHER">Other</option>
-        </select>
-      </div>
+      
 
       {/* Product varinatType */}
       <div>
         <p className="mb-2">Product variant Type</p>
         <select
-          value={variantType}
-          onChange={(e) => setVariantType(e.target.value)}
-          className="px-3 py-2 border"
-        >
-          <option value="TRADITIONAL">TRADITIONAL</option>
-          <option value="WESTERN">WESTERN</option>
-        </select>
+  value={variantType}
+  onChange={(e) => {
+    const newVariant = e.target.value;
+    setVariantType(newVariant);
+    setType(categoryMap[newVariant][0].value); // reset type
+  }}
+  className="px-3 py-2 border"
+>
+  <option value="TRADITIONAL">Traditional Jewellery</option>
+  <option value="FASHION">Fashion Jewellery</option>
+</select>
+      </div>
+
+      {/* Product Type */}
+      <div>
+        <p className="mb-2">Product Type</p>
+        <select
+  value={type}
+  onChange={(e) => setType(e.target.value)}
+  className="px-3 py-2 border"
+>
+  {categoryMap[variantType].map((item) => (
+    <option key={item.value} value={item.value}>
+      {item.label}
+    </option>
+  ))}
+</select>
       </div>
 
       {/* Description */}
@@ -185,16 +228,15 @@ const Add = ({ token }) => {
         </div>
 
         <div>
-          <p className="mb-2">Discount %</p>
-          <input
-            type="number"
-            value={discountRate}
-            min="0"
-            max="100"
-            onChange={(e) => setDiscountRate(e.target.value)}
-            className="px-3 py-2 border"
-          />
-        </div>
+  <p className="mb-2">Final Selling Price (₹)</p>
+  <input
+    type="number"
+    value={finalPrice}
+    onChange={(e) => setFinalPrice(e.target.value)}
+    className="px-3 py-2 border"
+    required
+  />
+</div>
 
         <div>
           <p className="mb-2">Stock</p>

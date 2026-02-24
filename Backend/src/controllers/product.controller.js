@@ -32,6 +32,7 @@ export const createProduct = async (req, res) => {
       description: req.body.description,
       rate: req.body.rate,
       discountRate: req.body.discountRate,
+      finalPrice: req.body.finalPrice,
       stock: req.body.stock,
       images: uploadedImages,
       createdBy: req.user._id,
@@ -278,6 +279,7 @@ export const updateProduct = async (req, res) => {
     if (req.body.varaintType !== undefined) product.variantType = req.body.variantType.trim().toUpperCase();
     if (req.body.description !== undefined) product.description = req.body.description;
     if (req.body.rate !== undefined) product.rate = req.body.rate;
+    if (req.body.finalPrice !== undefined) product.finalPrice = req.body.finalPrice;
     if (req.body.discountRate !== undefined) product.discountRate = req.body.discountRate;
     if (req.body.stock !== undefined) product.stock = req.body.stock;
 
