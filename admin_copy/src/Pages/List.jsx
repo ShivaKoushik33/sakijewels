@@ -80,35 +80,43 @@ const List = ({ token }) => {
           }
         />
 
-        <select
+          <select
   className="border p-2 text-sm rounded"
+  value={filters.type || ""}
   onChange={(e) =>
     setFilters({ ...filters, type: e.target.value })
   }
 >
   <option value="">All Types</option>
 
-  {/* Traditional Jewellery */}
-  <option value="ONE_GRAM_GOLD_NECKLACES">One Gram Gold Necklaces</option>
-  <option value="PEARL_NECKLACES">Pearl Necklaces</option>
-  <option value="RUBY_NECKLACES">Ruby Necklaces</option>
-  <option value="EARINGS_JUMKA">Earings & Jumka</option>
-  <option value="BANGLES">Bangles</option>
-  <option value="MANGALSUTRA">Mangalsutra</option>
-  <option value="RINGS">Rings (Traditional)</option>
-  <option value="MODERN_MINIMUM_NECKLACES">Modern Minimum Necklaces</option>
-  <option value="NOSE_PINS">Nose Pins</option>
+  {(filters.variantType === "" || filters.variantType === "TRADITIONAL")  && (
+    <>
+      <option value="ONE_GRAM_GOLD_NECKLACES">One Gram Gold Necklaces</option>
+      <option value="PEARL_NECKLACES">Pearl Necklaces</option>
+      <option value="RUBY_NECKLACES">Ruby Necklaces</option>
+      <option value="EARINGS_JUMKA">Earings & Jumka</option>
+      <option value="BANGLES">Bangles</option>
+      <option value="MANGALSUTRA">Mangalsutra</option>
+      {/* <option value="RINGS">Rings (Traditional)</option> */}
+      <option value="MODERN_MINIMUM_NECKLACES">Modern Minimum Necklaces</option>
+      {/* <option value="NOSE_PINS">Nose Pins</option> */}
+      <option value="PENDANTS">Pendants</option>
+    </>
+  )}
 
-  {/* Fashion Jewellery */}
-  <option value="FASHION_NECKLACES">Necklaces (Fashion)</option>
-  <option value="FASHION_EARINGS_JUMKA">Earings & Jumka (Fashion)</option>
-  <option value="BRACELET_BANGLES">Bracelet & Bangles</option>
-  <option value="FASHION_RINGS">Rings (Fashion)</option>
-  <option value="ANKLETS">Anklets</option>
-  <option value="HAIR_ACCESSORIES">Hair Accessories</option>
-
+  {(filters.variantType === "" || filters.variantType === "FASHION")  && (
+    <>
+      <option value="FASHION_NECKLACES">Necklaces (Fashion)</option>
+      <option value="FASHION_EARINGS_JUMKA">Earings & Jumka (Fashion)</option>
+      <option value="BRACELET_BANGLES">Bracelet & Bangles</option>
+      <option value="FASHION_RINGS">Rings (Fashion)</option>
+      <option value="ANKLETS">Anklets</option>
+      <option value="HAIR_ACCESSORIES">Hair Accessories</option>
+      <option value="FASHION_MANGALSUTRA">Fashion Mangalsutra</option>
+      <option value="GIFT_HAMPER">Gift Hamper</option>
+    </>
+  )}
 </select>
-
         <select
           className="border p-2 text-sm rounded"
           onChange={(e) =>
@@ -117,7 +125,7 @@ const List = ({ token }) => {
         >
           <option value="">All Variants</option>
           <option value="TRADITIONAL">TRADITIONAL</option>
-          <option value="WESTERN">WESTERN</option>
+          <option value="FASHION">FASHION</option>
         </select>
 
         <select
@@ -134,9 +142,9 @@ const List = ({ token }) => {
         </select>
       </div>
 
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-2 w-full overflow-x-auto">
         {/* Table Header */}
-        <div className="hidden md:grid grid-cols-[1fr_3fr_1fr_1fr_1fr_1fr] items-center py-2 px-2 border bg-gray-100 text-sm font-semibold">
+        <div className="hidden md:grid min-w-[750px] grid-cols-[80px_2fr_1fr_1fr_1fr_120px] items-center py-2 px-2 border bg-gray-100 text-sm font-semibold">
           <b>Image</b>
           <b>Name</b>
           <b>Type</b>
@@ -149,7 +157,7 @@ const List = ({ token }) => {
         {list.map((product) => (
           <div
             key={product._id}
-            className="grid grid-cols-[1fr_3fr_1fr] md:grid-cols-[1fr_3fr_1fr_1fr_1fr_1fr] items-center gap-2 py-2 px-2 border text-sm"
+            className="grid grid-cols-[60px_1fr_auto] md:min-w-[750px] md:grid-cols-[80px_2fr_1fr_1fr_1fr_120px] items-center gap-2 py-2 px-2 border text-sm"
           >
             {/* Image */}
             <img
@@ -159,10 +167,10 @@ const List = ({ token }) => {
             />
 
             {/* Name */}
-            <p>{product.name}</p>
+            <p className='truncate'>{product.name}</p>
 
             {/* Type */}
-            <p>{product.type}</p>
+            <p className='truncate'>{product.type}</p>
 
             {/* Final Price */}
             <p>

@@ -225,7 +225,7 @@ export const verifyPaymentAndPlaceOrder = async (req, res) => {
       deliveryFee,
       totalAmount,
       coupon: coupon || null,
-      status: "ACCEPTED",
+      status: "PENDING",
       paymentId: razorpay_payment_id,
       isPaid: true
     }], { session });

@@ -131,10 +131,10 @@ export default function Cart() {
 
                   <div className="flex items-center gap-3">
                     <span className="text-lg font-semibold">
-                      ₹{item.price.toLocaleString()}
+                      ₹{item.price ? item.price.toLocaleString() : 0}
                     </span>
                     <span className="line-through text-gray-400">
-                      ₹{item.originalPrice.toLocaleString()}
+                      ₹{item.originalPrice ? item.originalPrice.toLocaleString() : 0}
                     </span>
                     <span className="bg-green-500 text-white text-xs px-2 py-1 rounded">
                       {item.discount}% OFF

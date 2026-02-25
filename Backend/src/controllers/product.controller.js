@@ -196,12 +196,13 @@ export const getProductsByVariantCategory = async (req, res) => {
       variantType: variantType.trim().toUpperCase(),
       isActive: true
     });
+    // console.log("Products by variant type:", products); // Debug log
 
-    if (products.length === 0) {
-      return res.status(404).json({
-        message: "No products found for this category"
-      });
-    }
+    // if (products.length === 0) {
+    //   return res.status(404).json({
+    //     message: "No products found for this category"
+    //   });
+    // }
 
     res.status(200).json(products);
 
@@ -215,7 +216,7 @@ export const getAllProductsAdmin = async (req, res) => {
   try {
     const { name, type, variantType, sort } = req.query;
 
-    let filter = { isActive: true };
+    let filter = {};
 
     // 🔎 Filter by name (search)
     if (name) {

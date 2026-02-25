@@ -19,9 +19,8 @@ const productSchema = new mongoose.Schema(
     "EARINGS_JUMKA",
     "BANGLES",
     "MANGALSUTRA",
-    "RINGS",
     "MODERN_MINIMUM_NECKLACES",
-    "NOSE_PINS",
+    "PENDANTS",
 
     // Fashion
     "FASHION_NECKLACES",
@@ -29,7 +28,9 @@ const productSchema = new mongoose.Schema(
     "BRACELET_BANGLES",
     "FASHION_RINGS",
     "ANKLETS",
-    "HAIR_ACCESSORIES"
+    "HAIR_ACCESSORIES",
+    "FASHION_MANGALSUTRA",
+    "GIFT_HAMPER",
   ]
 },
 

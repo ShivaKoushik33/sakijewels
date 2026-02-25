@@ -20,7 +20,7 @@ const router = express.Router();
 /* USER APIs */
 router.get("/", getAllProducts);
 router.get("/category/:type", getProductsByCategory);
-router.get("/category/:variantType", getProductsByVariantCategory);
+//router.get("/main-category/:variantType", getProductsByVariantCategory);
 router.get("/best-sellers", getBestSellers);
 router.get("/most-gifted", getMostGifted);
 router.get("/:id", getProductById);

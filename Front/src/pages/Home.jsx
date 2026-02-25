@@ -47,33 +47,43 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-[#FCFDFC]">
       {/* Variant Filter Bar */}
-<div className="w-full bg-white border-b border-[#E6E8EC] sticky top-0 z-40">
-  <div className="max-w-[1440px] mx-auto flex justify-center gap-10 py-4">
-    
-    <button
-      onClick={() => setVariantType("TRADITIONAL")}
-      className={`font-semibold text-lg transition ${
-        variantType === "TRADITIONAL"
-          ? "text-[#901CDB] border-b-2 border-[#901CDB]"
-          : "text-gray-500"
-      }`}
-    >
-      TRADITIONAL
-    </button>
 
-    <button
-      onClick={() => setVariantType("WESTERN")}
-      className={`font-semibold text-lg transition ${
-        variantType === "WESTERN"
-          ? "text-[#901CDB] border-b-2 border-[#901CDB]"
-          : "text-gray-500"
-      }`}
-    >
-      WESTERN
-    </button>
+      <div className="w-full bg-white border-b border-[#E6E8EC] sticky top-0 z-40">
+        <div className="max-w-[1440px] mx-auto flex justify-center py-4 px-4">
 
-  </div>
-</div>
+          <div className="relative flex bg-[#F4F5F6] rounded-full p-1 w-full max-w-[320px] sm:max-w-[380px]">
+
+            {/* Sliding Background */}
+            <div
+              className={`absolute top-1 bottom-1 w-1/2 rounded-full bg-[#901CDB] transition-all duration-300 ease-in-out ${variantType === "TRADITIONAL" ? "left-1" : "left-1/2"
+                }`}
+            ></div>
+
+            {/* Traditional */}
+            <button
+              onClick={() => setVariantType("TRADITIONAL")}
+              className={`relative z-10 w-1/2 text-center py-2 sm:py-2.5 text-sm sm:text-base font-semibold rounded-full transition-colors duration-300 ${variantType === "TRADITIONAL"
+                  ? "text-white"
+                  : "text-[#000000]"
+                }`}
+            >
+              TRADITIONAL
+            </button>
+
+            {/* Western */}
+            <button
+              onClick={() => setVariantType("FASHION")}
+              className={`relative z-10 w-1/2 text-center py-2 sm:py-2.5 text-sm sm:text-base font-semibold rounded-full transition-colors duration-300 ${variantType === "FASHION"
+                  ? "text-white"
+                  : "text-[#000000]"
+                }`}
+            >
+              FASHION
+            </button>
+
+          </div>
+        </div>
+      </div>
       {/* Hero Banner */}
       {homepage.hero && <HeroBanner data={homepage.hero} />}
 

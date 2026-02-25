@@ -11,7 +11,7 @@ import { ToastContainer } from 'react-toastify';
 import Edit from './Pages/Edit';
 import OrderDetails from './Pages/OrderDetails';
 export const backendUrl = import.meta.env.VITE_BACKEND_URL;
-export const currency = '$';
+export const currency = '₹';
 
 function App() {
   const [token, setToken] = useState(

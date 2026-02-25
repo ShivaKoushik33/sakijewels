@@ -5,6 +5,28 @@ import { backendUrl } from '../App';
 import { toast } from 'react-toastify';
 
 const Add = ({ token }) => {
+//   const categoryMap = {
+//   TRADITIONAL: [
+//     { value: "ONE_GRAM_GOLD_NECKLACES", label: "One Gram Gold Necklaces" },
+//     { value: "PEARL_NECKLACES", label: "Pearl Necklaces" },
+//     { value: "RUBY_NECKLACES", label: "Ruby Necklaces" },
+//     { value: "EARINGS_JUMKA", label: "Earings & Jumka" },
+//     { value: "BANGLES", label: "Bangles" },
+//     { value: "MANGALSUTRA", label: "Mangalsutra" },
+//     { value: "RINGS", label: "Rings" },
+//     { value: "MODERN_MINIMUM_NECKLACES", label: "Modern Minimum Necklaces" },
+//     { value: "NOSE_PINS", label: "Nose Pins" }
+//   ],
+
+//   FASHION: [
+//     { value: "FASHION_NECKLACES", label: "Necklaces" },
+//     { value: "FASHION_EARINGS_JUMKA", label: "Earings & Jumka" },
+//     { value: "BRACELET_BANGLES", label: "Bracelet & Bangles" },
+//     { value: "FASHION_RINGS", label: "Rings" },
+//     { value: "ANKLETS", label: "Anklets" },
+//     { value: "HAIR_ACCESSORIES", label: "Hair Accessories" }
+//   ]
+// };
   const categoryMap = {
   TRADITIONAL: [
     { value: "ONE_GRAM_GOLD_NECKLACES", label: "One Gram Gold Necklaces" },
@@ -13,9 +35,10 @@ const Add = ({ token }) => {
     { value: "EARINGS_JUMKA", label: "Earings & Jumka" },
     { value: "BANGLES", label: "Bangles" },
     { value: "MANGALSUTRA", label: "Mangalsutra" },
-    { value: "RINGS", label: "Rings" },
+    // { value: "RINGS", label: "Rings" },
     { value: "MODERN_MINIMUM_NECKLACES", label: "Modern Minimum Necklaces" },
-    { value: "NOSE_PINS", label: "Nose Pins" }
+    // { value: "NOSE_PINS", label: "Nose Pins" },
+    { value: "PENDANTS", label: "Pendants" }
   ],
 
   FASHION: [
@@ -24,10 +47,13 @@ const Add = ({ token }) => {
     { value: "BRACELET_BANGLES", label: "Bracelet & Bangles" },
     { value: "FASHION_RINGS", label: "Rings" },
     { value: "ANKLETS", label: "Anklets" },
-    { value: "HAIR_ACCESSORIES", label: "Hair Accessories" }
+    { value: "HAIR_ACCESSORIES", label: "Hair Accessories" },
+    { value: "FASHION_MANGALSUTRA", label: "Fashion Mangalsutra" },
+    { value: "GIFT_HAMPER", label: "Gift Hamper" }
   ]
 };
-  const [image1, setImage1] = useState(false);
+
+const [image1, setImage1] = useState(false);
   const [image2, setImage2] = useState(false);
   const [image3, setImage3] = useState(false);
   const [image4, setImage4] = useState(false);
