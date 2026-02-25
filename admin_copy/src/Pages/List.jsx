@@ -91,14 +91,14 @@ const List = ({ token }) => {
 
   {(filters.variantType === "" || filters.variantType === "TRADITIONAL")  && (
     <>
-      <option value="ONE_GRAM_GOLD_NECKLACES">One Gram Gold Necklaces</option>
+      <option value="ONE_GRAM_GOLD_NECKLACES">1 Gram Gold Necklaces</option>
       <option value="PEARL_NECKLACES">Pearl Necklaces</option>
       <option value="RUBY_NECKLACES">Ruby Necklaces</option>
-      <option value="EARINGS_JUMKA">Earings & Jumka</option>
+      <option value="EARINGS_JUMKA">Earrings & Jumka</option>
       <option value="BANGLES">Bangles</option>
       <option value="MANGALSUTRA">Mangalsutra</option>
       {/* <option value="RINGS">Rings (Traditional)</option> */}
-      <option value="MODERN_MINIMUM_NECKLACES">Modern Minimum Necklaces</option>
+      <option value="MODERN_MINIMUM_NECKLACES">Minimal Necklaces</option>
       {/* <option value="NOSE_PINS">Nose Pins</option> */}
       <option value="PENDANTS">Pendants</option>
     </>
@@ -107,12 +107,12 @@ const List = ({ token }) => {
   {(filters.variantType === "" || filters.variantType === "FASHION")  && (
     <>
       <option value="FASHION_NECKLACES">Necklaces (Fashion)</option>
-      <option value="FASHION_EARINGS_JUMKA">Earings & Jumka (Fashion)</option>
+      <option value="FASHION_EARINGS_JUMKA">Earrings & Jumka (Fashion)</option>
       <option value="BRACELET_BANGLES">Bracelet & Bangles</option>
       <option value="FASHION_RINGS">Rings (Fashion)</option>
       <option value="ANKLETS">Anklets</option>
       <option value="HAIR_ACCESSORIES">Hair Accessories</option>
-      <option value="FASHION_MANGALSUTRA">Fashion Mangalsutra</option>
+      <option value="FASHION_MANGALSUTRA">Mangalsutra</option>
       <option value="GIFT_HAMPER">Gift Hamper</option>
     </>
   )}

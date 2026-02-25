@@ -29,26 +29,26 @@ const Add = ({ token }) => {
 // };
   const categoryMap = {
   TRADITIONAL: [
-    { value: "ONE_GRAM_GOLD_NECKLACES", label: "One Gram Gold Necklaces" },
+    { value: "ONE_GRAM_GOLD_NECKLACES", label: "1 Gram Gold Necklaces" },
     { value: "PEARL_NECKLACES", label: "Pearl Necklaces" },
     { value: "RUBY_NECKLACES", label: "Ruby Necklaces" },
-    { value: "EARINGS_JUMKA", label: "Earings & Jumka" },
+    { value: "EARINGS_JUMKA", label: "Earrings & Jumka" },
     { value: "BANGLES", label: "Bangles" },
     { value: "MANGALSUTRA", label: "Mangalsutra" },
     // { value: "RINGS", label: "Rings" },
-    { value: "MODERN_MINIMUM_NECKLACES", label: "Modern Minimum Necklaces" },
+    { value: "MODERN_MINIMUM_NECKLACES", label: "Minimal Necklaces" },
     // { value: "NOSE_PINS", label: "Nose Pins" },
     { value: "PENDANTS", label: "Pendants" }
   ],
 
   FASHION: [
     { value: "FASHION_NECKLACES", label: "Necklaces" },
-    { value: "FASHION_EARINGS_JUMKA", label: "Earings & Jumka" },
+    { value: "FASHION_EARINGS_JUMKA", label: "Earrings & Jumka" },
     { value: "BRACELET_BANGLES", label: "Bracelet & Bangles" },
     { value: "FASHION_RINGS", label: "Rings" },
     { value: "ANKLETS", label: "Anklets" },
     { value: "HAIR_ACCESSORIES", label: "Hair Accessories" },
-    { value: "FASHION_MANGALSUTRA", label: "Fashion Mangalsutra" },
+    { value: "FASHION_MANGALSUTRA", label: "Mangalsutra" },
     { value: "GIFT_HAMPER", label: "Gift Hamper" }
   ]
 };
@@ -143,6 +143,11 @@ formData.append("discountRate", calculatedDiscount);
       setIsLoading(false); // ✅ stop loading
     }
   };
+
+  const discount =
+  rate && finalPrice && Number(finalPrice) < Number(rate)
+    ? (Math.round(((rate - finalPrice) / rate) * 100)).toFixed(2)
+    : 0;
 
   return (
     <form
@@ -262,6 +267,9 @@ formData.append("discountRate", calculatedDiscount);
     className="px-3 py-2 border"
     required
   />
+  <p className="text-sm mt-2 text-green-600">
+  Discount: {discount}%
+</p>
 </div>
 
         <div>
