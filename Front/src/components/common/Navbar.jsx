@@ -275,22 +275,22 @@ const changeLanguage = (langCode, label) => {
           <div className="max-w-[1440px] mx-auto px-4 md:px-10 lg:px-[100px] pb-2">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between w-full gap-1 lg:gap-0 flex-nowrap lg:whitespace-nowrap">
               <div className="flex items-center gap-1 px-[10px] py-[10px]">
-                <span className="text-base text-[#353945]">Shop by Category</span>
-                <svg width="20" height="12" viewBox="0 0 20 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+               <Link to="/#shop-category">Shop by Category</Link>
+                {/* <svg width="20" height="12" viewBox="0 0 20 12" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M10 6L5 1L0 6" stroke="#353945" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
+                </svg> */}
               </div>
               <div className="px-[10px] py-[10px]">
-                <span className="text-base text-[#353945]">SALE is Live</span>
+                <Link to="/#essentials">Jewellery Essentials</Link>
               </div>
               <div className="px-[10px] py-[10px]">
-                <Link to="/collections?type=RING" className="text-base text-[#353945]">Rings</Link>
+                <Link to="/#most-gifted">Most Gifted</Link>
               </div>
               <div className="px-[10px] py-[10px]">
-                <Link to="/collections?type=BRACELET" className="text-base text-[#353945]">Bracelets</Link>
+                <Link to="/#best-selling">Best Selling</Link>
               </div>
               <div className="px-[10px] py-[10px]">
-                <Link to="/collections?type=NECKLACE" className="text-base text-[#353945]">Necklaces</Link>
+                <Link to="/#reviews">Reviews</Link>
               </div>
               {/* <div className="flex items-center gap-1 px-[10px] py-[10px]">
                 <span className="text-base text-[#353945]">Student collections</span>
@@ -298,14 +298,14 @@ const changeLanguage = (langCode, label) => {
                   <path d="M10 6L5 1L0 6" stroke="#353945" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               </div> */}
-              <div className="flex items-center gap-1 px-[10px] py-[10px]">
+              {/* <div className="flex items-center gap-1 px-[10px] py-[10px]">
                 <span className="text-base text-[#353945]">Exclusive collections</span>
                 <svg width="20" height="12" viewBox="0 0 20 12" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M10 6L5 1L0 6" stroke="#353945" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
-              </div>
+              </div> */}
               <div className="flex items-center gap-1 px-[10px] py-[10px]">
-                <span className="text-base text-[#353945]">More at Sakhi Jewels</span>
+               <Link to="/#about-us">About Us</Link>
               </div>
             </div>
           </div>

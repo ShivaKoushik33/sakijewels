@@ -29,6 +29,10 @@
   font-family: 'Kodchasan', sans-serif;
 }
 
+/* body {
+  font-family: 'Olivera', serif;
+} */
+
 /* Hide scrollbar for category horizontal scroll on mobile */
 .scrollbar-hide {
   -ms-overflow-style: none;

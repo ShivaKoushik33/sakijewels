@@ -5,6 +5,16 @@ import banner from '../assets/images/banner.png';
 import dup_category from '../assets/images/dup_category.png';
 import JewelleryEssentials from '../assets/images/jewelery_essentials.png';
 import productBanner from '../assets/images/product_banner.png';
+import Bangles from '../assets/images/bangles.jpeg';
+import pendants from '../assets/images/earrings.jpeg';
+import ONE_GRAM_GOLD_NECKLACES from '../assets/images/1_gram_neck.jpeg';
+import MANGALASUTRA from '../assets/images/mangalasutra.jpeg';
+import PEARLNECKLACES from '../assets/images/pearl_neck.jpeg';
+import RUBYNECKLACES from '../assets/images/ruby_neck.jpeg';
+import EARFASHION from '../assets/images/ear_fashion.jpeg';
+import MODERN_MINIMUM_NECKLACES from '../assets/images/modern_min.jpeg';
+import FASHIONNECKLACES from '../assets/images/neck_fash.jpeg';
+import FASHION_EARINGS_JUMKA from '../assets/images/fashion_earrings.jpeg';
 
 import api from "./apiService";
 
@@ -20,58 +30,164 @@ const mockHero = {
  
 };
 
-const mockCategories = [
-  {
-    id: 1,
-    name: 'Necklaces',
-    type:'NECKLACE',
-    image: dup_category,
-    badge:  "Min\n75%\nOff"
-  },
-  {
-    id: 2,
-    name: 'Bracelets',
-    type:'BRACELET',
-    image: dup_category,
-    badge:  "Min\n75%\nOff"
-  },
-  {
-    id: 3,
-    name: 'Earrings',
-    type:"EARRING", 
-    image: dup_category
+// const mockCategories = [
+//   {
+//     id: 1,
+//     name: 'Necklaces',
+//     type:'NECKLACE',
+//     image: dup_category,
+//     badge:  "Min\n75%\nOff"
+//   },
+//   {
+//     id: 2,
+//     name: 'Bracelets',
+//     type:'BRACELET',
+//     image: dup_category,
+//     badge:  "Min\n75%\nOff"
+//   },
+//   {
+//     id: 3,
+//     name: 'Earrings',
+//     type:"EARRING", 
+//     image: dup_category
    
+//   },
+//   {
+//     id: 4,
+//     name: 'Bangles',
+//     type: "BANGLE", 
+//     image: dup_category,
+//     badge:  "Min\n75%\nOff"
+//   },
+//   {
+//     id: 5,
+//     name: 'Anklets',
+//     type:"ANKLET",
+//     image: dup_category,
+//     badge:  "Min\n75%\nOff"
+//   },
+//   {
+//     id: 6,
+//     name: 'Necklaces',
+//     type:"NECKLACE", 
+//     image: dup_category,
+//     badge:  "Min\n75%\nOff"
+//   },
+//   {
+//     id: 7,
+//     name: 'Necklaces',
+//     type:"NECKLACE", 
+//     image: dup_category,
+//     badge:  "Min\n75%\nOff"
+//   }
+// ];
+
+
+export const categoryConfig = [
+  // =========================
+  // TRADITIONAL
+  // =========================
+  {
+    name: "One Gram Gold Necklaces",
+    type: "ONE_GRAM_GOLD_NECKLACES",
+    variantType: "TRADITIONAL",
+    image: ONE_GRAM_GOLD_NECKLACES
   },
   {
-    id: 4,
-    name: 'Bangles',
-    type: "BANGLE", 
-    image: dup_category,
-    badge:  "Min\n75%\nOff"
+    name: "Pearl Necklaces",
+    type: "PEARL_NECKLACES",
+    variantType: "TRADITIONAL",
+    image: PEARLNECKLACES
   },
   {
-    id: 5,
-    name: 'Anklets',
-    type:"ANKLET",
-    image: dup_category,
-    badge:  "Min\n75%\nOff"
+    name: "Ruby Necklaces",
+    type: "RUBY_NECKLACES",
+    variantType: "TRADITIONAL",
+    image: RUBYNECKLACES
   },
   {
-    id: 6,
-    name: 'Necklaces',
-    type:"NECKLACE", 
-    image: dup_category,
-    badge:  "Min\n75%\nOff"
+    name: "Earrings Jumka",
+    type: "EARINGS_JUMKA",
+    variantType: "TRADITIONAL",
+    image: EARFASHION
   },
   {
-    id: 7,
-    name: 'Necklaces',
-    type:"NECKLACE", 
-    image: dup_category,
-    badge:  "Min\n75%\nOff"
+    name: "Bangles",
+    type: "BANGLES",
+    variantType: "TRADITIONAL",
+    image: Bangles
+  },
+  {
+    name: "Mangalsutra",
+    type: "MANGALSUTRA",
+    variantType: "TRADITIONAL",
+    image: MANGALASUTRA
+  },
+  {
+    name: "Modern Minimal Necklaces",
+    type: "MODERN_MINIMUM_NECKLACES",
+    variantType: "TRADITIONAL",
+    image: MODERN_MINIMUM_NECKLACES
+  },
+  {
+    name: "Pendants",
+    type: "PENDANTS",
+    variantType: "TRADITIONAL",
+    image: pendants
+  },
+
+  // =========================
+  // FASHION
+  // =========================
+  {
+    name: "Fashion Necklaces",
+    type: "FASHION_NECKLACES",
+    variantType: "FASHION",
+    image: FASHIONNECKLACES
+  },
+  {
+    name: "Fashion Earrings Jumka",
+    type: "FASHION_EARINGS_JUMKA",
+    variantType: "FASHION",
+    image: FASHION_EARINGS_JUMKA
+  },
+  {
+    name: "Bracelet Bangles",
+    type: "BRACELET_BANGLES",
+    variantType: "FASHION",
+    image: dup_category
+  },
+  {
+    name: "Fashion Rings",
+    type: "FASHION_RINGS",
+    variantType: "FASHION",
+    image: dup_category
+  },
+  {
+    name: "Anklets",
+    type: "ANKLETS",
+    variantType: "FASHION",
+    image: dup_category
+  },
+  {
+    name: "Hair Accessories",
+    type: "HAIR_ACCESSORIES",
+    variantType: "FASHION",
+    image: dup_category
+  },
+  {
+    name: "Fashion Mangalsutra",
+    type: "FASHION_MANGALSUTRA",
+    variantType: "FASHION",
+    image: MANGALASUTRA
+  },
+  {
+    name: "Gift Hamper",
+    type: "GIFT_HAMPER",
+    variantType: "FASHION",
+    image: dup_category
   }
 ];
-
 const mockEssentials = [
   {
     id: 1,
@@ -272,12 +388,14 @@ export async function getHomepageData() {
       discount: product.discountRate,
       rating: product.rating,
       reviews: product.ratingCount,
-      image: product.images?.[0]?.url
+      image: product.images?.[0]?.url,
+      variantType: product.variantType
     });
-
+    await console.log("Best Sellers Data:", bestSellersRes.data);
+       await console.log("Most Gifted Data:", mostGiftedRes.data);
     return {
       hero: mockHero,
-      categories: mockCategories,
+      categories: categoryConfig,
       essentials: mockEssentials,
       mostGifted: mostGiftedRes.data.map(formatProduct),
       bestSelling: bestSellersRes.data.map(formatProduct),

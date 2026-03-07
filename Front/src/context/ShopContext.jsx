@@ -21,7 +21,7 @@ const ShopContextProvider = ({ children }) => {
 
 
   const [selectedAddress, setSelectedAddress] = useState(null);
-  const [delivery_fee, setDeliveryFee] = useState(79); 
+  const [delivery_fee, setDeliveryFee] = useState(69); 
     
 
 
@@ -194,7 +194,7 @@ useEffect(() => {
   };
 
   initialize();
-}, [token]);
+}, [token,variantType]);
 
 
 

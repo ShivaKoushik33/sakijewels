@@ -49,8 +49,12 @@ export const createPaymentOrder = async (req, res) => {
       subtotal += product.finalPrice * quantity;
     });
 
+    if (subtotal < 249) {
+  return res.status(400).json({ message: "Minimum order amount is ₹249" });
+}
+
     // 🔥 DELIVERY FEE (adjust if needed)
-    let deliveryFee = 79;
+    let deliveryFee = 69;
 
     // 🔥 CHECK FIRST ORDER
     const previousOrders = await Order.find({ user: user._id });
@@ -80,6 +84,10 @@ export const createPaymentOrder = async (req, res) => {
         deliveryFee = 0;
       }
     }
+
+    // 🔥 PREPAID 5% DISCOUNT
+const prepaidDiscount = Math.floor(subtotal * 0.05);
+discount += prepaidDiscount;
 
     const totalAmount = subtotal - discount + deliveryFee;
 
@@ -153,7 +161,7 @@ export const verifyPaymentAndPlaceOrder = async (req, res) => {
     }
 
     let subtotal = 0;
-    let deliveryFee = 79;
+    let deliveryFee = 69;
     let discount = 0;
 
     const orderItems = [];
@@ -181,6 +189,12 @@ export const verifyPaymentAndPlaceOrder = async (req, res) => {
       await product.save({ session });
 
       subtotal += product.finalPrice * quantity;
+
+      if (subtotal < 249) {
+  await session.abortTransaction();
+  session.endSession();
+  return res.status(400).json({ message: "Minimum order amount is ₹249" });
+}
 
       orderItems.push({
         product: product._id,
@@ -213,6 +227,10 @@ export const verifyPaymentAndPlaceOrder = async (req, res) => {
         deliveryFee = 0;
       }
     }
+
+    // 🔥 PREPAID 5% DISCOUNT
+const prepaidDiscount = Math.floor(subtotal * 0.05);
+discount += prepaidDiscount;
 
     const totalAmount = subtotal - discount + deliveryFee;
 
@@ -376,7 +394,8 @@ export const placeOrderCOD = async (req, res) => {
     }
     console.log("3");
     let subtotal = 0;
-    let deliveryFee = 79;
+    let deliveryFee = 69;
+    let codCharge = 39;
     let discount = 0;
 
     const orderItems = [];
@@ -416,6 +435,10 @@ if (!updatedProduct) {
       console.log("5");
       subtotal += product.finalPrice * quantity;
 
+      if (subtotal < 249) {
+  return res.status(400).json({ message: "Minimum order amount is ₹249" });
+}
+
       orderItems.push({
         product: product._id,
         name: product.name,
@@ -448,7 +471,7 @@ if (!updatedProduct) {
       }
     }
     console.log("7");
-    const totalAmount = subtotal - discount + deliveryFee;
+    const totalAmount = subtotal - discount + deliveryFee + codCharge;
 
     if (totalAmount <= 0) {
       await session.abortTransaction();

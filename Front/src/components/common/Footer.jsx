@@ -7,7 +7,7 @@ import Mdot from '../../assets/images/Mdot.svg';
 
 export default function Footer() {
   return (
-    <footer className="w-full bg-[#FFEED8]">
+    <footer id="about-us" className="w-full bg-[#FFEED8]">
       <div className="max-w-[1440px] mx-auto">
 
         {/* Main Footer */}

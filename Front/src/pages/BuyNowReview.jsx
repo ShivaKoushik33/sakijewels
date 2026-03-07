@@ -28,6 +28,7 @@ export default function BuyNowReview() {
 
   const cartProducts = getCartProducts();
   const summary = getCartSummary();
+  const isBelowMinimum = summary.subtotal < 249;
   const savings = summary.discount + couponDiscount;
   const itemCount = summary.itemCount;
 
@@ -329,6 +330,10 @@ export default function BuyNowReview() {
               </div>
 
               <div className="border-t my-4"></div>
+              <div className="flex justify-between mb-3">
+  <span>COD Charges</span>
+  <span>₹ 39</span>
+</div>
 
               <div className="flex justify-between text-lg font-bold mb-4">
                 <span>Total</span>
@@ -342,29 +347,49 @@ export default function BuyNowReview() {
               <div className="flex flex-col gap-3">
 
   {/* ONLINE PAYMENT */}
-  <button
-    type="button"
-    onClick={() => {
-      if (!selectedAddress) {
-        toast.error("Please select delivery address");
-        return;
-      }
+  {/* ONLINE PAYMENT */}
+<button
+  type="button"
+  disabled={isBelowMinimum}
+  onClick={() => {
+    if (!selectedAddress) {
+      toast.error("Please select delivery address");
+      return;
+    }
 
-      navigate(`/checkout/payment?addressId=${selectedAddress._id}&coupon=${couponCode}&total=${finalTotal}`);
-    }}
-    className="w-full py-3 bg-[#901CDB] text-white rounded-lg"
-  >
-    Pay Online
-  </button>
+    navigate(
+      `/checkout/payment?mode=online&addressId=${selectedAddress._id}&coupon=${couponCode}&total=${finalTotal-69}`
+    );
+  }}
+  className="w-full py-3 bg-[#901CDB] text-white rounded-lg"
+>
+  Pay Online (5% OFF)
+</button>
 
-  {/* CASH ON DELIVERY */}
-  <button
-    type="button"
-    onClick={handleCODOrder}
-    className="w-full py-3 border border-[#901CDB] text-[#901CDB] rounded-lg"
-  >
-    Cash on Delivery
-  </button>
+{/* CASH ON DELIVERY */}
+<button
+  type="button"
+  disabled={isBelowMinimum}
+  onClick={() => {
+    if (!selectedAddress) {
+      toast.error("Please select delivery address");
+      return;
+    }
+
+    navigate(
+      `/checkout/payment?mode=cod&addressId=${selectedAddress._id}&coupon=${couponCode}&total=${finalTotal-69}`
+    );
+  }}
+  className="w-full py-3 border border-[#901CDB] text-[#901CDB] rounded-lg"
+>
+  Cash on Delivery (+₹39)
+</button>
+
+  {isBelowMinimum && (
+  <p className="text-red-600 text-sm mb-3">
+    Minimum order amount is ₹249
+  </p>
+)}
 
 </div>
 

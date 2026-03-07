@@ -78,10 +78,10 @@ export default function ProductCard({ product }) {
 
 
   return (
-    <div className="flex flex-col gap-2 sm:gap-4 w-full max-w-[307px] mx-auto sm:mx-0">
+    <div className="flex flex-col h-full gap-2 sm:gap-4 w-full max-w-[307px] mx-auto sm:mx-0">
       {/* Product Image Container - clickable to Product Details */}
       <Link to={`/products/${id}`} className="block">
-        <div className="relative w-full aspect-square max-h-[200px] sm:max-h-[280px] md:max-h-[307px] md:h-[307px] bg-[#FCFDFC] border border-[#F8F8F9] rounded-t-xl md:rounded-t-[20px] overflow-hidden">
+        <div className="relative w-full aspect-square max-h-[200px] sm:max-h-[280px] md:max-h-[307px] md:h-[307px] bg-[#FCFDFC] border border-[#F8F8F9] rounded-t-xl md:rounded-[20px] overflow-hidden">
           <img 
             src={image} 
             alt={name}
@@ -110,7 +110,7 @@ export default function ProductCard({ product }) {
       </Link>
 
       {/* Product Info */}
-      <div className="flex flex-col gap-1.5 md:gap-2.5">
+      <div className="flex flex-col justify-between flex-1 gap-1.5 md:gap-2.5">
         <Link to={`/products/${id}`} className="block">
           <div className="flex items-center gap-1.5 md:gap-2.5 flex-wrap">
           <div className="flex items-center gap-1 md:gap-1.25">
@@ -123,7 +123,7 @@ export default function ProductCard({ product }) {
         </div>
         <div className="flex flex-col gap-1 md:gap-2">
           <span className="text-sm md:text-[17px] font-normal text-[#777E90] leading-snug line-clamp-2 hover:text-[#141416]">{name}</span>
-          <span className="text-xs md:text-sm font-normal text-[#1E4CA6] leading-snug hidden sm:inline">Get it for ₹{couponPrice.toLocaleString()} with coupon</span>
+          <span className="text-xs md:text-sm font-normal text-[#1E4CA6] leading-snug hidden sm:inline"></span>
         </div>
         </Link>
         <div className="flex items-center gap-1">
