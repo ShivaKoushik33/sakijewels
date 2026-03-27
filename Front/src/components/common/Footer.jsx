@@ -44,11 +44,11 @@ export default function Footer() {
 
                 {/* Info & Policy */}
                 <div className="flex flex-col gap-3 md:gap-5">
-                  <h4 className="font-semibold text-[#141416]">Info & Policy</h4>
-                  <span className="text-sm md:text-base text-[#353945]">Shipping & Return</span>
-                  <span className="text-sm md:text-base text-[#353945]">Privacy & Policy</span>
-                  <span className="text-sm md:text-base text-[#353945]">FAQ's & Support</span>
-                  <span className="text-sm md:text-base text-[#353945]">Terms of Service</span>
+          
+                  <Link to="/terms" className="text-sm md:text-base text-[#353945] hover:text-[#901CDB]">Info & Policy</Link>
+                  <Link to="/terms" className="text-sm md:text-base text-[#353945] hover:text-[#901CDB]">Shipping & Return</Link>
+                  <Link to="/terms" className="text-sm md:text-base text-[#353945] hover:text-[#901CDB]">FAQ's & Support</Link>
+                  <Link to="/terms" className="text-sm md:text-base text-[#353945] hover:text-[#901CDB]">Terms of Service</Link>
                 </div>
 
                 {/* Contact */}
@@ -60,11 +60,11 @@ export default function Footer() {
                   <div className="text-sm text-[#353945]">
                     <p className="font-semibold">The Sakhi Jewels Pvt Ltd.</p>
                     <p>
-                      Third Floor, Magnum Vista,<br />
-                      Raghuvanahalli, Bangalore 560062
+                      1-108-2 kotala kalikiri,<br />
+                      Andhra Pradesh 517234
                     </p>
                   </div>
-                  <p className="text-sm text-[#353945]">Call us: +91 70323 71104</p>
+                  <p className="text-sm text-[#353945]">Call us: +91 97056 53066</p>
                   <p className="text-sm text-[#353945]">Email: support@thesakijewels.com</p>
                   <p className="text-sm underline cursor-pointer text-[#901CDB]">Chat with us</p>
                 </div>

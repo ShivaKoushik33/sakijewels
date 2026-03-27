@@ -70,76 +70,82 @@ const List = ({ token }) => {
       <p className="mb-2">All Products List</p>
 
       {/* 🔹 FILTER SECTION (Minimal, no UI change) */}
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
       <div className="flex flex-wrap gap-3 mb-4">
-        <input
-          type="text"
-          placeholder="Search by name"
-          className="border p-2 text-sm rounded"
-          onChange={(e) =>
-            setFilters({ ...filters, name: e.target.value })
-          }
-        />
+          <input
+            type="text"
+            placeholder="Search by name"
+            className="border p-2 text-sm rounded"
+            onChange={(e) =>
+              setFilters({ ...filters, name: e.target.value })
+            }
+          />
 
           <select
-  className="border p-2 text-sm rounded"
-  value={filters.type || ""}
-  onChange={(e) =>
-    setFilters({ ...filters, type: e.target.value })
-  }
->
-  <option value="">All Types</option>
+              className="border p-2 text-sm rounded"
+              value={filters.type || ""}
+              onChange={(e) =>
+                setFilters({ ...filters, type: e.target.value })
+              }
+            >
+              <option value="">All Types</option>
 
-  {(filters.variantType === "" || filters.variantType === "TRADITIONAL")  && (
-    <>
-      <option value="ONE_GRAM_GOLD_NECKLACES">1 Gram Gold Necklaces</option>
-      <option value="PEARL_NECKLACES">Pearl Necklaces</option>
-      <option value="RUBY_NECKLACES">Ruby Necklaces</option>
-      <option value="EARINGS_JUMKA">Earrings & Jumka</option>
-      <option value="BANGLES">Bangles</option>
-      <option value="MANGALSUTRA">Mangalsutra</option>
-      {/* <option value="RINGS">Rings (Traditional)</option> */}
-      <option value="MODERN_MINIMUM_NECKLACES">Minimal Necklaces</option>
-      {/* <option value="NOSE_PINS">Nose Pins</option> */}
-      <option value="PENDANTS">Pendants</option>
-    </>
-  )}
+              {(filters.variantType === "" || filters.variantType === "TRADITIONAL")  && (
+                <>
+                  <option value="ONE_GRAM_GOLD_NECKLACES">1 Gram Gold Necklaces</option>
+                  <option value="PEARL_NECKLACES">Pearl Necklaces</option>
+                  <option value="RUBY_NECKLACES">Ruby Necklaces</option>
+                  <option value="EARINGS_JUMKA">Earrings & Jumka</option>
+                  <option value="BANGLES">Bangles</option>
+                  <option value="MANGALSUTRA">Mangalsutra</option>
+                  {/* <option value="RINGS">Rings (Traditional)</option> */}
+                  <option value="MODERN_MINIMUM_NECKLACES">Minimal Necklaces</option>
+                  {/* <option value="NOSE_PINS">Nose Pins</option> */}
+                  <option value="PENDANTS">Pendants</option>
+                </>
+              )}
 
-  {(filters.variantType === "" || filters.variantType === "FASHION")  && (
-    <>
-      <option value="FASHION_NECKLACES">Necklaces (Fashion)</option>
-      <option value="FASHION_EARINGS_JUMKA">Earrings & Jumka (Fashion)</option>
-      <option value="BRACELET_BANGLES">Bracelet & Bangles</option>
-      <option value="FASHION_RINGS">Rings (Fashion)</option>
-      <option value="ANKLETS">Anklets</option>
-      <option value="HAIR_ACCESSORIES">Hair Accessories</option>
-      <option value="FASHION_MANGALSUTRA">Mangalsutra</option>
-      <option value="GIFT_HAMPER">Gift Hamper</option>
-    </>
-  )}
-</select>
-        <select
-          className="border p-2 text-sm rounded"
-          onChange={(e) =>
-            setFilters({ ...filters, variantType: e.target.value })
-          }
-        >
-          <option value="">All Variants</option>
-          <option value="TRADITIONAL">TRADITIONAL</option>
-          <option value="FASHION">FASHION</option>
-        </select>
+              {(filters.variantType === "" || filters.variantType === "FASHION")  && (
+                <>
+                  <option value="FASHION_NECKLACES">Necklaces (Fashion)</option>
+                  <option value="FASHION_EARINGS_JUMKA">Earrings & Jumka (Fashion)</option>
+                  <option value="BRACELET_BANGLES">Bracelet & Bangles</option>
+                  <option value="FASHION_RINGS">Rings (Fashion)</option>
+                  <option value="ANKLETS">Anklets</option>
+                  <option value="HAIR_ACCESSORIES">Hair Accessories</option>
+                  <option value="FASHION_MANGALSUTRA">Mangalsutra</option>
+                  <option value="GIFT_HAMPER">Gift Hamper</option>
+                </>
+              )}
+            </select>
+            <select
+              className="border p-2 text-sm rounded"
+              onChange={(e) =>
+                setFilters({ ...filters, variantType: e.target.value })
+              }
+            >
+              <option value="">All Variants</option>
+              <option value="TRADITIONAL">TRADITIONAL</option>
+              <option value="FASHION">FASHION</option>
+            </select>
 
-        <select
-          className="border p-2 text-sm rounded"
-          onChange={(e) =>
-            setFilters({ ...filters, sort: e.target.value })
-          }
-        >
-          <option value="">Sort</option>
-          <option value="price_asc">Price Low → High</option>
-          <option value="price_desc">Price High → Low</option>
-          <option value="recent">Newest First</option>
-          <option value="oldest">Oldest First</option>
-        </select>
+              <select
+                className="border p-2 text-sm rounded"
+                onChange={(e) =>
+                  setFilters({ ...filters, sort: e.target.value })
+                }
+              >
+                <option value="">Sort</option>
+                <option value="price_asc">Price Low → High</option>
+                <option value="price_desc">Price High → Low</option>
+                <option value="recent">Newest First</option>
+                <option value="oldest">Oldest First</option>
+              </select>
+          </div>
+           {/* RIGHT: Count */}
+          <div className="text-sm font-semibold text-[#901CDB] bg-[#F3E8FF] px-3 py-2 rounded-lg">
+            {list.length} items
+          </div>
       </div>
 
       <div className="flex flex-col gap-2 w-full overflow-x-auto">

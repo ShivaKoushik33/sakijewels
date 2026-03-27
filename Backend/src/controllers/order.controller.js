@@ -488,7 +488,7 @@ if (!updatedProduct) {
       deliveryFee,
       totalAmount,
       coupon: coupon || null,
-      status: "ACCEPTED",
+      status: "PENDING",
       paymentMethod: "COD",
       paymentId: null,
       isPaid: false

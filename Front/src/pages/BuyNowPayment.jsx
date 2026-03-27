@@ -12,13 +12,17 @@ export default function BuyNowPayment() {
   const initialTotal = searchParams.get("total");
   const mode = searchParams.get("mode");
 
-  const { backendUrl, token } = useContext(ShopContext);
+ const { backendUrl, token, setCartItems } = useContext(ShopContext);
 
   const [loading, setLoading] = useState(false);
   const [itemCount, setItemCount] = useState(0);
   const [total, setTotal] = useState(
   initialTotal ? Number(initialTotal) : 0
 );
+
+useEffect(() => {
+      window.scrollTo(0, 0);
+    }, []);
 
 useEffect(() => {
   if (!initialTotal) return;
@@ -59,6 +63,7 @@ const handlePayment = async () => {
       );
 
       toast.success("Order placed successfully!");
+      setCartItems({});
       navigate("/");
       return;
     }
@@ -100,6 +105,7 @@ const handlePayment = async () => {
           );
 
           toast.success("Payment successful 🎉");
+          setCartItems({});
           navigate("/");
 
         } catch (error) {

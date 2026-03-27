@@ -307,6 +307,9 @@ const changeLanguage = (langCode, label) => {
               <div className="flex items-center gap-1 px-[10px] py-[10px]">
                <Link to="/#about-us">About Us</Link>
               </div>
+              <div className="px-[10px] py-[10px]">
+                <Link to="/terms">Terms & Conditions</Link>
+              </div>
             </div>
           </div>
         </div>

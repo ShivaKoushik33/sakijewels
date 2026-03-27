@@ -22,6 +22,7 @@ import EditAddress from '../pages/EditAddress';
 import Collections from '../pages/Collections';
 import SearchBar from '../components/common/SearchBar';
 import ProtectedRoute from './ProtectedRoute';
+import Terms from '../pages/Terms';
 export default function AppRoutes() {
   return (
   
@@ -39,6 +40,7 @@ export default function AppRoutes() {
             <Route path="/checkout/payment" element={<BuyNowPayment />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/terms" element={<Terms />} />
           <Route
             path="/profile"
             element={

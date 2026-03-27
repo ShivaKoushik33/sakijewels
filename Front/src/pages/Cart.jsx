@@ -1,10 +1,14 @@
-import { useContext, useState } from "react";
+import { useContext, useState ,useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { ShopContext } from "../context/shopContext";
 
 export default function Cart() {
   const navigate = useNavigate();
+
+  useEffect(() => {
+      window.scrollTo(0, 0);
+    }, []);
 
   const {
     products,
