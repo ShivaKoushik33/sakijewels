@@ -1,6 +1,6 @@
 import { useContext, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ShopContext } from "../../context/shopContext";
+import { ShopContext } from "../../context/ShopContext";
 
 const SearchBar = ({ className = "" }) => {
   const { products } = useContext(ShopContext);

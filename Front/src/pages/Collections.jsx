@@ -1,5 +1,5 @@
 // import { useContext, useEffect, useState } from "react";
-// import { ShopContext } from "../context/shopContext";
+// import { ShopContext } from "../context/ShopContext";
 // import ProductCard from "../components/home/ProductCard";
 // import { useLocation } from "react-router-dom";
 
@@ -167,7 +167,7 @@
 
 
 import { useContext, useEffect, useState, useMemo } from "react";
-import { ShopContext } from "../context/shopContext";
+import { ShopContext } from "../context/ShopContext";
 import ProductCard from "../components/home/ProductCard";
 import { useLocation } from "react-router-dom";
 

@@ -6,7 +6,7 @@ import ProductGrid from '../components/home/ProductGrid';
 import Testimonials from '../components/home/Testimonials';
 import OurStory from '../components/home/OurStory';
 import { getHomepageData } from '../services/homepageService';
-import { ShopContext } from '../context/shopContext';
+import { ShopContext } from '../context/ShopContext';
 import PromoBannerSection from '../components/home/PromoBannerSection';
 // import { categoryConfig } from "../constants/categoryConfig";
 import { useLocation } from "react-router-dom";

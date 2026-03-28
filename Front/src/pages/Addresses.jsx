@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import AddressCard from '../components/profile/AddressCard';
 import { getProfileUi, getUserAddresses } from '../services/profileService';
-import { ShopContext } from '../context/shopContext';
+import { ShopContext } from '../context/ShopContext';
 import { useContext } from 'react';
 
 

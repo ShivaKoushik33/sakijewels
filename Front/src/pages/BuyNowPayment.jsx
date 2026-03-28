@@ -1,6 +1,6 @@
 import { useState, useContext,useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ShopContext } from '../context/shopContext';
+import { ShopContext } from '../context/ShopContext';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 

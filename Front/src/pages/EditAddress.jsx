@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { getProfileUi, getAddressById } from '../services/profileService';
 import { useContext } from "react";
-import { ShopContext } from "../context/shopContext";
+import { ShopContext } from "../context/ShopContext";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";

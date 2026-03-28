@@ -2,7 +2,7 @@ import { useState, useEffect, useContext } from "react";
 import { useParams } from "react-router-dom";
 import { getProductDetailsData } from "../services/productDetailsService";
 import RelatedProducts from "../components/product/RelatedProducts";
-import { ShopContext } from "../context/shopContext";
+import { ShopContext } from "../context/ShopContext";
 import { toast } from "react-toastify";
 import "@fontsource/lato";
 import "@fontsource/roboto";

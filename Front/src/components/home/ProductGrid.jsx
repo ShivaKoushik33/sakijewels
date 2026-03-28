@@ -1,6 +1,6 @@
 import ProductCard from './ProductCard';
 import { useContext } from "react";
-import { ShopContext } from "../../context/shopContext";
+import { ShopContext } from "../../context/ShopContext";
 
 export default function ProductGrid({ title, products, showViewMore = false }) {
   if (!products || !Array.isArray(products) || products.length === 0) return null;

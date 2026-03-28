@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { use, useState } from 'react';
 import { useContext ,useEffect} from 'react';
 import { addToWishlistApi,removeFromWishlistApi,getWishlistData } from '../../services/wishlistService';
-import { ShopContext } from '../../context/shopContext';
+import { ShopContext } from '../../context/ShopContext';
 import { getProductDetailsData } from '../../services/productDetailsService';
 import { toast } from "react-toastify";
 

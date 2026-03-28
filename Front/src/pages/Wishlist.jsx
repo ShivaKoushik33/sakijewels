@@ -4,7 +4,7 @@ import { useContext } from "react";
 
 import ProductCard from "../components/home/ProductCard";
 import { getWishlistData } from "../services/wishlistService";
-import { ShopContext } from "../context/shopContext";
+import { ShopContext } from "../context/ShopContext";
 export default function Wishlist() {
   const [wishlist, setWishlist] = useState([]);
   const [loading, setLoading] = useState(true);

@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from "react";
-import { ShopContext } from "../../context/shopContext";
+import { ShopContext } from "../../context/ShopContext";
 import ProductCard from "../home/ProductCard";
 
 const RelatedProducts = ({ currentProduct }) => {

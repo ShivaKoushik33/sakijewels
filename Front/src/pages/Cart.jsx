@@ -1,7 +1,7 @@
 import { useContext, useState ,useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { ShopContext } from "../context/shopContext";
+import { ShopContext } from "../context/ShopContext";
 
 export default function Cart() {
   const navigate = useNavigate();

@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { useState ,useEffect } from 'react';
 import MainIcon from '../../assets/images/MainIcon.svg';
 import cart_icon from '../../assets/images/cart_icon.png';
-import { ShopContext } from '../../context/shopContext';
+import { ShopContext } from '../../context/ShopContext';
 import { useContext } from 'react';
 import SearchBar from "../common/SearchBar";
 

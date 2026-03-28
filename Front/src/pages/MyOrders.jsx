@@ -2,7 +2,7 @@ import { useEffect, useState, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import OrderCard from '../components/profile/OrderCard';
 import axios from 'axios';
-import { ShopContext } from '../context/shopContext';
+import { ShopContext } from '../context/ShopContext';
 
 export default function MyOrders() {
   const { backendUrl, token } = useContext(ShopContext);

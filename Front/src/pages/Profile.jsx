@@ -1,6 +1,6 @@
 import { useEffect, useState, useContext } from 'react';
 import axios from "axios";
-import { ShopContext } from '../context/shopContext';
+import { ShopContext } from '../context/ShopContext';
 import { getProfileUi } from '../services/profileService';
 
 export default function Profile() {

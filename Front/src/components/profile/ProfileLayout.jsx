@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { useContext, useEffect } from 'react';
-import { ShopContext } from '../../context/shopContext';
+import { ShopContext } from '../../context/ShopContext';
 import { useNavigate } from 'react-router-dom';
 const sidebarLinks = [
   { to: '/profile', label: 'Personal Information' },

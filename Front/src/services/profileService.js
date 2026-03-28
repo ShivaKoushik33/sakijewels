@@ -1,6 +1,6 @@
 // Mock profile data service (API layer)
 // Replace these mocks with real API calls later without changing UI components.
-import { ShopContext } from "../context/shopContext";
+import { ShopContext } from "../context/ShopContext";
 import axios from "axios";
 const UI = {
   pages: {
