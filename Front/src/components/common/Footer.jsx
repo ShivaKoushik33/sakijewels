@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import Logo from '../../assets/images/Logo.svg';
-import insta from '../../assets/images/insta.svg';
+import insta from '../../assets/images/Insta.svg';
 import Mdot from '../../assets/images/Mdot.svg';
 
 
