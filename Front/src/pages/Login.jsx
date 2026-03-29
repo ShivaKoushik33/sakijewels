@@ -12,6 +12,10 @@ export default function Login() {
   const { backendUrl, setToken, token, navigate } =
     useContext(ShopContext);
 
+    useEffect(() => {
+          window.scrollTo(0, 0);
+        }, []);
+
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
   const [confirmationResult, setConfirmationResult] = useState(null);
@@ -117,11 +121,8 @@ export default function Login() {
   }, [token]);
 
   return (
-    <section className="min-h-screen bg-white flex items-center justify-center">
-      <form
-        onSubmit={onSubmitHandler}
-        className="w-full max-w-md p-6 flex flex-col gap-4"
-      >
+    <section className="min-h-[calc(100vh-400px)] flex items-center justify-center px-4">
+    <form onSubmit={onSubmitHandler} className="w-full max-w-sm bg-white p-6 rounded-lg shadow-md flex flex-col gap-4">
         <h1 className="text-2xl font-bold">Login with Phone</h1>
 
         {/* PHONE */}

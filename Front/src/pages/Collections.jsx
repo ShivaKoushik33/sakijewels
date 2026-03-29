@@ -271,7 +271,7 @@ const filteredProducts = useMemo(() => {
   return productsCopy;
 }, [products, selectedTypes, search, showSearch, sortType]);
   return (
-    <div className="flex flex-col sm:flex-row gap-6 pt-10 pb-20 border-t min-h-screen bg-[#FCFDFC]">
+    <div className="flex flex-col sm:flex-row gap-6 pt-4 sm:pt-10 pb-20 border-t min-h-screen bg-[#FCFDFC]">
 
       {/* LEFT FILTER PANEL */}
       <div className="min-w-[220px] px-4">
@@ -305,8 +305,8 @@ const filteredProducts = useMemo(() => {
       <div className="flex-1 px-4 sm:px-6 md:px-10">
 
         {/* HEADER */}
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="font-olivera  text-2xl font-bold text-[#141416]">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
+          <h1 className="font-olivera text-xl font-bold text-[#141416]">
             {selectedTypes.length > 0
               ? selectedTypes[0].replaceAll("_", " ")
               : "All Collections"}
@@ -315,7 +315,7 @@ const filteredProducts = useMemo(() => {
           <select
             value={sortType}
             onChange={(e) => setSortType(e.target.value)}
-            className="border border-gray-300 text-sm px-3 py-1"
+            className="border border-gray-300 text-sm px-3 py-1 w-fit"
           >
             <option value="relevant">Sort by: Relevant</option>
             <option value="low-high">Sort by: Low to High</option>

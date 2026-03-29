@@ -188,9 +188,6 @@ useEffect(() => {
     if (token) {
       await getUserCart(token);
     }
-    else{
-      await getUserCart();
-    }
   };
 
   initialize();
