@@ -106,7 +106,7 @@ useEffect(() => {
 
       {/* Shop by Categories */}
       {homepage.categories && (
-        <div id="shop-category" className="w-full max-w-[1440px] mx-auto my-6 md:my-10 px-2 md:px-4">
+        <div id="shop-category" className="scroll-mt-24 sm:scroll-mt-44 w-full max-w-[1440px] mx-auto my-6 md:my-10 px-2 md:px-4">
           <div className="flex flex-col items-center gap-2.5 px-2.5 py-2.5 mb-6 md:mb-10">
             <h2 className="text-xl md:text-2xl font-semibold text-[#141416] text-center">Shop by Categories</h2>
           </div>
@@ -116,14 +116,14 @@ useEffect(() => {
 
       {/* 2026 Jewellery Essentials */}
       {homepage.essentials && (
-        <div  id="essentials" className="my-10 md:my-20">
+        <div  id="essentials" className="scroll-mt-24 sm:scroll-mt-44 my-10 md:my-20">
           <JewelleryEssentials data={homepage.essentials} />
         </div>
       )}
       
       {/* Most Gifted */}
       {homepage.mostGifted && (
-        <div id="most-gifted" className="w-full max-w-[1440px] mx-auto my-10 md:my-20 px-2 md:px-4">
+        <div id="most-gifted" className="scroll-mt-24 sm:scroll-mt-44 w-full max-w-[1440px] mx-auto my-10 md:my-20 px-2 md:px-4">
           <div className="flex flex-col items-center gap-2.5 px-2.5 py-2.5 mb-6 md:mb-10">
             <h2 className="text-xl md:text-2xl font-semibold text-[#141416] text-center">Most Gifted</h2>
           </div>
@@ -138,7 +138,7 @@ useEffect(() => {
       
       {/* Best Selling Products */}
       {homepage.bestSelling && (
-        <div id="best-selling" className="my-10 md:my-20">
+        <div id="best-selling" className="scroll-mt-24 sm:scroll-mt-44 my-10 md:my-20">
           <ProductGrid 
             title="Best Selling products" 
             products={homepage.bestSelling} 
@@ -149,7 +149,7 @@ useEffect(() => {
 
       {/* Testimonials */}
       {homepage.testimonials && (
-        <div id="reviews" className="my-10 md:my-20">
+        <div id="reviews" className="scroll-mt-24 sm:scroll-mt-44my-10 md:my-20">
           <Testimonials data={homepage.testimonials} />
         </div>
       )}

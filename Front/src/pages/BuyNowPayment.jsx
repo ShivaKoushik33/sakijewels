@@ -186,6 +186,13 @@ const handlePayment = async () => {
     ? "Place Order"
     : "Pay Now"}
 </button>
+<button
+  type="button"
+  onClick={() => navigate("/checkout/review")}
+  className="w-full py-3 mt-3 bg-[#D4A017] text-white rounded-lg"
+>
+  Back
+</button>
 
             </section>
           </div>

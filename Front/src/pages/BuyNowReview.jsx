@@ -384,6 +384,13 @@ export default function BuyNowReview() {
 >
   Cash on Delivery (+₹39)
 </button>
+<button
+  type="button"
+  onClick={() => navigate("/cart")}
+  className="w-full py-3 mt-3 bg-[#D4A017] text-white rounded-lg"
+>
+  Back
+</button>
 
   {isBelowMinimum && (
   <p className="text-red-600 text-sm mb-3">
