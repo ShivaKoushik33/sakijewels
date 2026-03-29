@@ -10,7 +10,7 @@ import addressRoutes from "./routes/address.routes.js";
 const app = express();
 
 app.use(cors({
-  origin: ["http://adminsakhi.thesakhijewels.com","https://adminsakhi.thesakhijewels.com","http://thesakhijewels.com","https://thesakhijewels.com"],
+  origin: ["http://localhost:5173","http://adminsakhi.thesakhijewels.com","https://adminsakhi.thesakhijewels.com","http://thesakhijewels.com","https://thesakhijewels.com"],
   credentials: true
 }));
 app.use(express.json());

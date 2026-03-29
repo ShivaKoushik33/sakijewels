@@ -130,8 +130,15 @@ export const firebaseLogin = async (req, res) => {
 
     let user = await User.findOne({ phone: formattedPhone });
 
+    // ✅ 🔥 AUTO REGISTER IF NOT EXISTS
     if (!user) {
-      return res.status(404).json({ message: "User not registered" });
+      user = await User.create({
+        name: `user_${formattedPhone.slice(-4)}`, // user_1234
+        email: `user_${formattedPhone}@dummy.com`, // dummy email
+        phone: formattedPhone,
+        password: "firebase_auth", // dummy (not used)
+        role: "USER",
+      });
     }
 
     if (!user.isActive) {
@@ -153,6 +160,7 @@ export const firebaseLogin = async (req, res) => {
     });
 
   } catch (error) {
+    console.error(error);
     res.status(401).json({ message: "Invalid Firebase token" });
   }
 };
