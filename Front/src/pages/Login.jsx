@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState, useRef } from "react";
+import { useContext, useEffect, useState } from "react";
 import { ShopContext } from "../context/ShopContext";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -18,22 +18,31 @@ export default function Login() {
   const [otpSent, setOtpSent] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const recaptchaRef = useRef(null);
-
   const isValidPhone = (phone) => /^[0-9]{10}$/.test(phone);
 
-  /* INIT RECAPTCHA ONCE */
+  /* ✅ INIT RECAPTCHA ONCE (MOST IMPORTANT FIX) */
   useEffect(() => {
-    if (!window.recaptchaVerifier && recaptchaRef.current) {
+    if (!window.recaptchaVerifier) {
       window.recaptchaVerifier = new RecaptchaVerifier(
         auth,
-        recaptchaRef.current,
+        "recaptcha-container",
         { size: "invisible" }
       );
+
+      // 👇 important
+      window.recaptchaVerifier.render();
     }
+
+    // ✅ cleanup (prevents production bugs)
+    return () => {
+      if (window.recaptchaVerifier) {
+        window.recaptchaVerifier.clear();
+        window.recaptchaVerifier = null;
+      }
+    };
   }, []);
 
-  /* SEND OTP */
+  /* ========= SEND OTP ========= */
   const sendOtp = async () => {
     if (!isValidPhone(phone)) {
       toast.error("Enter valid 10 digit phone number");
@@ -43,10 +52,12 @@ export default function Login() {
     try {
       setIsLoading(true);
 
+      const appVerifier = window.recaptchaVerifier;
+
       const result = await signInWithPhoneNumber(
         auth,
         "+91" + phone,
-        window.recaptchaVerifier
+        appVerifier
       );
 
       setConfirmationResult(result);
@@ -61,7 +72,7 @@ export default function Login() {
     }
   };
 
-  /* VERIFY OTP */
+  /* ========= VERIFY OTP ========= */
   const verifyOtp = async () => {
     if (!otp || otp.length !== 6) {
       toast.error("Enter valid OTP");
@@ -95,14 +106,10 @@ export default function Login() {
 
   const onSubmitHandler = (e) => {
     e.preventDefault();
-
     if (isLoading) return;
 
-    if (!otpSent) {
-      sendOtp();
-    } else {
-      verifyOtp();
-    }
+    if (!otpSent) sendOtp();
+    else verifyOtp();
   };
 
   useEffect(() => {
@@ -110,59 +117,54 @@ export default function Login() {
   }, [token]);
 
   return (
-    <section className="min-h-screen bg-white">
-      <div className="max-w-[400px] mx-auto px-4 py-12">
+    <section className="min-h-screen bg-white flex items-center justify-center">
+      <form
+        onSubmit={onSubmitHandler}
+        className="w-full max-w-md p-6 flex flex-col gap-4"
+      >
+        <h1 className="text-2xl font-bold">Login with Phone</h1>
 
-        <h1 className="text-2xl font-bold mb-2">Login</h1>
-        <p className="text-gray-500 mb-6">
-          Enter your phone number
-        </p>
+        {/* PHONE */}
+        <input
+          type="tel"
+          placeholder="Enter phone number"
+          value={phone}
+          onChange={(e) =>
+            setPhone(e.target.value.replace(/\D/g, ""))
+          }
+          maxLength={10}
+          className="h-[44px] px-4 border rounded-lg"
+          required
+        />
 
-        <form onSubmit={onSubmitHandler} className="flex flex-col gap-4">
-
-          {/* PHONE */}
+        {/* OTP */}
+        {otpSent && (
           <input
-            type="tel"
-            value={phone}
-            onChange={(e) =>
-              setPhone(e.target.value.replace(/\D/g, ""))
-            }
-            maxLength={10}
-            placeholder="Enter phone number"
+            type="text"
+            placeholder="Enter OTP"
+            value={otp}
+            onChange={(e) => setOtp(e.target.value)}
+            maxLength={6}
             className="h-[44px] px-4 border rounded-lg"
-            required
           />
+        )}
 
-          {/* OTP */}
-          {otpSent && (
-            <input
-              type="text"
-              value={otp}
-              onChange={(e) => setOtp(e.target.value)}
-              maxLength={6}
-              placeholder="Enter OTP"
-              className="h-[44px] px-4 border rounded-lg"
-            />
-          )}
+        {/* ✅ STABLE CONTAINER (DO NOT CHANGE) */}
+        <div id="recaptcha-container"></div>
 
-          {/* RECAPTCHA */}
-          <div ref={recaptchaRef}></div>
-
-          {/* BUTTON */}
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="h-[44px] bg-purple-600 text-white rounded-lg"
-          >
-            {isLoading
-              ? "Processing..."
-              : otpSent
-              ? "Verify OTP"
-              : "Send OTP"}
-          </button>
-
-        </form>
-      </div>
+        {/* BUTTON */}
+        <button
+          type="submit"
+          disabled={isLoading}
+          className="h-[44px] bg-purple-600 text-white rounded-lg"
+        >
+          {isLoading
+            ? "Processing..."
+            : otpSent
+            ? "Verify OTP"
+            : "Send OTP"}
+        </button>
+      </form>
     </section>
   );
 }
