@@ -254,11 +254,14 @@ export default function BuyNowReview() {
                     className="flex gap-3 md:gap-4 p-3 md:p-4 border border-[#E6E8EC] rounded-lg"
                   >
                     <div className="w-20 h-20 md:w-24 md:h-24 rounded-lg overflow-hidden border">
+                      <Link
+                  to={`/products/${item.id}`}
+                >
                       <img
                         src={item.image}
                         alt={item.name}
                         className="w-full h-full object-cover"
-                      />
+                      /></Link>
                     </div>
 
                     <div className="flex-1">

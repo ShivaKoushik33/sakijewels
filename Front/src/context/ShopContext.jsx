@@ -33,7 +33,7 @@ const ShopContextProvider = ({ children }) => {
 
       console.log("Products data:", response.data);
 
-      setProducts(response.data?.filter(p => p.variantType === variantType));   // ✅ directly set array
+      setProducts(response.data?.filter(p => (p.variantType === variantType && p.stock >0)));   // ✅ directly set array
 
     } catch (error) {
       console.log(error);

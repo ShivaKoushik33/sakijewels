@@ -190,11 +190,7 @@ export const verifyPaymentAndPlaceOrder = async (req, res) => {
 
       subtotal += product.finalPrice * quantity;
 
-      if (subtotal < 249) {
-  await session.abortTransaction();
-  session.endSession();
-  return res.status(400).json({ message: "Minimum order amount is ₹249" });
-}
+      
 
       orderItems.push({
         product: product._id,
@@ -204,6 +200,12 @@ export const verifyPaymentAndPlaceOrder = async (req, res) => {
         quantity
       });
     }
+
+    if (subtotal < 249) {
+  await session.abortTransaction();
+  session.endSession();
+  return res.status(400).json({ message: "Minimum order amount is ₹249" });
+}
 
     // 🔥 APPLY COUPON AGAIN (SECURE CHECK)
     if (coupon) {
@@ -375,7 +377,7 @@ export const placeOrderCOD = async (req, res) => {
 
   try {
     const { addressId, coupon } = req.body;
-    console.log("1");
+    
 
     const user = await User.findById(req.user._id).session(session);
 
@@ -384,7 +386,7 @@ export const placeOrderCOD = async (req, res) => {
       session.endSession();
       return res.status(400).json({ message: "Cart is empty" });
     }
-    console.log("2");
+    
     const address = user.addresses.id(addressId);
 
     if (!address) {
@@ -392,7 +394,7 @@ export const placeOrderCOD = async (req, res) => {
       session.endSession();
       return res.status(400).json({ message: "Invalid address" });
     }
-    console.log("3");
+    
     let subtotal = 0;
     let deliveryFee = 69;
     let codCharge = 39;
@@ -410,7 +412,7 @@ export const placeOrderCOD = async (req, res) => {
       if (quantity <= 0) continue;
 
       const product = await Product.findById(productId).session(session);
-      console.log("4");
+      
       if (!product || product.stock < quantity) {
         await session.abortTransaction();
         session.endSession();
@@ -432,12 +434,10 @@ if (!updatedProduct) {
     message: "Product is out of stock"
   });
 }
-      console.log("5");
+      
       subtotal += product.finalPrice * quantity;
 
-      if (subtotal < 249) {
-  return res.status(400).json({ message: "Minimum order amount is ₹249" });
-}
+    
 
       orderItems.push({
         product: product._id,
@@ -447,7 +447,15 @@ if (!updatedProduct) {
         quantity
       });
     }
-    console.log("6");
+    
+    if (subtotal < 249) {
+   await session.abortTransaction();
+   session.endSession();
+
+   return res.status(400).json({
+      message: "Minimum order amount is ₹249"
+   });
+}
     // 🔥 APPLY COUPON (SECURE CHECK)
     if (coupon) {
       const code = coupon.toUpperCase();

@@ -117,17 +117,21 @@ export default function Cart() {
               >
                 <button
                   onClick={() => removeItem(item.id)}
-                  className="absolute top-3 right-3 text-gray-500"
+                  className="absolute top-3 right-3 w-8 h-8 rounded-full bg-red-100 text-red-600 font-bold flex items-center justify-center hover:bg-red-600 hover:text-white transition"
                 >
                   ✕
                 </button>
-
+                
                 <div className="w-full sm:w-32 h-48 sm:h-32 rounded-lg overflow-hidden border">
+                  <Link
+                  to={`/products/${item.id}`}
+                >
                   <img
                     src={item.image}
                     alt={item.name}
                     className="w-full h-full object-cover"
                   />
+                  </Link>
                 </div>
 
                 <div className="flex-1 flex flex-col gap-3">

@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 
 const navItems = [
-  // { to: '/', label: 'Home', icon: 'home' },
+  { to: '/', label: 'Home', icon: 'home' },
   { to: '/wishlist', label: 'Wishlist', icon: 'wishlist' },
   { to: '/cart', label: 'Cart', icon: 'cart' },
   { to: '/profile', label: 'Profile', icon: 'profile' },
@@ -11,13 +11,13 @@ function NavIcon({ icon, isActive }) {
   const stroke = isActive ? '#000000' : '#000000';
   const size = 22;
   switch (icon) {
-    // case 'home':
-    //   return (
-    //     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    //       <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" stroke={stroke} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    //       <path d="M9 22V12h6v10" stroke={stroke} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    //     </svg>
-    //   );
+    case 'home':
+      return (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" stroke={stroke} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M9 22V12h6v10" stroke={stroke} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      );
     case 'wishlist':
       return (
         <svg width={size} height={size} viewBox="0 0 24 22" fill="none" xmlns="http://www.w3.org/2000/svg">

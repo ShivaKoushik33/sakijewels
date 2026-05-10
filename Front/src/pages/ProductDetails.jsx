@@ -227,8 +227,8 @@ export default function ProductDetails() {
                         width="18"
                         height="18"
                         viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
+                        fill={isWishlisted ? "#901CDB" : "none"}
+                        stroke={isWishlisted ? "#901CDB" : "#121212"}
                         strokeWidth="2"
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -239,7 +239,7 @@ export default function ProductDetails() {
                         <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
                       </svg>
                     </button>
-                    <button
+                    {/* <button
                       onClick={handleShare}
                       className="p-2 rounded-lg hover:bg-[#f8f8f9] transition-all duration-200"
                       aria-label="Share product"
@@ -250,12 +250,12 @@ export default function ProductDetails() {
                         alt="Share"
                         className="w-5 h-5"
                       />
-                    </button>
+                    </button> */}
                   </div>
                 </div>
 
                 {/* Rating */}
-                {product?.rating && (
+                {/* {product?.rating && (
                   <div className="flex items-center gap-3 pb-3">
                     <div className="flex items-center gap-1">
                       <span className="font-semibold text-xs" style={{ fontFamily: "'Lato', sans-serif" }}>
@@ -267,7 +267,7 @@ export default function ProductDetails() {
                       ({product.ratingCount || 323} Reviews)
                     </span>
                   </div>
-                )}
+                )} */}
 
                 {/* Price Section */}
                 <div className="space-y-2 pb-4">
@@ -301,9 +301,36 @@ export default function ProductDetails() {
                   <p className="text-gray-700 text-xs md:text-sm leading-relaxed" style={{ fontFamily: "'Roboto', sans-serif" }}>
                     {product?.description}
                   </p>
-                  <p className="text-[#121212] font-medium text-xs" style={{ fontFamily: "'Lato', sans-serif", fontWeight: 600 }}>
-                    Made With Pure 925 Silver
-                  </p>
+                  <div className="flex items-center gap-2 text-green-600">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="18"
+                        height="18"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <path d="M3 7h11v8H3z" />
+                        <path d="M14 10h4l3 3v2h-7z" />
+                        <circle cx="7.5" cy="18" r="1.5" />
+                        <circle cx="18.5" cy="18" r="1.5" />
+                      </svg>
+
+                      <p
+                        className="font-medium text-xs"
+                        style={{ fontFamily: "'Lato', sans-serif", fontWeight: 600 }}
+                      >
+                        Estimated Delivery Time:{" "}
+                        {new Date(
+                          new Date().setDate(new Date().getDate() + 5)
+                        ).toLocaleDateString("en-IN", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })}
+                      </p>
+                    </div>
                 </div>
 
                 {/* Finish/Options Selection */}
@@ -332,7 +359,7 @@ export default function ProductDetails() {
                 )}
 
                 {/* Delivery Estimator */}
-                <div className="pb-6">
+                {/* <div className="pb-6">
                   <label className="block text-[#121212] font-medium mb-3 text-sm" style={{ fontFamily: "'Lato', sans-serif", fontWeight: 600 }}>
                     Estimated Delivery Time
                   </label>
@@ -347,7 +374,7 @@ export default function ProductDetails() {
                       Check
                     </button>
                   </div>
-                </div>
+                </div> */}
 
                 {/* Action Buttons */}
                 <div className="flex gap-3 pt-4">
