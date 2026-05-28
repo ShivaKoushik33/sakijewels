@@ -9,11 +9,12 @@ const authMiddleware = async (req, res, next) => {
     req.headers.authorization.startsWith("Bearer")
   ) {
     token = req.headers.authorization.split(" ")[1];
-    
   }
 
   if (!token) {
-    return res.status(401).json({ message: "Not authorized, no token" });
+    return res
+      .status(401)
+      .json({ code: "NO_TOKEN", message: "Not authorized, no token" });
   }
 
   try {
@@ -22,12 +23,21 @@ const authMiddleware = async (req, res, next) => {
     req.user = await User.findById(decoded.id);
 
     if (!req.user || !req.user.isActive) {
-      return res.status(401).json({ message: "User not authorized" });
+      return res
+        .status(401)
+        .json({ code: "USER_INACTIVE", message: "User not authorized" });
     }
 
     next();
   } catch (error) {
-    res.status(401).json({ message: "Token failed" });
+    if (error.name === "TokenExpiredError") {
+      return res
+        .status(401)
+        .json({ code: "TOKEN_EXPIRED", message: "Session expired, please login again" });
+    }
+    return res
+      .status(401)
+      .json({ code: "TOKEN_INVALID", message: "Token failed" });
   }
 };
 

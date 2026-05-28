@@ -6,7 +6,7 @@ import { ShopContext } from '../context/ShopContext';
 import { getProfileUi, getUserAddresses } from '../services/profileService';
 
 export default function Profile() {
-  const { token, setToken, backendUrl } = useContext(ShopContext);
+  const { token, backendUrl, logout } = useContext(ShopContext);
   const navigate = useNavigate();
 
   const [ui, setUi] = useState(null);
@@ -77,8 +77,7 @@ export default function Profile() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    setToken("");
+    logout();
     navigate("/");
   };
 
@@ -118,10 +117,11 @@ export default function Profile() {
               </label>
               <input
                 type="text"
+                placeholder="Enter your full name"
                 value={editing ? formName : personalInfo?.name || ""}
                 onChange={(e) => setFormName(e.target.value)}
                 readOnly={!editing}
-                className={`w-full h-[44px] px-4 border border-[#E6E8EC] rounded-lg text-sm ${
+                className={`w-full h-[44px] px-4 border border-[#E6E8EC] rounded-lg text-sm placeholder-[#B1B5C3] ${
                   editing ? "bg-white focus:outline-none focus:border-[#901CDB]" : "bg-gray-100"
                 }`}
               />
@@ -133,10 +133,11 @@ export default function Profile() {
               </label>
               <input
                 type="email"
+                placeholder="Enter your email"
                 value={editing ? formEmail : personalInfo?.email || ""}
                 onChange={(e) => setFormEmail(e.target.value)}
                 readOnly={!editing}
-                className={`w-full h-[44px] px-4 border border-[#E6E8EC] rounded-lg text-sm ${
+                className={`w-full h-[44px] px-4 border border-[#E6E8EC] rounded-lg text-sm placeholder-[#B1B5C3] ${
                   editing ? "bg-white focus:outline-none focus:border-[#901CDB]" : "bg-gray-100"
                 }`}
               />

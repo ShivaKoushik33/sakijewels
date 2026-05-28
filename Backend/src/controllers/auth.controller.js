@@ -133,10 +133,7 @@ export const firebaseLogin = async (req, res) => {
     // ✅ 🔥 AUTO REGISTER IF NOT EXISTS
     if (!user) {
       user = await User.create({
-        name: `user_${formattedPhone.slice(-4)}`, // user_1234
-        email: `user_${formattedPhone}@dummy.com`, // dummy email
         phone: formattedPhone,
-        password: "firebase_auth", // dummy (not used)
         role: "USER",
       });
     }
@@ -170,26 +167,40 @@ export const firebaseLogin = async (req, res) => {
 export const adminLogin = async (req, res) => {
   try {
     const { email, password } = req.body;
-    //
+
     if (
-      email === process.env.ADMIN_EMAIL &&
-      password === process.env.ADMIN_PASSWORD
+      email !== process.env.ADMIN_EMAIL ||
+      password !== process.env.ADMIN_PASSWORD
     ) {
-      let token = jwt.sign(email + password, process.env.JWT_SECRET);
-      return res.status(200).json({
-        success: true,
-        message: 'Admin signed in successfully',
-        data: {
-          token,
-        },
-      });
-    } else {
       return res.status(400).json({
         success: false,
-        message: 'Invalid email or password',
+        message: "Invalid email or password",
       });
     }
-    res.send('Admin login');
+
+    let admin = await User.findOne({ email });
+
+    if (!admin) {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      admin = await User.create({
+        name: "Admin",
+        email,
+        phone: "0000000000",
+        password: hashedPassword,
+        role: "ADMIN",
+      });
+    } else if (admin.role !== "ADMIN") {
+      admin.role = "ADMIN";
+      await admin.save();
+    }
+
+    const token = generateToken(admin);
+
+    return res.status(200).json({
+      success: true,
+      message: "Admin signed in successfully",
+      data: { token },
+    });
   } catch (error) {
     res.status(500).json({
       success: false,

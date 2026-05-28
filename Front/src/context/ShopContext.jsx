@@ -12,12 +12,11 @@ const ShopContextProvider = ({ children }) => {
     return localStorage.getItem("token") || "";
   });
   const [variantType, setVariantType] = useState(
-  localStorage.getItem("variantType") || "TRADITIONAL"
-);
-  const [search, setSearch] = useState(''); 
+    localStorage.getItem("variantType") || "TRADITIONAL"
+  );
+  const [search, setSearch] = useState('');
   const [showSearch, setShowSearch] = useState(false);
   const [cartItems, setCartItems] = useState({});
-
 
   const [selectedAddress, setSelectedAddress] = useState(null);
   const [delivery_fee, setDeliveryFee] = useState(69);
@@ -38,17 +37,54 @@ const ShopContextProvider = ({ children }) => {
       localStorage.removeItem("buyNowItem");
     }
   }, [buyNowItem]);
-    
 
+  const navigate = useNavigate();
 
-  const navigate = useNavigate(); // to navigate to different pages
+  const logout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("buyNowItem");
+    setToken("");
+    setCartItems({});
+    setBuyNowItem(null);
+    setSelectedAddress(null);
+  };
+
+  useEffect(() => {
+    const interceptorId = axios.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        const status = error?.response?.status;
+        const code = error?.response?.data?.code;
+        const isAuthFailure =
+          status === 401 &&
+          (code === "TOKEN_EXPIRED" ||
+            code === "TOKEN_INVALID" ||
+            code === "USER_INACTIVE" ||
+            code === "NO_TOKEN");
+
+        if (isAuthFailure && localStorage.getItem("token")) {
+          localStorage.removeItem("token");
+          setToken("");
+          setCartItems({});
+          if (code === "TOKEN_EXPIRED") {
+            toast.info("Session expired. Please login again.");
+          } else {
+            toast.info("Please login to continue.");
+          }
+          navigate("/login");
+        }
+        return Promise.reject(error);
+      }
+    );
+    return () => {
+      axios.interceptors.response.eject(interceptorId);
+    };
+  }, [navigate]);
 
   const getProductsData = async () => {
     try {
       const response = await axios.get(`${backendUrl}/api/products`);
-
-      setProducts(response.data?.filter(p => (p.variantType === variantType && p.stock >0)));
-
+      setProducts(response.data?.filter(p => (p.variantType === variantType && p.stock > 0)));
     } catch (error) {
       toast.error("Failed to fetch products");
     }
@@ -62,50 +98,43 @@ const ShopContextProvider = ({ children }) => {
     }
     let cartData = structuredClone(cartItems);
     if (cartData[itemId]) {
-      cartData[itemId] += 1
+      cartData[itemId] += 1;
     } else {
-      cartData[itemId] = 1
+      cartData[itemId] = 1;
     }
 
-  setCartItems(cartData);
-    if (token) {
-      try {
-        const response = await axios.post(
-          backendUrl + '/api/cart/add',
-          {
-            itemId
+    setCartItems(cartData);
+    try {
+      const response = await axios.post(
+        backendUrl + '/api/cart/add',
+        { itemId },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
           },
-          {
-            headers: {
-  Authorization: `Bearer ${token}`,
-},
-          }
-        );
-
-        if (response.status !== 200) {
-          toast.error(response.data.message);
         }
-      } catch (error) {
+      );
+
+      if (response.status !== 200) {
+        toast.error(response.data.message);
+      }
+    } catch (error) {
+      if (error?.response?.status !== 401) {
         toast.error(error.response?.data?.message || "Failed to add to cart");
       }
     }
-  }
+  };
 
-
-
-    const getCartCount = () => {
-      let totalCount = 0;
-      for (let item in cartItems) {
-        const productExists = products.find((product) => product._id === item);
-        if (productExists) {
-          totalCount += cartItems[item];
-        }
-
+  const getCartCount = () => {
+    let totalCount = 0;
+    for (let item in cartItems) {
+      const productExists = products.find((product) => product._id === item);
+      if (productExists) {
+        totalCount += cartItems[item];
       }
-      return totalCount;
-    };
-
-
+    }
+    return totalCount;
+  };
 
   const getCartProducts = () => {
     return Object.keys(cartItems)
@@ -126,29 +155,24 @@ const ShopContextProvider = ({ children }) => {
       .filter(Boolean);
   };
 
-
   const getUserCart = async (token) => {
+    if (!token) return;
     try {
       const response = await axios.get(
         backendUrl + '/api/cart',
-
         {
-         headers: {
-          Authorization: `Bearer ${token}`,
-        }
-
+          headers: {
+            Authorization: `Bearer ${token}`,
+          }
         }
       );
       if (response.data.success) {
         setCartItems(response.data.cartData);
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to load cart");
+      // 401 handled by interceptor; stay silent on cart load errors
     }
   };
-
-
- 
 
   const getCartSummary = () => {
     const cartProducts = getCartProducts();
@@ -172,67 +196,49 @@ const ShopContextProvider = ({ children }) => {
     };
   };
 
+  useEffect(() => {
+    localStorage.setItem("variantType", variantType);
+  }, [variantType]);
 
+  useEffect(() => {
+    const initialize = async () => {
+      await getProductsData();
 
-useEffect(() => {
-  localStorage.setItem("variantType", variantType);
-}, [variantType]);
+      if (token) {
+        await getUserCart(token);
+      }
+    };
 
-   useEffect(() => {
-  const initialize = async () => {
-    await getProductsData();
+    initialize();
+  }, [token, variantType]);
 
-    if (token) {
-      await getUserCart(token);
-    }
+  const value = {
+    products,
+    search,
+    setSearch,
+    showSearch,
+    setShowSearch,
+    cartItems,
+    setCartItems,
+    addToCart,
+    getCartCount,
+    getCartProducts,
+    getCartSummary,
+    token,
+    setToken,
+    backendUrl,
+    navigate,
+    selectedAddress,
+    setSelectedAddress,
+    delivery_fee,
+    setDeliveryFee,
+    getUserCart,
+    variantType,
+    setVariantType,
+    buyNowItem,
+    setBuyNowItem,
+    logout,
   };
-
-  initialize();
-}, [token,variantType]);
-
-
-
-
-
-  // useEffect(() => {
-  //   if (token) {
-  //     localStorage.setItem("token", token);
-  //   } else {
-  //     localStorage.removeItem("token");
-  //   }
-  // }, [token]);
-
- 
-
-
-       
-
-        const value = {
-        products,
-        search,
-        setSearch,
-        showSearch,
-        setShowSearch,
-         cartItems,
-        setCartItems,
-        addToCart,
-        getCartCount,
-        getCartProducts,
-        getCartSummary,
-        token,
-        setToken,
-        backendUrl,
-        navigate,
-        selectedAddress,
-          setSelectedAddress,
-          delivery_fee,
-          setDeliveryFee,
-          getUserCart,
-          variantType,
-          setVariantType,
-          buyNowItem,
-          setBuyNowItem
-        };
 
   return <ShopContext.Provider value={value}>{children}</ShopContext.Provider>;
 };

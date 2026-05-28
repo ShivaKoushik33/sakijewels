@@ -11,12 +11,11 @@ const sidebarLinks = [
 
 export default function ProfileLayout() {
   const location = useLocation();
-  const { setToken } = useContext(ShopContext);
+  const { logout } = useContext(ShopContext);
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    setToken("");
+    logout();
     navigate("/");
   };
 

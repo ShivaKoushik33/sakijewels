@@ -61,14 +61,13 @@ const userSchema = new mongoose.Schema(
   {
     name: {
       type: String,
-      required: true,
       trim: true
     },
 
     email: {
       type: String,
-      required: true,
       unique: true,
+      sparse: true,
       lowercase: true,
       trim: true
     },
@@ -81,7 +80,6 @@ const userSchema = new mongoose.Schema(
 
     password: {
       type: String,
-      required: true,
       select: false // never return password in queries
     },
 

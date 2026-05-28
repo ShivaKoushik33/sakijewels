@@ -121,7 +121,7 @@ export default function Login() {
   }, [token]);
 
   return (
-    <section className="min-h-[calc(100vh-400px)] flex items-center justify-center px-4">
+    <section className="min-h-[calc(100vh-400px)] flex items-center justify-center px-4 m-10">
     <form onSubmit={onSubmitHandler} className="w-full max-w-sm bg-white p-6 rounded-lg shadow-md flex flex-col gap-4">
         <h1 className="text-2xl font-bold">Login with Phone</h1>
 

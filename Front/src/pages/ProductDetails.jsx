@@ -92,15 +92,44 @@ export default function ProductDetails() {
   };
 
   const handlePrevImage = () => {
-    setSelectedImage((prev) => 
+    setSelectedImage((prev) =>
       prev === 0 ? (product?.images?.length || 1) - 1 : prev - 1
     );
   };
 
   const handleNextImage = () => {
-    setSelectedImage((prev) => 
+    setSelectedImage((prev) =>
       prev === (product?.images?.length || 1) - 1 ? 0 : prev + 1
     );
+  };
+
+  // Swipe handling for the main image
+  const [touchStartX, setTouchStartX] = useState(null);
+  const [touchDeltaX, setTouchDeltaX] = useState(0);
+  const SWIPE_THRESHOLD = 40;
+
+  const onTouchStart = (e) => {
+    setTouchStartX(e.touches[0].clientX);
+    setTouchDeltaX(0);
+  };
+
+  const onTouchMove = (e) => {
+    if (touchStartX === null) return;
+    setTouchDeltaX(e.touches[0].clientX - touchStartX);
+  };
+
+  const onTouchEnd = () => {
+    if (touchStartX === null) {
+      setTouchDeltaX(0);
+      return;
+    }
+    if (touchDeltaX > SWIPE_THRESHOLD) {
+      handlePrevImage();
+    } else if (touchDeltaX < -SWIPE_THRESHOLD) {
+      handleNextImage();
+    }
+    setTouchStartX(null);
+    setTouchDeltaX(0);
   };
   
   
@@ -158,16 +187,69 @@ export default function ProductDetails() {
           {/* LEFT SIDE - Square Images */}
           <div className="lg:col-span-1">
             {/* Main Image Container - SQUARE SHAPE */}
-            <div className="relative w-full aspect-square rounded-[12px] overflow-hidden bg-white mb-4">
+            <div
+              className="relative w-full aspect-square rounded-[12px] overflow-hidden bg-white mb-4 select-none"
+              onTouchStart={onTouchStart}
+              onTouchMove={onTouchMove}
+              onTouchEnd={onTouchEnd}
+            >
               {product?.images?.length > 0 ? (
-                <img
-                  src={product.images[selectedImage]?.url}
-                  alt={product.name}
-                  className="w-full h-full object-cover transition-transform duration-300 ease-in-out"
-                />
+                <div
+                  className="flex h-full w-full"
+                  style={{
+                    transform: `translateX(calc(${-selectedImage * 100}% + ${touchDeltaX}px))`,
+                    transition: touchStartX !== null ? "none" : "transform 300ms ease-in-out",
+                  }}
+                >
+                  {product.images.map((img, i) => (
+                    <img
+                      key={i}
+                      src={img.url}
+                      alt={product.name}
+                      draggable={false}
+                      className="w-full h-full object-cover shrink-0"
+                    />
+                  ))}
+                </div>
               ) : (
                 <div className="flex items-center justify-center h-full text-gray-500 bg-[#fcfdfc]">
                   No image available
+                </div>
+              )}
+
+              {/* Inline arrows for desktop convenience */}
+              {product?.images?.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    onClick={handlePrevImage}
+                    aria-label="Previous image"
+                    className="hidden md:flex absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 items-center justify-center rounded-full bg-white/85 hover:bg-white shadow"
+                  >
+                    <img src={left_arrow} alt="" className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleNextImage}
+                    aria-label="Next image"
+                    className="hidden md:flex absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 items-center justify-center rounded-full bg-white/85 hover:bg-white shadow"
+                  >
+                    <img src={right_arrow} alt="" className="w-4 h-4" />
+                  </button>
+                </>
+              )}
+
+              {/* Dot indicators */}
+              {product?.images?.length > 1 && (
+                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+                  {product.images.map((_, i) => (
+                    <span
+                      key={i}
+                      className={`h-1.5 rounded-full transition-all duration-200 ${
+                        selectedImage === i ? "w-4 bg-[#4d0f75]" : "w-1.5 bg-white/80"
+                      }`}
+                    />
+                  ))}
                 </div>
               )}
 
