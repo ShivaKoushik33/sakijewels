@@ -15,7 +15,6 @@ export const addToWishlist = async (req, res) => {
     
 
     const user = await User.findById(req.user._id);
-     console.log("user", user);
     if (user.wishlist.includes(productId)) {
       return res.status(400).json({ message: "Already in wishlist" });
     }

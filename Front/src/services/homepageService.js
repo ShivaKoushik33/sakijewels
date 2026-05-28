@@ -135,18 +135,24 @@ export const categoryConfig = [
     variantType: "TRADITIONAL",
     image: pendants
   },
+  {
+    name: "Mens Collection",
+    type: "MENS_COLLECTION",
+    variantType: "TRADITIONAL",
+    image: dup_category
+  },
 
   // =========================
   // FASHION
   // =========================
   {
-    name: "Fashion Necklaces",
+    name: "Necklaces",
     type: "FASHION_NECKLACES",
     variantType: "FASHION",
     image: FASHIONNECKLACES
   },
   {
-    name: "Fashion Earrings Jumka",
+    name: "Earrings Jumka",
     type: "FASHION_EARINGS_JUMKA",
     variantType: "FASHION",
     image: FASHION_EARINGS_JUMKA
@@ -158,7 +164,7 @@ export const categoryConfig = [
     image: dup_category
   },
   {
-    name: "Fashion Rings",
+    name: "Rings",
     type: "FASHION_RINGS",
     variantType: "FASHION",
     image: dup_category
@@ -176,7 +182,7 @@ export const categoryConfig = [
     image: dup_category
   },
   {
-    name: "Fashion Mangalsutra",
+    name: "Mangalsutra",
     type: "FASHION_MANGALSUTRA",
     variantType: "FASHION",
     image: MANGALASUTRA
@@ -184,6 +190,12 @@ export const categoryConfig = [
   {
     name: "Gift Hamper",
     type: "GIFT_HAMPER",
+    variantType: "FASHION",
+    image: dup_category
+  },
+  {
+    name: "Mens Collection",
+    type: "MENS_COLLECTION",
     variantType: "FASHION",
     image: dup_category
   }
@@ -391,8 +403,6 @@ export async function getHomepageData() {
       image: product.images?.[0]?.url,
       variantType: product.variantType
     });
-    await console.log("Best Sellers Data:", bestSellersRes.data);
-       await console.log("Most Gifted Data:", mostGiftedRes.data);
     return {
       hero: mockHero,
       categories: categoryConfig,
@@ -405,7 +415,6 @@ export async function getHomepageData() {
     };
 
   } catch (error) {
-    console.error("Homepage fetch error:", error);
     throw error;
   }
 }

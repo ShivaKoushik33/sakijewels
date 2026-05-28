@@ -12,7 +12,11 @@ export default function BuyNowPayment() {
   const initialTotal = searchParams.get("total");
   const mode = searchParams.get("mode");
 
- const { backendUrl, token, setCartItems } = useContext(ShopContext);
+ const { backendUrl, token, setCartItems, variantType, getUserCart, buyNowItem, setBuyNowItem } = useContext(ShopContext);
+
+ const buyNowPayload = buyNowItem
+   ? { productId: buyNowItem.productId, quantity: buyNowItem.quantity }
+   : null;
 
   const [loading, setLoading] = useState(false);
   const [itemCount, setItemCount] = useState(0);
@@ -30,12 +34,12 @@ useEffect(() => {
   let calculatedTotal = Number(initialTotal);
 
   if (mode === "online") {
-    const prepaidDiscount = Math.floor(calculatedTotal * 0.05);
+    const prepaidDiscount = Math.floor(calculatedTotal * 0.03);
     calculatedTotal = calculatedTotal - prepaidDiscount;
   }
 
   if (mode === "cod") {
-    calculatedTotal = calculatedTotal + 39;
+    calculatedTotal = calculatedTotal + 29;
   }
 
   setTotal(calculatedTotal);
@@ -57,13 +61,19 @@ const handlePayment = async () => {
         `${backendUrl}/api/orders/place-cod`,
         {
           addressId,
-          coupon: couponCode || null
+          coupon: couponCode || null,
+          variantType,
+          buyNow: buyNowPayload
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
       toast.success("Order placed successfully!");
-      setCartItems({});
+      if (buyNowPayload) {
+        setBuyNowItem(null);
+      } else {
+        await getUserCart(token);
+      }
       navigate("/");
       return;
     }
@@ -75,7 +85,9 @@ const handlePayment = async () => {
       `${backendUrl}/api/orders/create-payment`,
       {
         coupon: couponCode || null,
-        addressId
+        addressId,
+        variantType,
+        buyNow: buyNowPayload
       },
       { headers: { Authorization: `Bearer ${token}` } }
     );
@@ -84,7 +96,7 @@ const handlePayment = async () => {
 
     const options = {
       key: import.meta.env.VITE_RAZORPAY_KEY_ID,
-      amount: total * 100, // 🔥 use adjusted total (5% already applied)
+      amount: total * 100, // 🔥 use adjusted total (3% already applied)
       currency: "INR",
       name: "Saki Jewels",
       description: "Order Payment",
@@ -99,13 +111,19 @@ const handlePayment = async () => {
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature: response.razorpay_signature,
               addressId,
-              coupon: couponCode || null
+              coupon: couponCode || null,
+              variantType,
+              buyNow: buyNowPayload
             },
             { headers: { Authorization: `Bearer ${token}` } }
           );
 
           toast.success("Payment successful 🎉");
-          setCartItems({});
+          if (buyNowPayload) {
+            setBuyNowItem(null);
+          } else {
+            await getUserCart(token);
+          }
           navigate("/");
 
         } catch (error) {

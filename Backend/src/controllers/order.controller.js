@@ -24,30 +24,48 @@ export const getUserOrders = async (req, res) => {
 
 export const createPaymentOrder = async (req, res) => {
   try {
-    const { coupon, addressId } = req.body;
+    const { coupon, addressId, variantType, buyNow } = req.body;
 
     const user = await User.findById(req.user._id);
 
-    if (!user || !user.cartData) {
-      return res.status(400).json({ message: "Cart is empty" });
-    }
-
-    const productIds = Object.keys(user.cartData);
-
-    if (productIds.length === 0) {
-      return res.status(400).json({ message: "Cart is empty" });
-    }
-
-    const products = await Product.find({
-      _id: { $in: productIds }
-    });
-
     let subtotal = 0;
 
-    products.forEach(product => {
-      const quantity = user.cartData[product._id];
-      subtotal += product.finalPrice * quantity;
-    });
+    if (buyNow && buyNow.productId) {
+      const qty = Math.max(1, Number(buyNow.quantity) || 1);
+      const product = await Product.findById(buyNow.productId);
+
+      if (!product) {
+        return res.status(400).json({ message: "Product not found" });
+      }
+      if (product.stock < qty) {
+        return res.status(400).json({ message: `${product.name} is out of stock` });
+      }
+      subtotal = product.finalPrice * qty;
+    } else {
+      if (!user || !user.cartData) {
+        return res.status(400).json({ message: "Cart is empty" });
+      }
+
+      const productIds = Object.keys(user.cartData);
+
+      if (productIds.length === 0) {
+        return res.status(400).json({ message: "Cart is empty" });
+      }
+
+      const productFilter = { _id: { $in: productIds } };
+      if (variantType) productFilter.variantType = variantType;
+
+      const products = await Product.find(productFilter);
+
+      if (products.length === 0) {
+        return res.status(400).json({ message: "Cart is empty" });
+      }
+
+      products.forEach(product => {
+        const quantity = user.cartData[product._id];
+        subtotal += product.finalPrice * quantity;
+      });
+    }
 
     if (subtotal < 249) {
   return res.status(400).json({ message: "Minimum order amount is ₹249" });
@@ -86,7 +104,7 @@ export const createPaymentOrder = async (req, res) => {
     }
 
     // 🔥 PREPAID 5% DISCOUNT
-const prepaidDiscount = Math.floor(subtotal * 0.05);
+const prepaidDiscount = Math.floor(subtotal * 0.03);
 discount += prepaidDiscount;
 
     const totalAmount = subtotal - discount + deliveryFee;
@@ -127,7 +145,9 @@ export const verifyPaymentAndPlaceOrder = async (req, res) => {
       razorpay_payment_id,
       razorpay_signature,
       addressId,
-      coupon
+      coupon,
+      variantType,
+      buyNow
     } = req.body;
 
     // 🔐 VERIFY SIGNATURE
@@ -146,7 +166,9 @@ export const verifyPaymentAndPlaceOrder = async (req, res) => {
 
     const user = await User.findById(req.user._id).session(session);
 
-    if (!user || !user.cartData || Object.keys(user.cartData).length === 0) {
+    const isBuyNow = !!(buyNow && buyNow.productId);
+
+    if (!isBuyNow && (!user || !user.cartData || Object.keys(user.cartData).length === 0)) {
       await session.abortTransaction();
       session.endSession();
       return res.status(400).json({ message: "Cart is empty" });
@@ -170,35 +192,79 @@ export const verifyPaymentAndPlaceOrder = async (req, res) => {
     const previousOrders = await Order.find({ user: user._id }).session(session);
     const isFirstOrder = previousOrders.length === 0;
 
-    for (const productId of Object.keys(user.cartData)) {
+    const processedProductIds = [];
 
-      const quantity = user.cartData[productId];
-      if (quantity <= 0) continue;
+    if (isBuyNow) {
+      const qty = Math.max(1, Number(buyNow.quantity) || 1);
+      const product = await Product.findById(buyNow.productId).session(session);
 
-      const product = await Product.findById(productId).session(session);
+      if (!product) {
+        await session.abortTransaction();
+        session.endSession();
+        return res.status(400).json({ message: "Product not found" });
+      }
 
-      if (!product || product.stock < quantity) {
+      if (product.stock < qty) {
         await session.abortTransaction();
         session.endSession();
         return res.status(400).json({
-          message: `${product?.name || "Product"} is out of stock`
+          message: `${product.name} is out of stock`
         });
       }
 
-      product.stock -= quantity;
+      product.stock -= qty;
       await product.save({ session });
 
-      subtotal += product.finalPrice * quantity;
-
-      
+      subtotal += product.finalPrice * qty;
 
       orderItems.push({
         product: product._id,
         name: product.name,
         image: product.images?.[0]?.url,
         price: product.finalPrice,
-        quantity
+        quantity: qty
       });
+    } else {
+      for (const productId of Object.keys(user.cartData)) {
+
+        const quantity = user.cartData[productId];
+        if (quantity <= 0) continue;
+
+        const product = await Product.findById(productId).session(session);
+
+        if (!product) continue;
+
+        if (variantType && product.variantType !== variantType) continue;
+
+        if (product.stock < quantity) {
+          await session.abortTransaction();
+          session.endSession();
+          return res.status(400).json({
+            message: `${product?.name || "Product"} is out of stock`
+          });
+        }
+
+        product.stock -= quantity;
+        await product.save({ session });
+
+        subtotal += product.finalPrice * quantity;
+
+        processedProductIds.push(product._id.toString());
+
+        orderItems.push({
+          product: product._id,
+          name: product.name,
+          image: product.images?.[0]?.url,
+          price: product.finalPrice,
+          quantity
+        });
+      }
+    }
+
+    if (orderItems.length === 0) {
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(400).json({ message: "Cart is empty" });
     }
 
     if (subtotal < 249) {
@@ -231,7 +297,7 @@ export const verifyPaymentAndPlaceOrder = async (req, res) => {
     }
 
     // 🔥 PREPAID 5% DISCOUNT
-const prepaidDiscount = Math.floor(subtotal * 0.05);
+const prepaidDiscount = Math.floor(subtotal * 0.03);
 discount += prepaidDiscount;
 
     const totalAmount = subtotal - discount + deliveryFee;
@@ -243,17 +309,23 @@ discount += prepaidDiscount;
       subtotal,
       discount,
       deliveryFee,
+      codCharge: 0,
       totalAmount,
       coupon: coupon || null,
-      status: "PENDING",
+      status: "ACCEPTED",
+      paymentMethod: "ONLINE",
       paymentId: razorpay_payment_id,
       isPaid: true
     }], { session });
 
-    // 🛒 CLEAR CART
-    user.cartData = {};
-    user.markModified("cartData");
-    await user.save({ session });
+    // 🛒 CLEAR CART (only the items that were just ordered — keep other variant)
+    if (!isBuyNow) {
+      for (const pid of processedProductIds) {
+        delete user.cartData[pid];
+      }
+      user.markModified("cartData");
+      await user.save({ session });
+    }
 
     await session.commitTransaction();
     session.endSession();
@@ -269,10 +341,9 @@ discount += prepaidDiscount;
     try {
   if (razorpay_payment_id) {
     await razorpay.payments.refund(razorpay_payment_id);
-    console.log("Refund initiated successfully");
   }
 } catch (refundError) {
-  console.error("Refund failed:", refundError.message);
+  // refund failed silently
 }
     res.status(500).json({
       message: "Payment verification failed. Please retry payment.",
@@ -376,17 +447,19 @@ export const placeOrderCOD = async (req, res) => {
   session.startTransaction();
 
   try {
-    const { addressId, coupon } = req.body;
-    
+    const { addressId, coupon, variantType, buyNow } = req.body;
+
 
     const user = await User.findById(req.user._id).session(session);
 
-    if (!user || !user.cartData || Object.keys(user.cartData).length === 0) {
+    const isBuyNow = !!(buyNow && buyNow.productId);
+
+    if (!isBuyNow && (!user || !user.cartData || Object.keys(user.cartData).length === 0)) {
       await session.abortTransaction();
       session.endSession();
       return res.status(400).json({ message: "Cart is empty" });
     }
-    
+
     const address = user.addresses.id(addressId);
 
     if (!address) {
@@ -394,10 +467,10 @@ export const placeOrderCOD = async (req, res) => {
       session.endSession();
       return res.status(400).json({ message: "Invalid address" });
     }
-    
+
     let subtotal = 0;
     let deliveryFee = 69;
-    let codCharge = 39;
+    let codCharge = 29;
     let discount = 0;
 
     const orderItems = [];
@@ -406,48 +479,86 @@ export const placeOrderCOD = async (req, res) => {
     const previousOrders = await Order.find({ user: user._id }).session(session);
     const isFirstOrder = previousOrders.length === 0;
 
-    for (const productId of Object.keys(user.cartData)) {
+    const processedProductIds = [];
 
-      const quantity = user.cartData[productId];
-      if (quantity <= 0) continue;
-
-      const product = await Product.findById(productId).session(session);
-      
-      if (!product || product.stock < quantity) {
-        await session.abortTransaction();
-        session.endSession();
-        return res.status(400).json({
-          message: `${product?.name || "Product"} is out of stock`
-        });
-      }
+    if (isBuyNow) {
+      const qty = Math.max(1, Number(buyNow.quantity) || 1);
 
       const updatedProduct = await Product.findOneAndUpdate(
-  { _id: productId, stock: { $gte: quantity } },
-  { $inc: { stock: -quantity } },
-  { session, new: true }
-);
+        { _id: buyNow.productId, stock: { $gte: qty } },
+        { $inc: { stock: -qty } },
+        { session, new: true }
+      );
 
-if (!updatedProduct) {
-  await session.abortTransaction();
-  session.endSession();
-  return res.status(400).json({
-    message: "Product is out of stock"
-  });
-}
-      
-      subtotal += product.finalPrice * quantity;
+      if (!updatedProduct) {
+        await session.abortTransaction();
+        session.endSession();
+        return res.status(400).json({ message: "Product is out of stock" });
+      }
 
-    
+      subtotal += updatedProduct.finalPrice * qty;
 
       orderItems.push({
-        product: product._id,
-        name: product.name,
-        image: product.images?.[0]?.url,
-        price: product.finalPrice,
-        quantity
+        product: updatedProduct._id,
+        name: updatedProduct.name,
+        image: updatedProduct.images?.[0]?.url,
+        price: updatedProduct.finalPrice,
+        quantity: qty
       });
+    } else {
+      for (const productId of Object.keys(user.cartData)) {
+
+        const quantity = user.cartData[productId];
+        if (quantity <= 0) continue;
+
+        const product = await Product.findById(productId).session(session);
+
+        if (!product) continue;
+
+        if (variantType && product.variantType !== variantType) continue;
+
+        if (product.stock < quantity) {
+          await session.abortTransaction();
+          session.endSession();
+          return res.status(400).json({
+            message: `${product?.name || "Product"} is out of stock`
+          });
+        }
+
+        const updatedProduct = await Product.findOneAndUpdate(
+    { _id: productId, stock: { $gte: quantity } },
+    { $inc: { stock: -quantity } },
+    { session, new: true }
+  );
+
+  if (!updatedProduct) {
+    await session.abortTransaction();
+    session.endSession();
+    return res.status(400).json({
+      message: "Product is out of stock"
+    });
+  }
+
+        subtotal += product.finalPrice * quantity;
+
+        processedProductIds.push(product._id.toString());
+
+        orderItems.push({
+          product: product._id,
+          name: product.name,
+          image: product.images?.[0]?.url,
+          price: product.finalPrice,
+          quantity
+        });
+      }
     }
-    
+
+    if (orderItems.length === 0) {
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(400).json({ message: "Cart is empty" });
+    }
+
     if (subtotal < 249) {
    await session.abortTransaction();
    session.endSession();
@@ -478,7 +589,6 @@ if (!updatedProduct) {
         deliveryFee = 0;
       }
     }
-    console.log("7");
     const totalAmount = subtotal - discount + deliveryFee + codCharge;
 
     if (totalAmount <= 0) {
@@ -494,6 +604,7 @@ if (!updatedProduct) {
       subtotal,
       discount,
       deliveryFee,
+      codCharge,
       totalAmount,
       coupon: coupon || null,
       status: "PENDING",
@@ -501,20 +612,21 @@ if (!updatedProduct) {
       paymentId: null,
       isPaid: false
     }], { session });
-    console.log("8");
-    // 🛒 CLEAR CART
-    user.cartData = {};
-    user.markModified("cartData");
-    await user.save({ session });
+    // 🛒 CLEAR CART (only the items that were just ordered — keep other variant)
+    if (!isBuyNow) {
+      for (const pid of processedProductIds) {
+        delete user.cartData[pid];
+      }
+      user.markModified("cartData");
+      await user.save({ session });
+    }
 
     await session.commitTransaction();
     session.endSession();
-    console.log("9");
     res.status(201).json({
       message: "Order placed successfully (Cash on Delivery)",
       order: order[0]
     });
-    console.log("10");
 
   } catch (error) {
     await session.abortTransaction();

@@ -14,8 +14,12 @@ export default function BuyNowReview() {
     setSelectedAddress,
     delivery_fee,
     backendUrl,
-    token
+    token,
+    variantType,
+    buyNowItem
   } = useContext(ShopContext);
+
+  const isBuyNow = !!buyNowItem;
 
   const [addresses, setAddresses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -26,8 +30,38 @@ export default function BuyNowReview() {
   const [freeShipping, setFreeShipping] = useState(false);
   const [isFirstOrder, setIsFirstOrder] = useState(false);
 
-  const cartProducts = getCartProducts();
-  const summary = getCartSummary();
+  const cartProductsBase = getCartProducts();
+  const cartSummaryBase = getCartSummary();
+
+  const cartProducts = isBuyNow
+    ? [
+        {
+          id: buyNowItem.productId,
+          name: buyNowItem.name,
+          image: buyNowItem.image,
+          price: buyNowItem.price,
+          originalPrice: buyNowItem.originalPrice,
+          discount: buyNowItem.discount,
+          quantity: buyNowItem.quantity
+        }
+      ]
+    : cartProductsBase;
+
+  const summary = isBuyNow
+    ? (() => {
+        const subtotal = (buyNowItem.price || 0) * (buyNowItem.quantity || 1);
+        const discount =
+          ((buyNowItem.originalPrice || 0) - (buyNowItem.price || 0)) *
+          (buyNowItem.quantity || 1);
+        return {
+          itemCount: 1,
+          subtotal,
+          discount,
+          total: subtotal
+        };
+      })()
+    : cartSummaryBase;
+
   const isBelowMinimum = summary.subtotal < 249;
   const savings = summary.discount + couponDiscount;
   const itemCount = summary.itemCount;
@@ -75,7 +109,7 @@ export default function BuyNowReview() {
           setIsFirstOrder(true);
         }
       } catch (error) {
-        console.log("Order check failed");
+        // ignore
       }
     };
 
@@ -95,7 +129,8 @@ export default function BuyNowReview() {
       `${backendUrl}/api/orders/place-cod`,
       {
         addressId: selectedAddress._id,
-        coupon: couponCode
+        coupon: couponCode,
+        variantType
       },
       {
         headers: { Authorization: `Bearer ${token}` }
@@ -334,8 +369,7 @@ export default function BuyNowReview() {
 
               <div className="border-t my-4"></div>
               <div className="flex justify-between mb-3">
-  <span>COD Charges</span>
-  <span>₹ 39</span>
+
 </div>
 
               <div className="flex justify-between text-lg font-bold mb-4">
@@ -366,7 +400,7 @@ export default function BuyNowReview() {
   }}
   className="w-full py-3 bg-[#901CDB] text-white rounded-lg"
 >
-  Pay Online (5% OFF)
+  Pay Online (3% OFF)
 </button>
 
 {/* CASH ON DELIVERY */}
@@ -385,11 +419,11 @@ export default function BuyNowReview() {
   }}
   className="w-full py-3 border border-[#901CDB] text-[#901CDB] rounded-lg"
 >
-  Cash on Delivery (+₹39)
+  Cash on Delivery (+₹29)
 </button>
 <button
   type="button"
-  onClick={() => navigate("/cart")}
+  onClick={() => navigate(isBuyNow ? `/products/${buyNowItem.productId}` : "/cart")}
   className="w-full py-3 mt-3 bg-[#D4A017] text-white rounded-lg"
 >
   Back

@@ -31,6 +31,9 @@ const productSchema = new mongoose.Schema(
     "HAIR_ACCESSORIES",
     "FASHION_MANGALSUTRA",
     "GIFT_HAMPER",
+
+    // Mens (available under both variantTypes)
+    "MENS_COLLECTION",
   ]
 },
 

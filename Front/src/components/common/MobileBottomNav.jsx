@@ -1,4 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
+import { useContext } from 'react';
+import { ShopContext } from '../../context/ShopContext';
 
 const navItems = [
   { to: '/', label: 'Home', icon: 'home' },
@@ -47,6 +49,8 @@ function NavIcon({ icon, isActive }) {
 export default function MobileBottomNav() {
   const location = useLocation();
   const pathname = location.pathname;
+  const { getCartCount } = useContext(ShopContext);
+  const cartCount = getCartCount() || 0;
 
   return (
     <nav
@@ -67,8 +71,15 @@ export default function MobileBottomNav() {
               `}
               aria-current={isActive ? 'page' : undefined}
             >
-              <span className={isActive ? 'flex items-center justify-center w-10 h-10 rounded-full bg-[#901CDB]/20 text-[#901CDB]' : 'text-white'}>
+              <span className={`relative ${isActive ? 'flex items-center justify-center w-10 h-10 rounded-full bg-[#901CDB]/20 text-[#901CDB]' : 'text-white'}`}>
                 <NavIcon icon={icon} isActive={isActive} />
+                {icon === 'cart' && cartCount > 0 && (
+                  <span
+                    className="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 flex items-center justify-center text-[9px] font-semibold text-white bg-black rounded-full shadow-md"
+                  >
+                    {cartCount}
+                  </span>
+                )}
               </span>
               <span className="text-[10px] md:text-xs font-medium truncate max-w-[64px]">
                 {label}

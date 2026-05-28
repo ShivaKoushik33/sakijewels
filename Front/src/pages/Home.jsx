@@ -23,7 +23,7 @@ export default function Home() {
         const data = await getHomepageData();
         setHomepage(data);
       } catch (error) {
-        console.error('Error fetching homepage data:', error);
+        // ignore
       } finally {
         setLoading(false);
       }

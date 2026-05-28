@@ -18,7 +18,8 @@ export default function Cart() {
     getCartProducts,
     getCartSummary,
     token,
-    backendUrl
+    backendUrl,
+    setBuyNowItem
   } = useContext(ShopContext);
 
   const [loading] = useState(false);
@@ -32,47 +33,66 @@ export default function Cart() {
   const cartProducts = getCartProducts();
   const orderSummary = getCartSummary();
 
-  // 🔥 FETCH PRODUCT STOCK WHEN CART PAGE OPENS
+  // 🔥 FETCH PRODUCT STOCK FOR EVERY CART ITEM
+  const cartIdsKey = cartProducts.map((p) => p.id).join(",");
+
   useEffect(() => {
+    if (cartProducts.length === 0) return;
+
+    let cancelled = false;
+
     const fetchStocks = async () => {
       try {
-        const updatedStockMap = {};
+        const entries = await Promise.all(
+          cartProducts.map(async (item) => {
+            const response = await axios.get(
+              `${backendUrl}/api/products/${item.id}`
+            );
+            return [item.id, response.data.stock || 0];
+          })
+        );
 
-        for (const item of cartProducts) {
-          const response = await axios.get(
-            `${backendUrl}/api/products/${item.id}`
-          );
-
-          updatedStockMap[item.id] = response.data.stock || 0;
+        if (!cancelled) {
+          setStockMap(Object.fromEntries(entries));
         }
-
-        setStockMap(updatedStockMap);
-        console.log(updatedStockMap);
       } catch (error) {
-        console.error("Stock fetch error:", error);
+        // ignore – buttons still guard with current stockMap
       }
     };
 
-    if (cartProducts.length > 0) {
-      fetchStocks();
-    }
-  }, []);
+    fetchStocks();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [cartIdsKey, backendUrl]);
 
   // 🔥 UPDATE QUANTITY (Frontend + Backend Sync)
   const updateQuantity = async (itemId, change) => {
-    const currentQty = cartItems[itemId];
-    const stock = stockMap[itemId] || 0;
+    const currentQty = cartItems[itemId] || 0;
+    const stock = stockMap[itemId];
 
     const newQuantity = Math.max(1, currentQty + change);
 
     // 🔥 CHECK STOCK ONLY FOR +
-    if (change === 1 && newQuantity > stock) {
-      setStockMessage({
-        ...stockMessage,
-        [itemId]: `Available stock count is ${stock}`
-      });
-
-      return;
+    if (change === 1) {
+      if (stock === undefined) {
+        setStockMessage({
+          ...stockMessage,
+          [itemId]: "Checking stock, please wait..."
+        });
+        return;
+      }
+      if (newQuantity > stock) {
+        setStockMessage({
+          ...stockMessage,
+          [itemId]:
+            stock === 0
+              ? "Out of stock"
+              : `Only ${stock} available in stock`
+        });
+        return;
+      }
     }
 
     // remove message if valid
@@ -95,18 +115,14 @@ export default function Cart() {
         }
       );
 
-      console.log("Re item response:", response.data.cartData);
       setCartItems(response.data.cartData);
     } catch (error) {
-      console.error(error);
+      // optional: surface a toast
     }
   };
 
   // 🔥 REMOVE ITEM (Frontend + Backend Sync)
   const removeItem = async (itemId) => {
-    const updatedCart = { ...cartItems };
-    delete updatedCart[itemId];
-
     try {
       const response = await axios.put(
         `${backendUrl}/api/cart/update`,
@@ -121,10 +137,9 @@ export default function Cart() {
         }
       );
 
-      console.log("Remove item response:", response.data.cartData);
       setCartItems(response.data.cartData);
     } catch (error) {
-      console.error(error);
+      // optional: surface a toast
     }
   };
 
@@ -273,7 +288,10 @@ export default function Cart() {
               </div>
 
               <button
-                onClick={() => navigate("/checkout/review")}
+                onClick={() => {
+                  setBuyNowItem(null);
+                  navigate("/checkout/review");
+                }}
                 className="w-full py-3 bg-[#901CDB] text-white rounded-lg"
               >
                 Checkout Securely

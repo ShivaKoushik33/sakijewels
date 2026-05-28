@@ -1,11 +1,12 @@
 import { useEffect, useState, useContext } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import OrderCard from '../components/profile/OrderCard';
 import axios from 'axios';
 import { ShopContext } from '../context/ShopContext';
 
 export default function MyOrders() {
   const { backendUrl, token } = useContext(ShopContext);
+  const navigate = useNavigate();
 
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -17,10 +18,8 @@ export default function MyOrders() {
           `${backendUrl}/api/orders/my-orders`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
-        console.log("My Orders API response:", res.data);
         setOrders(res.data || []);
       } catch (error) {
-        console.error(error);
         setOrders([]);
       } finally {
         setLoading(false);
@@ -52,7 +51,7 @@ export default function MyOrders() {
               You have no orders yet
             </p>
             <Link
-              to="/products"
+              to="/collections"
               className="px-8 py-3 border border-[#901CDB] rounded-lg text-[#901CDB] hover:bg-[#901CDB] hover:text-white transition"
             >
               Continue Shopping
@@ -61,7 +60,13 @@ export default function MyOrders() {
         ) : (
           <div className="flex flex-col gap-4">
             {orders.map((order) => (
-              <OrderCard key={order._id} order={order} />
+              <div
+                key={order._id}
+                onClick={() => navigate(`/orders/${order._id}`)}
+                className="cursor-pointer"
+              >
+                <OrderCard order={order} />
+              </div>
             ))}
           </div>
         )}

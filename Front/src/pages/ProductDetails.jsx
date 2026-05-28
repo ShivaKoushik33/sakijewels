@@ -15,7 +15,7 @@ import { getWishlistData } from "../services/wishlistService";
 
 export default function ProductDetails() {
   const { id } = useParams();
-  const { addToCart, token, navigate } = useContext(ShopContext);
+  const { addToCart, token, navigate, setBuyNowItem } = useContext(ShopContext);
 
   const [product, setProduct] = useState(null);
   const [reviews, setReviews] = useState([]);
@@ -23,6 +23,7 @@ export default function ProductDetails() {
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedFinish, setSelectedFinish] = useState(null);
   const [isWishlisted, setIsWishlisted] = useState(false);
+  const [quantity, setQuantity] = useState(1);
   // Dummy functions for wishlist and share
  const handleAddToWishlist = async () => {
   if (!token) {
@@ -48,6 +49,46 @@ export default function ProductDetails() {
 
   const handleShare = () => {
     toast.info("Share feature coming soon!");
+  };
+
+  const handleBuyNow = () => {
+    if (!token) {
+      toast.info("Please login to continue");
+      navigate("/login");
+      return;
+    }
+
+    const stock = product?.stock ?? 0;
+    if (stock <= 0) {
+      toast.error("Product is out of stock");
+      return;
+    }
+
+    const qty = Math.min(Math.max(1, quantity), stock);
+
+    setBuyNowItem({
+      productId: product._id,
+      quantity: qty,
+      name: product.name,
+      image: product.images?.[0]?.url,
+      price: product.finalPrice,
+      originalPrice: product.rate,
+      discount: product.discountRate
+    });
+
+    navigate("/checkout/review");
+  };
+
+  const decreaseQty = () => setQuantity((q) => Math.max(1, q - 1));
+  const increaseQty = () => {
+    const stock = product?.stock ?? Infinity;
+    setQuantity((q) => {
+      if (q + 1 > stock) {
+        toast.info(`Only ${stock} in stock`);
+        return q;
+      }
+      return q + 1;
+    });
   };
 
   const handlePrevImage = () => {
@@ -376,10 +417,52 @@ export default function ProductDetails() {
                   </div>
                 </div> */}
 
+                {/* Quantity Selector */}
+                <div className="pb-2">
+                  <label
+                    className="block text-[#121212] font-medium mb-2 text-sm"
+                    style={{ fontFamily: "'Lato', sans-serif", fontWeight: 600 }}
+                  >
+                    Quantity
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={decreaseQty}
+                      disabled={quantity <= 1}
+                      className="w-9 h-9 border border-[#e6e8ec] rounded-lg text-lg font-semibold text-[#121212] hover:bg-[#f8f8f9] disabled:opacity-50"
+                      aria-label="Decrease quantity"
+                    >
+                      -
+                    </button>
+                    <span
+                      className="min-w-[32px] text-center text-sm font-semibold text-[#121212]"
+                      style={{ fontFamily: "'Lato', sans-serif" }}
+                    >
+                      {quantity}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={increaseQty}
+                      className="w-9 h-9 border border-[#e6e8ec] rounded-lg text-lg font-semibold text-[#121212] hover:bg-[#f8f8f9]"
+                      aria-label="Increase quantity"
+                    >
+                      +
+                    </button>
+                    {product?.stock > 0 && product.stock <= 5 && (
+                      <span className="text-xs text-[#FF9900]">
+                        Only {product.stock} left
+                      </span>
+                    )}
+                  </div>
+                </div>
+
                 {/* Action Buttons */}
                 <div className="flex gap-3 pt-4">
                   <button
-                    className="flex-1 px-4 py-2.5 border-2 border-[#901CDB] text-[#901CDB] rounded-lg font-medium hover:bg-[#f8f8f9] transition-colors text-sm"
+                    onClick={handleBuyNow}
+                    disabled={!product?.stock || product.stock <= 0}
+                    className="flex-1 px-4 py-2.5 border-2 border-[#901CDB] text-[#901CDB] rounded-lg font-medium hover:bg-[#f8f8f9] transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                     style={{ fontFamily: "'Lato', sans-serif", fontWeight: 600 }}
                   >
                     Buy Now

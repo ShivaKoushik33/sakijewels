@@ -42,7 +42,7 @@ export default function AddAddress() {
       setLoadingPin(true);
 
       const res = await axios.get(
-        `https://api.postalpincode.in/pincode/${pin}`
+        `${backendUrl}/api/pincode/${pin}`
       );
 
       const result = res.data?.[0];

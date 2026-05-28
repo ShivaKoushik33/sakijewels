@@ -171,6 +171,13 @@ import { ShopContext } from "../context/ShopContext";
 import ProductCard from "../components/home/ProductCard";
 import { useLocation } from "react-router-dom";
 
+const formatTypeLabel = (type) => {
+  if (!type) return "";
+  return type
+    .replace(/^FASHION_/, "")
+    .replaceAll("_", " ");
+};
+
 export default function Collections() {
   const location = useLocation();
   const { products, search, showSearch, variantType } =
@@ -294,7 +301,7 @@ const filteredProducts = useMemo(() => {
                   checked={selectedTypes.includes(type)}
                   onChange={toggleType}
                 />
-                {type.replaceAll("_", " ")}
+                {formatTypeLabel(type)}
               </label>
             ))}
           </div>
@@ -308,7 +315,7 @@ const filteredProducts = useMemo(() => {
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
           <h1 className="font-olivera text-xl font-bold text-[#141416]">
             {selectedTypes.length > 0
-              ? selectedTypes[0].replaceAll("_", " ")
+              ? formatTypeLabel(selectedTypes[0])
               : "All Collections"}
           </h1>
 

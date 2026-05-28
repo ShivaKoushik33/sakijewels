@@ -18,7 +18,6 @@ export default function Wishlist() {
     async function fetchData() {
       try {
         const data = await getWishlistData(token);
-        console.log("Fetched wishlist data:", data);
         const normalizedWishlist = data.map((item) => ({
               id: item._id,
               name: item.name,
@@ -33,7 +32,7 @@ export default function Wishlist() {
             }));
         setWishlist(normalizedWishlist || []);
       } catch (error) {
-        console.error("Error fetching wishlist:", error);
+        // ignore
       } finally {
         setLoading(false);
       }

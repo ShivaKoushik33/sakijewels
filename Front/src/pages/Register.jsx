@@ -58,9 +58,7 @@ export default function Signup() {
     try {
       setLoading(true);
 
-      const data = await signupUser(form);
-
-      console.log("Signup success:", data);
+      await signupUser(form);
 
       navigate("/login");
 

@@ -38,7 +38,8 @@ const Add = ({ token }) => {
     // { value: "RINGS", label: "Rings" },
     { value: "MODERN_MINIMUM_NECKLACES", label: "Minimal Necklaces" },
     // { value: "NOSE_PINS", label: "Nose Pins" },
-    { value: "PENDANTS", label: "Pendants" }
+    { value: "PENDANTS", label: "Pendants" },
+    { value: "MENS_COLLECTION", label: "Mens Collection" }
   ],
 
   FASHION: [
@@ -49,7 +50,8 @@ const Add = ({ token }) => {
     { value: "ANKLETS", label: "Anklets" },
     { value: "HAIR_ACCESSORIES", label: "Hair Accessories" },
     { value: "FASHION_MANGALSUTRA", label: "Mangalsutra" },
-    { value: "GIFT_HAMPER", label: "Gift Hamper" }
+    { value: "GIFT_HAMPER", label: "Gift Hamper" },
+    { value: "MENS_COLLECTION", label: "Mens Collection" }
   ]
 };
 

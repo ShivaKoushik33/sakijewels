@@ -11,12 +11,10 @@ export const getWishlistData = async (token) => {
       Authorization: `Bearer ${token}`,
     },
   });
-  console.log("Get Wishlist API response:", res);
   return res.data;
 };
 
 export const removeFromWishlistApi = async (productId, token) => {
-  // console.log("Removing from wishlist:", { productId, token });
   const res = await axios.delete(
     `${backendUrl}/api/wishlist/remove/${productId}`,
     {
@@ -25,14 +23,11 @@ export const removeFromWishlistApi = async (productId, token) => {
       },
     }
   );
-  console.log("Remove from Wishlist API response:", res);
   return res.data;
 };
 
 
 export const addToWishlistApi = async (productId, token) => {
-  // console.log("Adding to wishlist:", { productId, token });
-  // console.log("Backend URL:", backendUrl);
   const res = await axios.post(
     `${backendUrl}/api/wishlist/add`,
     { productId },
@@ -42,6 +37,5 @@ export const addToWishlistApi = async (productId, token) => {
       },
     }
   );
-  console.log("add Wishlist API response:", res);
   return res.data;
 };

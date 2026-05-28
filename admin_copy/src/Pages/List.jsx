@@ -117,6 +117,8 @@ const List = ({ token }) => {
                   <option value="GIFT_HAMPER">Gift Hamper</option>
                 </>
               )}
+
+              <option value="MENS_COLLECTION">Mens Collection</option>
             </select>
             <select
               className="border p-2 text-sm rounded"

@@ -212,7 +212,6 @@ export async function getUserAddresses(token, backendUrl) {
         }
       }
     );
-    console.log("Fetched addresses:", response);
 
     // Transform backend format → UI format
     return response.data.map((addr) => ({
@@ -229,7 +228,6 @@ export async function getUserAddresses(token, backendUrl) {
       }
     }));
   } catch (error) {
-    console.error("Error fetching addresses:", error);
     return [];
   }
 }
@@ -264,7 +262,6 @@ export async function getAddressById(id, token, backendUrl) {
       pincode: address.pincode,
     };
   } catch (error) {
-    console.error(error);
     return null;
   }
 }

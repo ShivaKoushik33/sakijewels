@@ -36,9 +36,8 @@ import Product from "../models/Product.js";
 
 export const addToCart = async (req, res) => {
   try {
-    const user = req.user; 
+    const user = req.user;
     const cartData = await user.cartData;
-    console.log("Current cartData:", cartData);
     const { itemId } = req.body;
 
     if (!user) {
@@ -58,8 +57,6 @@ export const addToCart = async (req, res) => {
 
     await User.findByIdAndUpdate(user._id, { cartData });
 
-    console.log("Cart after save:", user.cartData);
-
     res.status(200).json({
       success: true,
       message: "Item added successfully",
@@ -67,7 +64,6 @@ export const addToCart = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("AddToCart Error:", error);
     res.status(500).json({
       success: false,
       message: error.message,
@@ -102,7 +98,6 @@ export const addToCart = async (req, res) => {
 export const getCart = async (req, res) => {
   try {
     const user = req.user;
-    console.log("User in getCart:", user.cartData);
 
     res.status(200).json({
       success: true,
@@ -110,7 +105,6 @@ export const getCart = async (req, res) => {
     });
 
   } catch (error) {
-    console.error(error);
     res.status(500).json({
       success: false,
       message: error.message,
@@ -146,8 +140,6 @@ export const updateCart = async (req, res) => {
       message: "Cart updated successfully",
       cartData: user.cartData
     });
-
-    console.log("Cart after update:", user.cartData);
 
   } catch (error) {
     res.status(500).json({

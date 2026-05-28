@@ -15,6 +15,7 @@ import Login from '../pages/Login';
 import Register from '../pages/Register';
 import Profile from '../pages/Profile';
 import MyOrders from '../pages/MyOrders';
+import OrderDetails from '../pages/OrderDetails';
 import Addresses from '../pages/Addresses';
 import BankDetails from '../pages/BankDetails';
 import AddAddress from '../pages/AddAddress';
@@ -42,6 +43,22 @@ export default function AppRoutes() {
             <Route path="/register" element={<Register />} />
             <Route path="/terms" element={<Terms />} />
           <Route
+            path="/orders"
+            element={
+              <ProtectedRoute>
+                <MyOrders />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/orders/:id"
+            element={
+              <ProtectedRoute>
+                <OrderDetails />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/profile"
             element={
               <ProtectedRoute>
@@ -50,11 +67,10 @@ export default function AppRoutes() {
             }
           >
             <Route index element={<Profile />} />
-            <Route path="orders" element={<MyOrders />} />
             <Route path="addresses" element={<Addresses />} />
             <Route path="addresses/new" element={<AddAddress />} />
             <Route path="addresses/:id/edit" element={<EditAddress />} />
-            
+
             <Route path="bank-details" element={<BankDetails />} />
           </Route>
           </Routes>

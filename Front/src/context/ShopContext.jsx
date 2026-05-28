@@ -7,7 +7,6 @@ export const ShopContext = createContext();
 
 const ShopContextProvider = ({ children }) => {
   const backendUrl = import.meta.env.VITE_API_BASE_URL;
-  // console.log("Backend URL in context provider:", backendUrl); // Debug log
   const [products, setProducts] = useState([]);
   const [token, setToken] = useState(() => {
     return localStorage.getItem("token") || "";
@@ -21,7 +20,24 @@ const ShopContextProvider = ({ children }) => {
 
 
   const [selectedAddress, setSelectedAddress] = useState(null);
-  const [delivery_fee, setDeliveryFee] = useState(69); 
+  const [delivery_fee, setDeliveryFee] = useState(69);
+
+  const [buyNowItem, setBuyNowItem] = useState(() => {
+    try {
+      const stored = localStorage.getItem("buyNowItem");
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  useEffect(() => {
+    if (buyNowItem) {
+      localStorage.setItem("buyNowItem", JSON.stringify(buyNowItem));
+    } else {
+      localStorage.removeItem("buyNowItem");
+    }
+  }, [buyNowItem]);
     
 
 
@@ -31,25 +47,20 @@ const ShopContextProvider = ({ children }) => {
     try {
       const response = await axios.get(`${backendUrl}/api/products`);
 
-      console.log("Products data:", response.data);
-
-      setProducts(response.data?.filter(p => (p.variantType === variantType && p.stock >0)));   // ✅ directly set array
+      setProducts(response.data?.filter(p => (p.variantType === variantType && p.stock >0)));
 
     } catch (error) {
-      console.log(error);
       toast.error("Failed to fetch products");
     }
   };
 
   const addToCart = async (itemId) => {
-    console.log("Adding item to cart:", itemId); // Debug log
     if (!token) {
       toast.info("Please login to add items to cart");
       navigate("/login");
       return;
     }
     let cartData = structuredClone(cartItems);
-    console.log("Adding to cart, current cart data:", cartData); // Debug log
     if (cartData[itemId]) {
       cartData[itemId] += 1
     } else {
@@ -57,7 +68,6 @@ const ShopContextProvider = ({ children }) => {
     }
 
   setCartItems(cartData);
-  console.log("Updated cart data after adding item:", cartData); // Debug log
     if (token) {
       try {
         const response = await axios.post(
@@ -71,25 +81,15 @@ const ShopContextProvider = ({ children }) => {
 },
           }
         );
-        console.log("Add to cart response:", response); // Debug log
 
-        if (response.status === 200) {
-          console.log(response.data.message);
-        } else {
-          console.log('error', response.data.message);
+        if (response.status !== 200) {
           toast.error(response.data.message);
         }
       } catch (error) {
-        console.log(error);
-        toast.error(error.response.data.message);
+        toast.error(error.response?.data?.message || "Failed to add to cart");
       }
     }
   }
-  
-
-   useEffect(() => {
-    console.log("Cart items updated:", cartItems);
-  }, [cartItems]);
 
 
 
@@ -128,11 +128,10 @@ const ShopContextProvider = ({ children }) => {
 
 
   const getUserCart = async (token) => {
-    console.log("Fetching user cart with token:", token); // Debug log
     try {
       const response = await axios.get(
         backendUrl + '/api/cart',
-        
+
         {
          headers: {
           Authorization: `Bearer ${token}`,
@@ -140,13 +139,11 @@ const ShopContextProvider = ({ children }) => {
 
         }
       );
-      console.log("User cart response:", response); // Debug log
       if (response.data.success) {
         setCartItems(response.data.cartData);
       }
     } catch (error) {
-      console.log(error);
-      toast.error(error.response.data.message);
+      toast.error(error.response?.data?.message || "Failed to load cart");
     }
   };
 
@@ -232,7 +229,9 @@ useEffect(() => {
           setDeliveryFee,
           getUserCart,
           variantType,
-          setVariantType
+          setVariantType,
+          buyNowItem,
+          setBuyNowItem
         };
 
   return <ShopContext.Provider value={value}>{children}</ShopContext.Provider>;

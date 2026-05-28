@@ -2,6 +2,13 @@ import { useContext, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ShopContext } from "../../context/ShopContext";
 
+const formatTypeLabel = (type) => {
+  if (!type) return "";
+  return type
+    .replace(/^FASHION_/, "")
+    .replaceAll("_", " ");
+};
+
 const SearchBar = ({ className = "" }) => {
   const { products } = useContext(ShopContext);
 
@@ -69,7 +76,7 @@ const SearchBar = ({ className = "" }) => {
               onClick={() => handleSelect(item)}
               className="px-4 py-2 cursor-pointer hover:bg-purple-50"
             >
-              {item}
+              {formatTypeLabel(item)}
             </div>
           ))}
         </div>
