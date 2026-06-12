@@ -13,7 +13,7 @@ const ShopContextProvider = ({ children }) => {
     return localStorage.getItem("token") || "";
   });
   const [variantType, setVariantType] = useState(
-    localStorage.getItem("variantType") || "TRADITIONAL"
+    localStorage.getItem("variantType") || "FASHION"
   );
   const [search, setSearch] = useState('');
   const [showSearch, setShowSearch] = useState(false);
