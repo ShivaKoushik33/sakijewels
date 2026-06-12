@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import Logo from '../../assets/images/Logo.svg';
 import insta from '../../assets/images/Insta.svg';
 import Mdot from '../../assets/images/Mdot.svg';
+import instaMain from '../../assets/images/InstaMain.jpeg';
 
 
 
@@ -58,10 +59,10 @@ export default function Footer() {
                     For any suggestions, queries or complaints please contact us:
                   </p>
                   <div className="text-sm text-[#353945]">
-                    <p className="font-semibold">The Sakhi Jewels Pvt Ltd.</p>
+                    <p className="font-semibold">The Sakhi Jewels</p>
                     <p>
-                      1-108-2 kotala kalikiri,<br />
-                      Andhra Pradesh 517234
+                      1-108-2 kotala kalikiri Mandal<br />
+                      chittoor dist Andhra Pradesh - 518234
                     </p>
                   </div>
                   <p className="text-sm text-[#353945]">Call us: +91 97056 53066</p>
@@ -72,9 +73,14 @@ export default function Footer() {
             </div>
 
             {/* Social */}
-            <div className="flex items-center gap-4">
+            <div className="flex flex-col gap-4">
               <span className="font-semibold text-sm md:text-base">Follow us on:</span>
-              <img src={insta} alt="Instagram" className="w-6 h-6 md:w-8 md:h-8" />
+              <img src={instaMain} alt="Instagram" className="w-24 h-24 md:w-28 md:h-28" onClick={() =>
+    window.open(
+      "https://www.instagram.com/the_sakhijewels?igsh=eXFjeDJhajF2bTBm",
+      "_blank"
+    )
+  } />
             </div>
 
             {/* Copyright */}

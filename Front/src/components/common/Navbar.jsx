@@ -6,12 +6,17 @@ import { ShopContext } from '../../context/ShopContext';
 import { useContext } from 'react';
 import SearchBar from "../common/SearchBar";
 
-export default function Navbar() {
+export default function Navbar({ onMenuToggle }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { getCartCount , setShowSearch } = useContext(ShopContext);
   const [isLangOpen, setIsLangOpen] = useState(false);
 const [selectedLang, setSelectedLang] = useState("English");
 
+  const toggleMenu = (value) => {
+    const next = typeof value === 'boolean' ? value : !isMenuOpen;
+    setIsMenuOpen(next);
+    onMenuToggle?.(next);
+  };
 
   useEffect(() => {
     if (isMenuOpen) {
@@ -81,12 +86,18 @@ const changeLanguage = (langCode, label) => {
             <button
               type="button"
               className="lg:hidden p-2 rounded-lg hover:bg-gray-100"
-              onClick={() => setIsMenuOpen((o) => !o)}
+              onClick={() => toggleMenu()}
               aria-label="Toggle menu"
             >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M3 6h18M3 12h18M3 18h18" />
-              </svg>
+              {isMenuOpen ? (
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M6 6l12 12M6 18L18 6" />
+                </svg>
+              ) : (
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M3 6h18M3 12h18M3 18h18" />
+                </svg>
+              )}
             </button>
 
             {/* Logo */}
@@ -292,54 +303,95 @@ const changeLanguage = (langCode, label) => {
         {/* Overlay when mobile menu is open */}
         {isMenuOpen && (
           <div
-            className="fixed inset-0 bg-black/50 z-40 lg:hidden"
-            onClick={() => setIsMenuOpen(false)}
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden"
+            onClick={() => toggleMenu(false)}
           />
         )}
 
         {/* Navigation Menu - desktop; mobile as dropdown when isMenuOpen */}
-        <div className={`border-b border-[#E6E8EC] ${isMenuOpen ? 'block relative z-50' : 'hidden'} lg:block`}>
-          <div className="max-w-[1440px] mx-auto px-4 md:px-10 lg:px-[100px] pb-2 bg-white">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between w-full gap-1 lg:gap-0 flex-nowrap lg:whitespace-nowrap">
+        <div className={`${isMenuOpen ? 'block relative z-50' : 'hidden'} lg:block lg:border-b lg:border-[#E6E8EC]`}>
+          {/* Desktop layout */}
+          <div className="hidden lg:block max-w-[1440px] mx-auto px-4 md:px-10 lg:px-[100px] pb-2 bg-white">
+            <div className="flex flex-row items-center justify-between w-full flex-nowrap whitespace-nowrap">
               <div className="flex items-center gap-1 px-[10px] py-[10px]">
-               <Link to="/#shop-category" onClick={() => setIsMenuOpen(false)}>Shop by Category</Link>
-                {/* <svg width="20" height="12" viewBox="0 0 20 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M10 6L5 1L0 6" stroke="#353945" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg> */}
+               <Link to="/#shop-category">Shop by Category</Link>
               </div>
               <div className="px-[10px] py-[10px]">
-                <Link to="/#essentials" onClick={() => setIsMenuOpen(false)}>Jewellery Essentials</Link>
+                <Link to="/#essentials">Jewellery Essentials</Link>
               </div>
               <div className="px-[10px] py-[10px]">
-                <Link to="/#most-gifted" onClick={() => setIsMenuOpen(false)}>Most Gifted</Link>
+                <Link to="/#most-gifted">Most Gifted</Link>
               </div>
               <div className="px-[10px] py-[10px]">
-                <Link to="/#best-selling" onClick={() => setIsMenuOpen(false)}>Best Selling</Link>
+                <Link to="/#best-selling">Best Selling</Link>
               </div>
               <div className="px-[10px] py-[10px]">
-                <Link to="/#reviews" onClick={() => setIsMenuOpen(false)}>Reviews</Link>
+                <Link to="/#reviews">Reviews</Link>
               </div>
-              {/* <div className="flex items-center gap-1 px-[10px] py-[10px]">
-                <span className="text-base text-[#353945]">Student collections</span>
-                <svg width="20" height="12" viewBox="0 0 20 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M10 6L5 1L0 6" stroke="#353945" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </div> */}
-              {/* <div className="flex items-center gap-1 px-[10px] py-[10px]">
-                <span className="text-base text-[#353945]">Exclusive collections</span>
-                <svg width="20" height="12" viewBox="0 0 20 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M10 6L5 1L0 6" stroke="#353945" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </div> */}
               <div className="px-[10px] py-[10px]">
-                <Link to="/orders" onClick={() => setIsMenuOpen(false)}>My Orders</Link>
+                <Link to="/orders">My Orders</Link>
               </div>
               <div className="flex items-center gap-1 px-[10px] py-[10px]">
-               <Link to="/#about-us" onClick={() => setIsMenuOpen(false)}>About Us</Link>
+               <Link to="/#about-us">About Us</Link>
               </div>
               <div className="px-[10px] py-[10px]">
-                <Link to="/terms" onClick={() => setIsMenuOpen(false)}>Terms & Conditions</Link>
+                <Link to="/terms">Terms & Conditions</Link>
               </div>
+            </div>
+          </div>
+
+          {/* Mobile menu */}
+          <div className="lg:hidden bg-white rounded-b-2xl shadow-xl border-t border-[#E6E8EC] mx-2 overflow-hidden animate-[slideDown_0.2s_ease-out]">
+            <div className="flex flex-col py-2">
+              <Link to="/#shop-category" onClick={() => toggleMenu(false)} className="flex items-center gap-3 px-5 py-3 text-[15px] font-medium text-[#141416] hover:bg-[#F4F5F6] transition-colors">
+                <span className="w-8 h-8 flex items-center justify-center rounded-full bg-[#901CDB]/10">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#901CDB" strokeWidth="2"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/></svg>
+                </span>
+                Shop by Category
+              </Link>
+              <Link to="/#essentials" onClick={() => toggleMenu(false)} className="flex items-center gap-3 px-5 py-3 text-[15px] font-medium text-[#141416] hover:bg-[#F4F5F6] transition-colors">
+                <span className="w-8 h-8 flex items-center justify-center rounded-full bg-[#901CDB]/10">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#901CDB" strokeWidth="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                </span>
+                Jewellery Essentials
+              </Link>
+              <Link to="/#most-gifted" onClick={() => toggleMenu(false)} className="flex items-center gap-3 px-5 py-3 text-[15px] font-medium text-[#141416] hover:bg-[#F4F5F6] transition-colors">
+                <span className="w-8 h-8 flex items-center justify-center rounded-full bg-[#901CDB]/10">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#901CDB" strokeWidth="2"><path d="M20 12v6a2 2 0 01-2 2H6a2 2 0 01-2-2v-6M12 2v16M12 2l4 4M12 2L8 6"/></svg>
+                </span>
+                Most Gifted
+              </Link>
+              <Link to="/#best-selling" onClick={() => toggleMenu(false)} className="flex items-center gap-3 px-5 py-3 text-[15px] font-medium text-[#141416] hover:bg-[#F4F5F6] transition-colors">
+                <span className="w-8 h-8 flex items-center justify-center rounded-full bg-[#901CDB]/10">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#901CDB" strokeWidth="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                </span>
+                Best Selling
+              </Link>
+              <Link to="/#reviews" onClick={() => toggleMenu(false)} className="flex items-center gap-3 px-5 py-3 text-[15px] font-medium text-[#141416] hover:bg-[#F4F5F6] transition-colors">
+                <span className="w-8 h-8 flex items-center justify-center rounded-full bg-[#901CDB]/10">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#901CDB" strokeWidth="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                </span>
+                Reviews
+              </Link>
+              <div className="border-t border-[#E6E8EC] my-1 mx-5"></div>
+              <Link to="/orders" onClick={() => toggleMenu(false)} className="flex items-center gap-3 px-5 py-3 text-[15px] font-medium text-[#141416] hover:bg-[#F4F5F6] transition-colors">
+                <span className="w-8 h-8 flex items-center justify-center rounded-full bg-[#901CDB]/10">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#901CDB" strokeWidth="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4zM3 6h18M16 10a4 4 0 01-8 0"/></svg>
+                </span>
+                My Orders
+              </Link>
+              <Link to="/#about-us" onClick={() => toggleMenu(false)} className="flex items-center gap-3 px-5 py-3 text-[15px] font-medium text-[#141416] hover:bg-[#F4F5F6] transition-colors">
+                <span className="w-8 h-8 flex items-center justify-center rounded-full bg-[#901CDB]/10">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#901CDB" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+                </span>
+                About Us
+              </Link>
+              <Link to="/terms" onClick={() => toggleMenu(false)} className="flex items-center gap-3 px-5 py-3 text-[15px] font-medium text-[#141416] hover:bg-[#F4F5F6] transition-colors">
+                <span className="w-8 h-8 flex items-center justify-center rounded-full bg-[#901CDB]/10">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#901CDB" strokeWidth="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
+                </span>
+                Terms & Conditions
+              </Link>
             </div>
           </div>
         </div>

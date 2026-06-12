@@ -190,11 +190,6 @@ export const categoryConfig = [
 ];
 const mockEssentials = [
   {
-    id: 1,
-    name: 'Emerging Trends',
-    image: JewelleryEssentials
-  },
-  {
     id: 2,
     name: 'Mens Collection',
     type: 'MENS_COLLECTION',

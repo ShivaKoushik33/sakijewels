@@ -1,4 +1,5 @@
 import { Routes, Route } from 'react-router-dom';
+import { useState } from 'react';
 
 import Navbar from '../components/common/Navbar';
 import Footer from '../components/common/Footer';
@@ -25,10 +26,12 @@ import SearchBar from '../components/common/SearchBar';
 import ProtectedRoute from './ProtectedRoute';
 import Terms from '../pages/Terms';
 export default function AppRoutes() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   return (
-  
+
       <div className="flex flex-col min-h-screen pb-16 lg:pb-0">
-        <Navbar />
+        <Navbar onMenuToggle={setMobileMenuOpen} />
         <main className="flex-grow">
           <Routes>
             <Route path="/" element={<Home />} />
@@ -76,7 +79,7 @@ export default function AppRoutes() {
           </Routes>
         </main>
         <Footer />
-        <MobileBottomNav />
+        {!mobileMenuOpen && <MobileBottomNav />}
       </div>
     
   );
