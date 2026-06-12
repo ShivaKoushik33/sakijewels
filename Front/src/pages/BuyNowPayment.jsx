@@ -12,7 +12,7 @@ export default function BuyNowPayment() {
   const initialTotal = searchParams.get("total");
   const mode = searchParams.get("mode");
 
- const { backendUrl, token, setCartItems, variantType, getUserCart, buyNowItem, setBuyNowItem } = useContext(ShopContext);
+ const { backendUrl, token, setCartItems, getUserCart, buyNowItem, setBuyNowItem } = useContext(ShopContext);
 
  const buyNowPayload = buyNowItem
    ? { productId: buyNowItem.productId, quantity: buyNowItem.quantity }
@@ -62,7 +62,6 @@ const handlePayment = async () => {
         {
           addressId,
           coupon: couponCode || null,
-          variantType,
           buyNow: buyNowPayload
         },
         { headers: { Authorization: `Bearer ${token}` } }
@@ -86,7 +85,6 @@ const handlePayment = async () => {
       {
         coupon: couponCode || null,
         addressId,
-        variantType,
         buyNow: buyNowPayload
       },
       { headers: { Authorization: `Bearer ${token}` } }
@@ -112,7 +110,6 @@ const handlePayment = async () => {
               razorpay_signature: response.razorpay_signature,
               addressId,
               coupon: couponCode || null,
-              variantType,
               buyNow: buyNowPayload
             },
             { headers: { Authorization: `Bearer ${token}` } }
@@ -188,7 +185,7 @@ const handlePayment = async () => {
               <div className="flex justify-between items-center mb-4">
                 <span>Total</span>
                 <span className="text-xl font-bold">
-                  ₹ {total ? (total+69).toLocaleString() : "—"}
+                  ₹ {total ? (total+49).toLocaleString() : "—"}
                 </span>
               </div>
 

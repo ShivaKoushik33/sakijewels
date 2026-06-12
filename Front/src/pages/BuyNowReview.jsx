@@ -15,7 +15,6 @@ export default function BuyNowReview() {
     delivery_fee,
     backendUrl,
     token,
-    variantType,
     buyNowItem
   } = useContext(ShopContext);
 
@@ -129,8 +128,7 @@ export default function BuyNowReview() {
       `${backendUrl}/api/orders/place-cod`,
       {
         addressId: selectedAddress._id,
-        coupon: couponCode,
-        variantType
+        coupon: couponCode
       },
       {
         headers: { Authorization: `Bearer ${token}` }
@@ -395,7 +393,7 @@ export default function BuyNowReview() {
     }
 
     navigate(
-      `/checkout/payment?mode=online&addressId=${selectedAddress._id}&coupon=${couponCode}&total=${finalTotal-69}`
+      `/checkout/payment?mode=online&addressId=${selectedAddress._id}&coupon=${couponCode}&total=${finalTotal-49}`
     );
   }}
   className="w-full py-3 bg-[#901CDB] text-white rounded-lg"
@@ -414,7 +412,7 @@ export default function BuyNowReview() {
     }
 
     navigate(
-      `/checkout/payment?mode=cod&addressId=${selectedAddress._id}&coupon=${couponCode}&total=${finalTotal-69}`
+      `/checkout/payment?mode=cod&addressId=${selectedAddress._id}&coupon=${couponCode}&total=${finalTotal-49}`
     );
   }}
   className="w-full py-3 border border-[#901CDB] text-[#901CDB] rounded-lg"

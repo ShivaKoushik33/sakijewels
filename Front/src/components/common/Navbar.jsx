@@ -14,6 +14,15 @@ const [selectedLang, setSelectedLang] = useState("English");
 
 
   useEffect(() => {
+    if (isMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [isMenuOpen]);
+
+  useEffect(() => {
   const script = document.createElement("script");
   script.src =
     "//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit";
@@ -280,9 +289,17 @@ const changeLanguage = (langCode, label) => {
           </div>
         </div>
 
+        {/* Overlay when mobile menu is open */}
+        {isMenuOpen && (
+          <div
+            className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+            onClick={() => setIsMenuOpen(false)}
+          />
+        )}
+
         {/* Navigation Menu - desktop; mobile as dropdown when isMenuOpen */}
-        <div className={`border-b border-[#E6E8EC] ${isMenuOpen ? 'block' : 'hidden'} lg:block`}>
-          <div className="max-w-[1440px] mx-auto px-4 md:px-10 lg:px-[100px] pb-2">
+        <div className={`border-b border-[#E6E8EC] ${isMenuOpen ? 'block relative z-50' : 'hidden'} lg:block`}>
+          <div className="max-w-[1440px] mx-auto px-4 md:px-10 lg:px-[100px] pb-2 bg-white">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between w-full gap-1 lg:gap-0 flex-nowrap lg:whitespace-nowrap">
               <div className="flex items-center gap-1 px-[10px] py-[10px]">
                <Link to="/#shop-category" onClick={() => setIsMenuOpen(false)}>Shop by Category</Link>

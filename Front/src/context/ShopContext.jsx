@@ -8,6 +8,7 @@ export const ShopContext = createContext();
 const ShopContextProvider = ({ children }) => {
   const backendUrl = import.meta.env.VITE_API_BASE_URL;
   const [products, setProducts] = useState([]);
+  const [allProducts, setAllProducts] = useState([]);
   const [token, setToken] = useState(() => {
     return localStorage.getItem("token") || "";
   });
@@ -19,7 +20,7 @@ const ShopContextProvider = ({ children }) => {
   const [cartItems, setCartItems] = useState({});
 
   const [selectedAddress, setSelectedAddress] = useState(null);
-  const [delivery_fee, setDeliveryFee] = useState(69);
+  const [delivery_fee, setDeliveryFee] = useState(49);
 
   const [buyNowItem, setBuyNowItem] = useState(() => {
     try {
@@ -84,7 +85,9 @@ const ShopContextProvider = ({ children }) => {
   const getProductsData = async () => {
     try {
       const response = await axios.get(`${backendUrl}/api/products`);
-      setProducts(response.data?.filter(p => (p.variantType === variantType && p.stock > 0)));
+      const inStock = response.data?.filter(p => p.stock > 0) || [];
+      setAllProducts(inStock);
+      setProducts(inStock.filter(p => p.variantType === variantType));
     } catch (error) {
       toast.error("Failed to fetch products");
     }
@@ -128,7 +131,7 @@ const ShopContextProvider = ({ children }) => {
   const getCartCount = () => {
     let totalCount = 0;
     for (let item in cartItems) {
-      const productExists = products.find((product) => product._id === item);
+      const productExists = allProducts.find((product) => product._id === item);
       if (productExists) {
         totalCount += cartItems[item];
       }
@@ -139,7 +142,7 @@ const ShopContextProvider = ({ children }) => {
   const getCartProducts = () => {
     return Object.keys(cartItems)
       .map((id) => {
-        const product = products.find((p) => p._id === id);
+        const product = allProducts.find((p) => p._id === id);
         if (!product) return null;
 
         return {

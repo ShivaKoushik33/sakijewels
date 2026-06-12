@@ -72,7 +72,7 @@ export const createPaymentOrder = async (req, res) => {
 }
 
     // 🔥 DELIVERY FEE (adjust if needed)
-    let deliveryFee = 69;
+    let deliveryFee = 49;
 
     // 🔥 CHECK FIRST ORDER
     const previousOrders = await Order.find({ user: user._id });
@@ -183,7 +183,7 @@ export const verifyPaymentAndPlaceOrder = async (req, res) => {
     }
 
     let subtotal = 0;
-    let deliveryFee = 69;
+    let deliveryFee = 49;
     let discount = 0;
 
     const orderItems = [];
@@ -469,7 +469,7 @@ export const placeOrderCOD = async (req, res) => {
     }
 
     let subtotal = 0;
-    let deliveryFee = 69;
+    let deliveryFee = 49;
     let codCharge = 29;
     let discount = 0;
 

@@ -105,6 +105,13 @@ export default function OrderDetails() {
             <p className="text-xs md:text-sm text-[#777E90] mt-0.5">
               Placed on {new Date(order.createdAt).toLocaleString()}
             </p>
+            <p className="text-xs md:text-sm text-[#777E90] mt-0.5">
+              Expected Delivery: {(() => {
+                const d = new Date(order.createdAt);
+                d.setDate(d.getDate() + 7);
+                return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+              })()}
+            </p>
           </div>
 
           <div

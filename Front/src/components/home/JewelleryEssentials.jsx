@@ -17,7 +17,7 @@ export default function JewelleryEssentials({ data }) {
         {data.map((item) => (
           <div 
             key={item.id}
-            onClick={() => navigate(`/collections`)}
+            onClick={() => navigate(item.type ? `/collections?type=${item.type}` : `/collections`)}
             className="relative w-full max-w-[363px] mx-auto lg:mx-0 h-[200px] sm:h-[220px] md:h-[240px] lg:w-[363px] rounded-2xl overflow-hidden group cursor-pointer"
           >
             <img 

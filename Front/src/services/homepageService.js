@@ -135,12 +135,6 @@ export const categoryConfig = [
     variantType: "TRADITIONAL",
     image: pendants
   },
-  {
-    name: "Mens Collection",
-    type: "MENS_COLLECTION",
-    variantType: "TRADITIONAL",
-    image: dup_category
-  },
 
   // =========================
   // FASHION
@@ -193,12 +187,6 @@ export const categoryConfig = [
     variantType: "FASHION",
     image: dup_category
   },
-  {
-    name: "Mens Collection",
-    type: "MENS_COLLECTION",
-    variantType: "FASHION",
-    image: dup_category
-  }
 ];
 const mockEssentials = [
   {
@@ -208,7 +196,8 @@ const mockEssentials = [
   },
   {
     id: 2,
-    name: 'Combos',
+    name: 'Mens Collection',
+    type: 'MENS_COLLECTION',
     image: JewelleryEssentials
   },
   {
