@@ -5,16 +5,26 @@ import banner from '../assets/images/banner.png';
 import dup_category from '../assets/images/dup_category.png';
 import JewelleryEssentials from '../assets/images/jewelery_essentials.png';
 import productBanner from '../assets/images/product_banner.png';
-import Bangles from '../assets/images/Bangles.jpeg';
 import pendants from '../assets/images/Earrings.jpeg';
-import ONE_GRAM_GOLD_NECKLACES from '../assets/images/1_gram_neck.jpeg';
-import MANGALASUTRA from '../assets/images/mangalasutra.jpeg';
-import PEARLNECKLACES from '../assets/images/pearl_neck.jpeg';
-import RUBYNECKLACES from '../assets/images/ruby_neck.jpeg';
-import EARFASHION from '../assets/images/ear_fashion.jpeg';
 import MODERN_MINIMUM_NECKLACES from '../assets/images/modern_min.jpeg';
-import FASHIONNECKLACES from '../assets/images/neck_fash.jpeg';
-import FASHION_EARINGS_JUMKA from '../assets/images/fashion_earrings.jpeg';
+
+// Traditional category images
+import ONE_GRAM_GOLD_NECKLACES from '../assets/images/trad_one_gram_gold_necklaces.jpeg';
+import PEARLNECKLACES from '../assets/images/trad_pearl_necklaces.jpeg';
+import RUBYNECKLACES from '../assets/images/trad_ruby_necklaces.jpeg';
+import EARINGS_JUMKA_TRAD from '../assets/images/trad_earrings_jumka.jpeg';
+import Bangles from '../assets/images/trad_bangles.jpeg';
+import MANGALASUTRA from '../assets/images/trad_mangalsutra.jpeg';
+
+// Fashion category images
+import FASHIONNECKLACES from '../assets/images/fashion_necklaces.jpeg';
+import FASHION_EARINGS_JUMKA from '../assets/images/fashion_earrings_jumka.jpeg';
+import FASHION_BRACELET_BANGLES from '../assets/images/fashion_bracelet_bangles.jpeg';
+import FASHION_RINGS from '../assets/images/fashion_rings.jpeg';
+import FASHION_ANKLETS from '../assets/images/fashion_anklets.jpeg';
+import FASHION_HAIR_ACCESSORIES from '../assets/images/fashion_hair_accessories.jpeg';
+import FASHION_MANGALSUTRA from '../assets/images/fashion_mangalsutra.jpeg';
+import FASHION_GIFT_HAMPER from '../assets/images/fashion_gift_hamper.jpeg';
 
 import api from "./apiService";
 
@@ -109,7 +119,7 @@ export const categoryConfig = [
     name: "Earrings Jumka",
     type: "EARINGS_JUMKA",
     variantType: "TRADITIONAL",
-    image: EARFASHION
+    image: EARINGS_JUMKA_TRAD
   },
   {
     name: "Bangles",
@@ -155,37 +165,37 @@ export const categoryConfig = [
     name: "Bracelet Bangles",
     type: "BRACELET_BANGLES",
     variantType: "FASHION",
-    image: dup_category
+    image: FASHION_BRACELET_BANGLES
   },
   {
     name: "Rings",
     type: "FASHION_RINGS",
     variantType: "FASHION",
-    image: dup_category
+    image: FASHION_RINGS
   },
   {
     name: "Anklets",
     type: "ANKLETS",
     variantType: "FASHION",
-    image: dup_category
+    image: FASHION_ANKLETS
   },
   {
     name: "Hair Accessories",
     type: "HAIR_ACCESSORIES",
     variantType: "FASHION",
-    image: dup_category
+    image: FASHION_HAIR_ACCESSORIES
   },
   {
     name: "Mangalsutra",
     type: "FASHION_MANGALSUTRA",
     variantType: "FASHION",
-    image: MANGALASUTRA
+    image: FASHION_MANGALSUTRA
   },
   {
     name: "Gift Hamper",
     type: "GIFT_HAMPER",
     variantType: "FASHION",
-    image: dup_category
+    image: FASHION_GIFT_HAMPER
   },
 ];
 const mockEssentials = [
