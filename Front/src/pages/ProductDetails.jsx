@@ -3,7 +3,6 @@ import { useParams } from "react-router-dom";
 import { getProductDetailsData } from "../services/productDetailsService";
 import RelatedProducts from "../components/product/RelatedProducts";
 import { ShopContext } from "../context/ShopContext";
-import { toast } from "react-toastify";
 import "@fontsource/lato";
 import "@fontsource/roboto";
 import left_arrow from "../assets/images/left_arrow.svg?url";
@@ -24,10 +23,10 @@ export default function ProductDetails() {
   const [selectedFinish, setSelectedFinish] = useState(null);
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [quantity, setQuantity] = useState(1);
-  // Dummy functions for wishlist and share
+  const [stockMsg, setStockMsg] = useState("");   // inline stock message
+
  const handleAddToWishlist = async () => {
   if (!token) {
-    toast.info("Please login to use wishlist");
     navigate("/login");
     return;
   }
@@ -35,32 +34,31 @@ export default function ProductDetails() {
   try {
     if (!isWishlisted) {
       await addToWishlistApi(product._id, token);
-      toast.success("Added to wishlist");
       setIsWishlisted(true);
     } else {
       await removeFromWishlistApi(product._id, token);
-      toast.success("Removed from wishlist");
       setIsWishlisted(false);
     }
   } catch (error) {
-    toast.error(error.response?.data?.message || "Something went wrong");
+    // silent
   }
 };
 
   const handleShare = () => {
-    toast.info("Share feature coming soon!");
+    // no-op for now (share not yet implemented)
   };
 
   const handleBuyNow = () => {
+    setStockMsg("");
+
     if (!token) {
-      toast.info("Please login to continue");
       navigate("/login");
       return;
     }
 
     const stock = product?.stock ?? 0;
     if (stock <= 0) {
-      toast.error("Product is out of stock");
+      setStockMsg("Product is out of stock");
       return;
     }
 
@@ -84,9 +82,10 @@ export default function ProductDetails() {
     const stock = product?.stock ?? Infinity;
     setQuantity((q) => {
       if (q + 1 > stock) {
-        toast.info(`Only ${stock} in stock`);
+        setStockMsg(`Only ${stock} in stock`);
         return q;
       }
+      setStockMsg("");
       return q + 1;
     });
   };
@@ -531,10 +530,15 @@ export default function ProductDetails() {
                     >
                       +
                     </button>
-                    {product?.stock > 0 && product.stock <= 5 && (
-                      <span className="text-xs text-[#FF9900]">
-                        Only {product.stock} left
-                      </span>
+                    {/* Stock message beside the + button */}
+                    {stockMsg ? (
+                      <span className="text-xs text-red-500">{stockMsg}</span>
+                    ) : (
+                      product?.stock > 0 && product.stock <= 5 && (
+                        <span className="text-xs text-[#FF9900]">
+                          Only {product.stock} left
+                        </span>
+                      )
                     )}
                   </div>
                 </div>
@@ -552,12 +556,10 @@ export default function ProductDetails() {
                   <button
                     onClick={() => {
                       if (!token) {
-                        toast.info("Please login to add items to cart");
                         navigate("/login");
                         return;
                       }
                       addToCart(product._id);
-                      toast.success("Added to cart!");
                     }}
                     className="flex-1 px-4 py-2.5 bg-[#901CDB] text-white rounded-lg font-medium hover:bg-[#7A16C0] transition-colors text-sm"
                     style={{ fontFamily: "'Lato', sans-serif", fontWeight: 600 }}

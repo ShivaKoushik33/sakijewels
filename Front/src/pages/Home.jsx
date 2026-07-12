@@ -95,7 +95,7 @@ useEffect(() => {
                   : "text-[#000000]"
                 }`}
             >
-              FASHION
+              MODERN
             </button>
 
           </div>
@@ -131,6 +131,16 @@ useEffect(() => {
         </div>
       )}
 
+      {/* New Arrivals */}
+      {homepage.newArrivals && homepage.newArrivals.length > 0 && (
+        <div id="new-arrivals" className="scroll-mt-24 sm:scroll-mt-44 w-full max-w-[1440px] mx-auto my-10 md:my-20 px-2 md:px-4">
+          <div className="flex flex-col items-center gap-2.5 px-2.5 py-2.5 mb-6 md:mb-10">
+            <h2 className="text-xl md:text-2xl font-semibold text-[#141416] text-center">New Arrivals</h2>
+          </div>
+          <ProductGrid title="" products={homepage.newArrivals} />
+        </div>
+      )}
+
       {/* Promo Banner Section */}
       {homepage.promoBanner && (
         <PromoBannerSection data={homepage.promoBanner} />
@@ -159,7 +169,7 @@ useEffect(() => {
   href="https://wa.me/919705653066"  // 👈 replace with your link if different
   target="_blank"
   rel="noopener noreferrer"
-  className="fixed bottom-20 right-6 z-50"
+  className="fixed bottom-20 right-6 z-30"
 >
   <div className="w-16 h-16 bg-[#25D366] rounded-full flex items-center justify-center shadow-xl hover:scale-110 transition-transform duration-300">
     <svg

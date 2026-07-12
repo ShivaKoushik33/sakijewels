@@ -9,7 +9,8 @@ import {
   getProductsByVariantCategory,
   getAllProductsAdmin,
   getBestSellers,
-  getMostGifted
+  getMostGifted,
+  getNewArrivals
 } from "../controllers/product.controller.js";
 
 import authMiddleware from "../middlewares/auth.middleware.js";
@@ -23,6 +24,7 @@ router.get("/category/:type", getProductsByCategory);
 //router.get("/main-category/:variantType", getProductsByVariantCategory);
 router.get("/best-sellers", getBestSellers);
 router.get("/most-gifted", getMostGifted);
+router.get("/new-arrivals", getNewArrivals);
 router.get("/:id", getProductById);
 
 

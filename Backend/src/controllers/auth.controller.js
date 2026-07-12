@@ -1,7 +1,19 @@
 import bcrypt from "bcryptjs";
 import User from "../models/User.js";
+import Otp from "../models/Otp.js";
+import OtpThrottle from "../models/OtpThrottle.js";
 import generateToken from "../utils/generateToken.js";
-import admin from "../config/firebaseAdmin.js";
+import { sendOtpSms } from "../utils/sendSms.js";
+
+const OTP_EXPIRY_MINUTES = 5;
+const MAX_VERIFY_ATTEMPTS = 5;
+const RESEND_COOLDOWN_SECONDS = 30;
+
+// Daily cap: max OTPs one phone can request within a rolling 24h window.
+const MAX_OTPS_PER_DAY = 5;
+const THROTTLE_WINDOW_HOURS = 24;
+
+const isValidPhone = (phone) => /^[0-9]{10}$/.test(phone);
 
 /**
  * REGISTER USER
@@ -106,36 +118,125 @@ export const loginUser = async (req, res) => {
 
 
 /**
- * FIREBASE LOGIN
+ * SEND OTP
+ * Generates a 6-digit OTP, stores it hashed with a short expiry, and
+ * sends it to the phone via SMS.
  */
-export const firebaseLogin = async (req, res) => {
+export const sendOtp = async (req, res) => {
   try {
-    const { firebaseToken } = req.body;
+    const { phone } = req.body;
 
-    if (!firebaseToken) {
-      return res.status(400).json({ message: "Firebase token required" });
+    if (!isValidPhone(phone)) {
+      return res.status(400).json({ message: "Enter a valid 10 digit phone number" });
     }
 
-    // 🔐 Verify Firebase ID token
-    const decodedToken = await admin.auth().verifyIdToken(firebaseToken);
-
-    const phone = decodedToken.phone_number;
-
-    if (!phone) {
-      return res.status(400).json({ message: "Phone number not verified" });
+    // Cooldown: block rapid re-sends to avoid SMS abuse / cost.
+    const existing = await Otp.findOne({ phone }).sort({ createdAt: -1 });
+    if (existing) {
+      const secondsSince = (Date.now() - existing.createdAt.getTime()) / 1000;
+      if (secondsSince < RESEND_COOLDOWN_SECONDS) {
+        return res.status(429).json({
+          message: `Please wait ${Math.ceil(
+            RESEND_COOLDOWN_SECONDS - secondsSince
+          )}s before requesting a new OTP`,
+        });
+      }
     }
 
-    // Remove country code (+91)
-    const formattedPhone = phone.replace("+91", "");
-
-    let user = await User.findOne({ phone: formattedPhone });
-
-    // ✅ 🔥 AUTO REGISTER IF NOT EXISTS
-    if (!user) {
-      user = await User.create({
-        phone: formattedPhone,
-        role: "USER",
+    // Daily cap: block if this phone already hit the limit in the current window.
+    const throttle = await OtpThrottle.findOne({ phone });
+    const now = Date.now();
+    const windowActive = throttle && throttle.windowExpiresAt.getTime() > now;
+    if (windowActive && throttle.count >= MAX_OTPS_PER_DAY) {
+      return res.status(429).json({
+        message: "Daily OTP limit reached. Please try again later.",
       });
+    }
+
+    // Generate a 6-digit code (100000–999999).
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+    const codeHash = await bcrypt.hash(code, 10);
+    const expiresAt = new Date(now + OTP_EXPIRY_MINUTES * 60 * 1000);
+
+    // One active OTP per phone: remove any previous codes first.
+    await Otp.deleteMany({ phone });
+    await Otp.create({ phone, codeHash, expiresAt });
+
+    // Send it (throws if the provider fails).
+    await sendOtpSms(phone, code);
+
+    // Count this send against the daily cap (only after a successful send).
+    if (windowActive) {
+      throttle.count += 1;
+      await throttle.save();
+    } else {
+      await OtpThrottle.findOneAndUpdate(
+        { phone },
+        {
+          phone,
+          count: 1,
+          windowExpiresAt: new Date(now + THROTTLE_WINDOW_HOURS * 60 * 60 * 1000),
+        },
+        { upsert: true }
+      );
+    }
+
+    res.status(200).json({ message: "OTP sent" });
+  } catch (error) {
+    console.error("sendOtp error:", error);
+    res.status(500).json({ message: "Failed to send OTP. Please try again." });
+  }
+};
+
+/**
+ * VERIFY OTP
+ * Checks the code, then logs the user in (auto-registering new phones),
+ * issuing the same JWT used elsewhere.
+ */
+export const verifyOtp = async (req, res) => {
+  try {
+    const { phone, otp } = req.body;
+
+    if (!isValidPhone(phone)) {
+      return res.status(400).json({ message: "Enter a valid 10 digit phone number" });
+    }
+    if (!otp || !/^[0-9]{6}$/.test(otp)) {
+      return res.status(400).json({ message: "Enter a valid 6 digit OTP" });
+    }
+
+    const record = await Otp.findOne({ phone }).sort({ createdAt: -1 });
+
+    if (!record) {
+      return res.status(400).json({ message: "OTP expired. Please request a new one." });
+    }
+
+    if (record.expiresAt.getTime() < Date.now()) {
+      await Otp.deleteMany({ phone });
+      return res.status(400).json({ message: "OTP expired. Please request a new one." });
+    }
+
+    if (record.attempts >= MAX_VERIFY_ATTEMPTS) {
+      await Otp.deleteMany({ phone });
+      return res.status(429).json({
+        message: "Too many wrong attempts. Please request a new OTP.",
+      });
+    }
+
+    const isMatch = await bcrypt.compare(otp, record.codeHash);
+
+    if (!isMatch) {
+      record.attempts += 1;
+      await record.save();
+      return res.status(400).json({ message: "Invalid OTP" });
+    }
+
+    // ✅ Correct code — consume it.
+    await Otp.deleteMany({ phone });
+
+    // Auto-register if this phone has never logged in.
+    let user = await User.findOne({ phone });
+    if (!user) {
+      user = await User.create({ phone, role: "USER" });
     }
 
     if (!user.isActive) {
@@ -155,10 +256,9 @@ export const firebaseLogin = async (req, res) => {
         role: user.role,
       },
     });
-
   } catch (error) {
-    console.error(error);
-    res.status(401).json({ message: "Invalid Firebase token" });
+    console.error("verifyOtp error:", error);
+    res.status(500).json({ message: "Failed to verify OTP. Please try again." });
   }
 };
 

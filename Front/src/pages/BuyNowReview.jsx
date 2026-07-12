@@ -2,7 +2,6 @@ import { useState, useEffect, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ShopContext } from '../context/ShopContext';
 import axios from 'axios';
-import { toast } from 'react-toastify';
 
 export default function BuyNowReview() {
   const navigate = useNavigate();
@@ -28,8 +27,12 @@ export default function BuyNowReview() {
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [freeShipping, setFreeShipping] = useState(false);
   const [isFirstOrder, setIsFirstOrder] = useState(false);
+  const [couponMsg, setCouponMsg] = useState({ type: "", text: "" }); // inline coupon feedback
+  const [addressMsg, setAddressMsg] = useState("");   // inline address error
+  const [orderMsg, setOrderMsg] = useState("");        // inline order error
 
-  const cartProductsBase = getCartProducts();
+  // Only in-stock items are ordered/charged, so only show those in review.
+  const cartProductsBase = getCartProducts().filter((p) => p.stock > 0);
   const cartSummaryBase = getCartSummary();
 
   const cartProducts = isBuyNow
@@ -90,7 +93,7 @@ export default function BuyNowReview() {
         }
 
       } catch (error) {
-        toast.error("Failed to fetch addresses");
+        // silent — address list just stays empty
       } finally {
         setLoading(false);
       }
@@ -118,8 +121,9 @@ export default function BuyNowReview() {
   }, [token]);
 
   const handleCODOrder = async () => {
+  setOrderMsg("");
   if (!selectedAddress) {
-    toast.error("Please select delivery address");
+    setAddressMsg("Please select delivery address");
     return;
   }
 
@@ -135,11 +139,10 @@ export default function BuyNowReview() {
       }
     );
 
-    toast.success("Order placed successfully!");
     navigate("/");
 
   } catch (error) {
-    toast.error(
+    setOrderMsg(
       error.response?.data?.message || "Failed to place order"
     );
   }
@@ -151,21 +154,23 @@ export default function BuyNowReview() {
     let discount = 0;
     let freeShip = false;
 
+    setCouponMsg({ type: "", text: "" });
+
     if (!code) {
-      toast.error("Enter coupon code");
+      setCouponMsg({ type: "error", text: "Enter coupon code" });
       return;
     }
 
     // 1️⃣ TSJFIRST
     if (code === "TSJFIRST") {
       if (!isFirstOrder) {
-        toast.error("Valid only for first order");
+        setCouponMsg({ type: "error", text: "Valid only for first order" });
         return;
       }
       if (summary.subtotal >= 599) {
         discount = 100;
       } else {
-        toast.error("Order must be above ₹599");
+        setCouponMsg({ type: "error", text: "Order must be above ₹599" });
         return;
       }
     }
@@ -173,14 +178,14 @@ export default function BuyNowReview() {
     // 2️⃣ TSJSSFIRST
     else if (code === "TSJSSFIRST") {
       if (!isFirstOrder) {
-        toast.error("Valid only for first order");
+        setCouponMsg({ type: "error", text: "Valid only for first order" });
         return;
       }
       if (summary.subtotal >= 999) {
         discount = 100;
         freeShip = true;
       } else {
-        toast.error("Order must be above ₹999");
+        setCouponMsg({ type: "error", text: "Order must be above ₹999" });
         return;
       }
     }
@@ -190,7 +195,7 @@ export default function BuyNowReview() {
       if (summary.subtotal >= 999) {
         discount = Math.floor(summary.subtotal * 0.10);
       } else {
-        toast.error("Order must be above ₹999");
+        setCouponMsg({ type: "error", text: "Order must be above ₹999" });
         return;
       }
     }
@@ -201,19 +206,19 @@ export default function BuyNowReview() {
         discount = Math.floor(summary.subtotal * 0.15);
         freeShip = true;
       } else {
-        toast.error("Order must be above ₹1499");
+        setCouponMsg({ type: "error", text: "Order must be above ₹1499" });
         return;
       }
     }
 
     else {
-      toast.error("Invalid coupon code");
+      setCouponMsg({ type: "error", text: "Invalid coupon code" });
       return;
     }
 
     setCouponDiscount(discount);
     setFreeShipping(freeShip);
-    toast.success("Coupon applied successfully");
+    setCouponMsg({ type: "success", text: "Coupon applied successfully" });
   };
 
   return (
@@ -353,6 +358,12 @@ export default function BuyNowReview() {
                 </button>
               </div>
 
+              {couponMsg.text && (
+                <p className={`text-sm mb-3 ${couponMsg.type === "success" ? "text-green-600" : "text-red-500"}`}>
+                  {couponMsg.text}
+                </p>
+              )}
+
               {couponDiscount > 0 && (
                 <div className="flex justify-between mb-3 text-green-600">
                   <span>Coupon Discount</span>
@@ -388,12 +399,12 @@ export default function BuyNowReview() {
   disabled={isBelowMinimum}
   onClick={() => {
     if (!selectedAddress) {
-      toast.error("Please select delivery address");
+      setAddressMsg("Please select delivery address");
       return;
     }
 
     navigate(
-      `/checkout/payment?mode=online&addressId=${selectedAddress._id}&coupon=${couponCode}&total=${finalTotal-49}`
+      `/checkout/payment?mode=online&addressId=${selectedAddress._id}&coupon=${couponCode}&subtotal=${summary.subtotal}&couponDiscount=${couponDiscount}&freeShipping=${freeShipping ? 1 : 0}`
     );
   }}
   className="w-full py-3 bg-[#901CDB] text-white rounded-lg"
@@ -407,12 +418,12 @@ export default function BuyNowReview() {
   disabled={isBelowMinimum}
   onClick={() => {
     if (!selectedAddress) {
-      toast.error("Please select delivery address");
+      setAddressMsg("Please select delivery address");
       return;
     }
 
     navigate(
-      `/checkout/payment?mode=cod&addressId=${selectedAddress._id}&coupon=${couponCode}&total=${finalTotal-49}`
+      `/checkout/payment?mode=cod&addressId=${selectedAddress._id}&coupon=${couponCode}&subtotal=${summary.subtotal}&couponDiscount=${couponDiscount}&freeShipping=${freeShipping ? 1 : 0}`
     );
   }}
   className="w-full py-3 border border-[#901CDB] text-[#901CDB] rounded-lg"
@@ -432,6 +443,13 @@ export default function BuyNowReview() {
     Minimum order amount is ₹249
   </p>
 )}
+
+  {addressMsg && (
+    <p className="text-red-600 text-sm">{addressMsg}</p>
+  )}
+  {orderMsg && (
+    <p className="text-red-600 text-sm">{orderMsg}</p>
+  )}
 
 </div>
 

@@ -116,7 +116,7 @@ export const categoryConfig = [
     image: RUBYNECKLACES
   },
   {
-    name: "Earrings Jumka",
+    name: "Ear Rings",
     type: "EARINGS_JUMKA",
     variantType: "TRADITIONAL",
     image: EARINGS_JUMKA_TRAD
@@ -134,7 +134,7 @@ export const categoryConfig = [
     image: MANGALASUTRA
   },
   {
-    name: "Modern Minimal Necklaces",
+    name: "Minimal Necklaces",
     type: "MODERN_MINIMUM_NECKLACES",
     variantType: "TRADITIONAL",
     image: MODERN_MINIMUM_NECKLACES
@@ -156,13 +156,13 @@ export const categoryConfig = [
     image: FASHIONNECKLACES
   },
   {
-    name: "Earrings Jumka",
+    name: "Ear Rings",
     type: "FASHION_EARINGS_JUMKA",
     variantType: "FASHION",
     image: FASHION_EARINGS_JUMKA
   },
   {
-    name: "Bracelet Bangles",
+    name: "Bangles",
     type: "BRACELET_BANGLES",
     variantType: "FASHION",
     image: FASHION_BRACELET_BANGLES
@@ -203,11 +203,6 @@ const mockEssentials = [
     id: 2,
     name: 'Mens Collection',
     type: 'MENS_COLLECTION',
-    image: JewelleryEssentials
-  },
-  {
-    id: 3,
-    name: 'Brand New Rings',
     image: JewelleryEssentials
   }
 ];
@@ -379,9 +374,10 @@ const mockOurStory = {
 
 export async function getHomepageData() {
   try {
-    const [bestSellersRes, mostGiftedRes] = await Promise.all([
+    const [bestSellersRes, mostGiftedRes, newArrivalsRes] = await Promise.all([
       api.get("/products/best-sellers"),
-      api.get("/products/most-gifted")
+      api.get("/products/most-gifted"),
+      api.get("/products/new-arrivals")
     ]);
 
     // const {bestSellers, mostGifted} = useContext(ShopContext);
@@ -403,6 +399,7 @@ export async function getHomepageData() {
       essentials: mockEssentials,
       mostGifted: mostGiftedRes.data.map(formatProduct),
       bestSelling: bestSellersRes.data.map(formatProduct),
+      newArrivals: newArrivalsRes.data.map(formatProduct),
       testimonials: mockTestimonials,
       ourStory: mockOurStory,
       promoBanner: mockHomepage

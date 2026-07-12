@@ -95,7 +95,8 @@ const productSchema = new mongoose.Schema(
       ref: "User"
     },
       isBestSeller: { type: Boolean, default: false },
-      isMostGifted: { type: Boolean, default: false }
+      isMostGifted: { type: Boolean, default: false },
+      isNewArrival: { type: Boolean, default: false }
     
   },
   {

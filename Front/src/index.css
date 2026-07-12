@@ -16,6 +16,17 @@
   animation: scroll 20s linear infinite;
 }
 
+@keyframes slideDown {
+  0% {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .bg-gradient-radial {
   background: radial-gradient(circle at 88% 66%, rgba(144, 28, 219, 1) 14%, rgba(77, 15, 117, 1) 100%);
 }

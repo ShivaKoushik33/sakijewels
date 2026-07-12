@@ -220,28 +220,34 @@ export default function Cart() {
                     </span>
                   </div>
 
-                  <div className="flex items-center gap-2 mt-2">
-                    <button
-                      onClick={() => updateQuantity(item.id, -1)}
-                      className="w-9 h-9 bg-[#901CDB] text-white rounded-lg"
-                    >
-                      -
-                    </button>
+                  {item.stock > 0 ? (
+                    <div className="flex items-center gap-2 mt-2">
+                      <button
+                        onClick={() => updateQuantity(item.id, -1)}
+                        className="w-9 h-9 bg-[#901CDB] text-white rounded-lg"
+                      >
+                        -
+                      </button>
 
-                    <input
-                      type="number"
-                      value={item.quantity}
-                      readOnly
-                      className="w-14 text-center border rounded-lg"
-                    />
+                      <input
+                        type="number"
+                        value={item.quantity}
+                        readOnly
+                        className="w-14 text-center border rounded-lg"
+                      />
 
-                    <button
-                      onClick={() => updateQuantity(item.id, 1)}
-                      className="w-9 h-9 bg-[#901CDB] text-white rounded-lg"
-                    >
-                      +
-                    </button>
-                  </div>
+                      <button
+                        onClick={() => updateQuantity(item.id, 1)}
+                        className="w-9 h-9 bg-[#901CDB] text-white rounded-lg"
+                      >
+                        +
+                      </button>
+                    </div>
+                  ) : (
+                    <span className="mt-2 inline-block w-fit bg-red-100 text-red-600 text-sm font-semibold px-3 py-1 rounded">
+                      Out of Stock — remove to checkout
+                    </span>
+                  )}
 
                   {/* 🔥 STOCK MESSAGE */}
                   {stockMessage[item.id] && (

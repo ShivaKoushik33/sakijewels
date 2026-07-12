@@ -63,6 +63,10 @@ export const createPaymentOrder = async (req, res) => {
 
       products.forEach(product => {
         const quantity = user.cartData[product._id];
+        // Skip out-of-stock items so they aren't included in the charged
+        // amount. They stay hidden in the cart UI but must not block/inflate
+        // a legitimate checkout of the remaining in-stock items.
+        if (product.stock < quantity) return;
         subtotal += product.finalPrice * quantity;
       });
     }
@@ -236,13 +240,10 @@ export const verifyPaymentAndPlaceOrder = async (req, res) => {
 
         if (variantType && product.variantType !== variantType) continue;
 
-        if (product.stock < quantity) {
-          await session.abortTransaction();
-          session.endSession();
-          return res.status(400).json({
-            message: `${product?.name || "Product"} is out of stock`
-          });
-        }
+        // Out-of-stock items are skipped (not ordered, not charged) instead of
+        // aborting the whole payment. They remain in the cart for the user to
+        // handle later. This matches the amount computed in createPaymentOrder.
+        if (product.stock < quantity) continue;
 
         product.stock -= quantity;
         await product.save({ session });
@@ -312,7 +313,7 @@ discount += prepaidDiscount;
       codCharge: 0,
       totalAmount,
       coupon: coupon || null,
-      status: "ACCEPTED",
+      status: "CONFIRMED",
       paymentMethod: "ONLINE",
       paymentId: razorpay_payment_id,
       isPaid: true
@@ -517,13 +518,9 @@ export const placeOrderCOD = async (req, res) => {
 
         if (variantType && product.variantType !== variantType) continue;
 
-        if (product.stock < quantity) {
-          await session.abortTransaction();
-          session.endSession();
-          return res.status(400).json({
-            message: `${product?.name || "Product"} is out of stock`
-          });
-        }
+        // Out-of-stock items are skipped (not ordered) instead of blocking the
+        // whole order. They stay in the cart for the user to handle later.
+        if (product.stock < quantity) continue;
 
         const updatedProduct = await Product.findOneAndUpdate(
     { _id: productId, stock: { $gte: quantity } },
@@ -531,13 +528,8 @@ export const placeOrderCOD = async (req, res) => {
     { session, new: true }
   );
 
-  if (!updatedProduct) {
-    await session.abortTransaction();
-    session.endSession();
-    return res.status(400).json({
-      message: "Product is out of stock"
-    });
-  }
+  // Lost a race for the last unit(s): skip rather than abort the whole order.
+  if (!updatedProduct) continue;
 
         subtotal += product.finalPrice * quantity;
 
@@ -607,7 +599,7 @@ export const placeOrderCOD = async (req, res) => {
       codCharge,
       totalAmount,
       coupon: coupon || null,
-      status: "PENDING",
+      status: "ACCEPTED",
       paymentMethod: "COD",
       paymentId: null,
       isPaid: false

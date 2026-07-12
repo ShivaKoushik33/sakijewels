@@ -22,7 +22,7 @@ export default function Testimonials({ data }) {
   }
 
   return (
-    <div className="w-full max-w-[1440px] mx-auto overflow-hidden">
+    <div className="w-full max-w-[1440px] mx-auto overflow-hidden pb-10 md:pb-16">
 
       {/* Header */}
       <div className="flex flex-col items-center gap-1.5 px-2.5 py-2.5 mb-6 md:mb-10">

@@ -66,10 +66,14 @@ const userSchema = new mongoose.Schema(
 
     email: {
       type: String,
-      unique: true,
-      sparse: true,
       lowercase: true,
-      trim: true
+      trim: true,
+      // Unique only when an email is actually present. Phone-only (OTP) users
+      // have no email, so a plain/sparse unique index still collides on null.
+      index: {
+        unique: true,
+        partialFilterExpression: { email: { $type: "string" } }
+      }
     },
 
     phone: {

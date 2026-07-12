@@ -55,6 +55,7 @@ const Edit = ({ token }) => {
   const [isActive, setIsActive] = useState(true);
   const [bestSeller, setBestSeller] = useState(false);
   const [mostGifted, setMostGifted] = useState(false);
+  const [newArrival, setNewArrival] = useState(false);
 
   const [existingImages, setExistingImages] = useState([]);
   const [newImages, setNewImages] = useState([]);
@@ -83,6 +84,7 @@ const Edit = ({ token }) => {
       setIsActive(product.isActive);
       setBestSeller(product.isBestSeller);
       setMostGifted(product.isMostGifted);
+      setNewArrival(product.isNewArrival);
       setExistingImages(product.images || []);
 
     } catch {
@@ -124,6 +126,7 @@ const Edit = ({ token }) => {
       formData.append("isActive", isActive);
       formData.append("isBestSeller", bestSeller);
       formData.append("isMostGifted", mostGifted);
+      formData.append("isNewArrival", newArrival);
 
       if (newImages.length > 0) {
         newImages.forEach((img) => {
@@ -260,6 +263,15 @@ const Edit = ({ token }) => {
           onChange={() => setMostGifted(prev => !prev)}
         />
         MostGifted
+      </label>
+
+      <label className="flex gap-2">
+        <input
+          type="checkbox"
+          checked={newArrival}
+          onChange={() => setNewArrival(prev => !prev)}
+        />
+        NewArrival
       </label>
 
       <button className="bg-black text-white py-2 rounded">

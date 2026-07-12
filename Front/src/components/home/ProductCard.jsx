@@ -4,7 +4,6 @@ import { useContext ,useEffect} from 'react';
 import { addToWishlistApi,removeFromWishlistApi,getWishlistData } from '../../services/wishlistService';
 import { ShopContext } from '../../context/ShopContext';
 import { getProductDetailsData } from '../../services/productDetailsService';
-import { toast } from "react-toastify";
 
 
 
@@ -29,7 +28,6 @@ export default function ProductCard({ product }) {
 
   const handleAddToWishlist = async () => {
   if (!token) {
-    toast.info("Please login to use wishlist");
     navigate("/login");
     return;
   }
@@ -37,15 +35,13 @@ export default function ProductCard({ product }) {
   try {
     if (!isWishlisted) {
       await addToWishlistApi(id, token);
-      toast.success("Added to wishlist");
       setIsWishlisted(true);
     } else {
       await removeFromWishlistApi(id, token);
-      toast.success("Removed from wishlist");
       setIsWishlisted(false);
     }
   } catch (error) {
-    toast.error(error.response?.data?.message || "Something went wrong");
+    // silent
   }
 };
  useEffect(() => {
@@ -117,8 +113,8 @@ export default function ProductCard({ product }) {
             <span className="text-base md:text-lg font-medium text-[#141416]">₹{price.toLocaleString()}</span>
             <span className="text-xs md:text-sm font-normal text-[#777E90] line-through">₹{originalPrice.toLocaleString()}</span>
           </div>
-          <div className="bg-[#34C759] px-1.5 py-0.5 md:px-2 md:py-1 rounded-md">
-            <span className="text-[10px] md:text-[11px] font-bold text-white uppercase tracking-wider">{discount}% OFF</span>
+          <div className="bg-[#34C759] inline-flex items-center px-1.5 py-1 rounded-md">
+            <span className="text-[10px] md:text-[11px] font-bold text-white uppercase tracking-wider leading-none">{discount}% OFF</span>
           </div>
         </div>
         <div className="flex flex-col gap-1 md:gap-2">
@@ -129,12 +125,10 @@ export default function ProductCard({ product }) {
         <div className="flex items-center gap-1">
           <button onClick={() => {
             if (!token) {
-              toast.info("Please login to add items to cart");
               navigate("/login");
               return;
             }
             addToCart(id);
-            toast.success("Added to cart!");
           }}
             className="flex-1 bg-[#901CDB] text-white px-2 py-2 md:px-2.5 md:py-2.5 rounded-lg text-sm md:text-lg font-medium text-center hover:bg-[#7A16C0] transition-colors">
             Add to Cart

@@ -171,8 +171,16 @@ import { ShopContext } from "../context/ShopContext";
 import ProductCard from "../components/home/ProductCard";
 import { useLocation } from "react-router-dom";
 
+// UI-only display overrides for specific category types.
+const TYPE_LABEL_OVERRIDES = {
+  EARINGS_JUMKA: "Ear Rings",
+  FASHION_EARINGS_JUMKA: "Ear Rings",
+  BRACELET_BANGLES: "Bangles",
+};
+
 const formatTypeLabel = (type) => {
   if (!type) return "";
+  if (TYPE_LABEL_OVERRIDES[type]) return TYPE_LABEL_OVERRIDES[type];
   return type
     .replace(/^FASHION_/, "")
     .replaceAll("_", " ");
@@ -187,6 +195,13 @@ export default function Collections() {
   const [selectedTypes, setSelectedTypes] = useState([]);
   const [sortType, setSortType] = useState("relevant");
   const [showFilter, setShowFilter] = useState(false);
+  const [showSort, setShowSort] = useState(false);   // mobile sort menu
+
+  const sortOptions = [
+    { value: "relevant", label: "Relevant" },
+    { value: "low-high", label: "Price: Low to High" },
+    { value: "high-low", label: "Price: High to Low" },
+  ];
 
   // ✅ Get available product types dynamically
   const availableTypes = useMemo(() => {
@@ -284,7 +299,7 @@ const filteredProducts = useMemo(() => {
       <div className="min-w-[220px] px-4">
         <p
           onClick={() => setShowFilter(!showFilter)}
-          className=" font-olivera  text-xl font-semibold cursor-pointer mb-4"
+          className="hidden sm:block font-olivera text-xl font-semibold cursor-pointer mb-4"
         >
           Filters
         </p>
@@ -294,7 +309,7 @@ const filteredProducts = useMemo(() => {
 
           <div className="flex flex-col gap-2 text-sm text-gray-700">
             {availableTypes.map((type) => (
-              <label key={type} className="flex gap-2 items-center">
+              <label key={type} className="flex gap-2 items-center font-olivera">
                 <input
                   type="checkbox"
                   value={type}
@@ -312,17 +327,74 @@ const filteredProducts = useMemo(() => {
       <div className="flex-1 px-4 sm:px-6 md:px-10">
 
         {/* HEADER */}
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
+        <div className="flex flex-row justify-between items-center gap-3 mb-6">
           <h1 className="font-olivera text-xl font-bold text-[#141416]">
             {selectedTypes.length > 0
               ? formatTypeLabel(selectedTypes[0])
               : "All Collections"}
           </h1>
 
+          {/* MOBILE SORT — funnel icon + popover on the far right (hidden on desktop) */}
+          <div className="relative sm:hidden">
+            <button
+              type="button"
+              onClick={() => setShowSort((prev) => !prev)}
+              aria-label="Sort products"
+              className={`flex items-center justify-center w-9 h-9 rounded-full border transition-colors ${
+                showSort || sortType !== "relevant"
+                  ? "border-[#901CDB] text-[#901CDB] bg-[#901CDB]/10"
+                  : "border-gray-300 text-[#141416]"
+              }`}
+            >
+              {/* Funnel / filter icon */}
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" />
+              </svg>
+            </button>
+
+            {showSort && (
+              <>
+                {/* click-away overlay */}
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setShowSort(false)}
+                />
+                <div className="absolute right-0 mt-2 w-48 bg-white border border-[#E6E8EC] rounded-xl shadow-lg z-50 overflow-hidden animate-[slideDown_0.15s_ease-out]">
+                  <p className="px-4 pt-3 pb-1 text-xs font-semibold text-[#777E90] uppercase tracking-wide">
+                    Sort By
+                  </p>
+                  {sortOptions.map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => {
+                        setSortType(opt.value);
+                        setShowSort(false);
+                      }}
+                      className={`flex items-center justify-between w-full text-left px-4 py-2.5 text-sm transition-colors ${
+                        sortType === opt.value
+                          ? "text-[#901CDB] font-semibold bg-[#901CDB]/5"
+                          : "text-[#141416] hover:bg-[#F4F5F6]"
+                      }`}
+                    >
+                      {opt.label}
+                      {sortType === opt.value && (
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M20 6L9 17l-5-5" />
+                        </svg>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* DESKTOP SORT dropdown (unchanged, hidden on mobile) */}
           <select
             value={sortType}
             onChange={(e) => setSortType(e.target.value)}
-            className="border border-gray-300 text-sm px-3 py-1 w-fit"
+            className="hidden sm:block border border-gray-300 text-sm px-3 py-1 w-fit"
           >
             <option value="relevant">Sort by: Relevant</option>
             <option value="low-high">Sort by: Low to High</option>

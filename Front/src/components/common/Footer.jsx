@@ -62,11 +62,11 @@ export default function Footer() {
                     <p className="font-semibold">The Sakhi Jewels</p>
                     <p>
                       1-108-2 kotala kalikiri Mandal<br />
-                      chittoor dist Andhra Pradesh - 518234
+                      chittoor dist Andhra Pradesh - 517234
                     </p>
                   </div>
                   <p className="text-sm text-[#353945]">Call us: +91 97056 53066</p>
-                  <p className="text-sm text-[#353945]">Email: support@thesakijewels.com</p>
+                  <p className="text-sm text-[#353945]">Email: support@thesakhijewels.com</p>
                   <p className="text-sm underline cursor-pointer text-[#901CDB]">Chat with us</p>
                 </div>
               </div>

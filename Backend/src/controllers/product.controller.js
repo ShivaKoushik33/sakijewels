@@ -38,8 +38,9 @@ export const createProduct = async (req, res) => {
       createdBy: req.user._id,
       isActive: req.body.isActive,
       isBestSeller: req.body.isBestSeller || false,
-      isMostGifted: req.body.isMostGifted || false
-      
+      isMostGifted: req.body.isMostGifted || false,
+      isNewArrival: req.body.isNewArrival || false
+
     });
 
     res.status(201).json({
@@ -296,6 +297,10 @@ export const updateProduct = async (req, res) => {
       product.isMostGifted = req.body.isMostGifted === "true" || req.body.isMostGifted === true;
     }
 
+    if (req.body.isNewArrival !== undefined) {
+      product.isNewArrival = req.body.isNewArrival === "true" || req.body.isNewArrival === true;
+    }
+
     // 🔹 If new images uploaded → replace old images
     if (req.files && req.files.length > 0) {
 
@@ -340,6 +345,15 @@ export const getBestSellers = async (req, res) => {
 export const getMostGifted = async (req, res) => {
   const products = await Product
     .find({ isMostGifted: true, isActive: true })
+    .limit(4);
+
+  res.json(products);
+};
+
+
+export const getNewArrivals = async (req, res) => {
+  const products = await Product
+    .find({ isNewArrival: true, isActive: true })
     .limit(4);
 
   res.json(products);

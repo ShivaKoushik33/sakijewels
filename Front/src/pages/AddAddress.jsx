@@ -3,7 +3,6 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { getProfileUi } from '../services/profileService';
 import { ShopContext } from '../context/ShopContext';
 import axios from 'axios';
-import { toast } from 'react-toastify';
 
 export default function AddAddress() {
   const [ui, setUi] = useState(null);
@@ -20,8 +19,9 @@ export default function AddAddress() {
   });
 
   const [cities, setCities] = useState([]);
-  const [areas, setAreas] = useState([]);
   const [loadingPin, setLoadingPin] = useState(false);
+  const [pinMsg, setPinMsg] = useState("");    // inline pincode message
+  const [formMsg, setFormMsg] = useState("");  // inline form error
 
   const { backendUrl, token, setSelectedAddress } = useContext(ShopContext);
   const navigate = useNavigate();
@@ -40,6 +40,7 @@ export default function AddAddress() {
 
     try {
       setLoadingPin(true);
+      setPinMsg("");
 
       const res = await axios.get(
         `${backendUrl}/api/pincode/${pin}`
@@ -53,9 +54,8 @@ export default function AddAddress() {
         !result.PostOffice ||
         result.PostOffice.length === 0
       ) {
-        toast.error('Invalid pincode');
+        setPinMsg('Invalid pincode');
         setCities([]);
-        setAreas([]);
         setFormData((prev) => ({
           ...prev,
           city: '',
@@ -67,21 +67,18 @@ export default function AddAddress() {
       const offices = result.PostOffice;
 
       const cityList = [...new Set(offices.map((item) => item.District))];
-      const areaList = offices.map((item) => item.Name);
 
       setCities(cityList);
-      setAreas(areaList);
 
+      // Only auto-fill city & state. Village is always entered by the user
+      // (rural villages may not be listed under a pincode).
       setFormData((prev) => ({
         ...prev,
         state: offices[0].State,
-        city: cityList[0],
-        street: areaList[0] || prev.street
+        city: cityList[0]
       }));
-
-      toast.success('Pincode verified');
     } catch (error) {
-      toast.error('Failed to verify pincode');
+      setPinMsg('Failed to verify pincode');
     } finally {
       setLoadingPin(false);
     }
@@ -112,7 +109,6 @@ export default function AddAddress() {
 
       if (cleanPin.length < 6) {
         setCities([]);
-        setAreas([]);
       }
     }
   };
@@ -120,19 +116,20 @@ export default function AddAddress() {
   /* 🔥 SUBMIT */
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setFormMsg("");
 
     if (!token) {
-      toast.error('Please login');
+      localStorage.setItem("authNotice", "Please login to add an address.");
       return navigate('/login');
     }
 
     if (formData.phone.length !== 10) {
-      toast.error('Enter valid mobile number');
+      setFormMsg('Enter valid mobile number');
       return;
     }
 
     if (formData.pincode.length !== 6) {
-      toast.error('Enter valid pincode');
+      setFormMsg('Enter valid pincode');
       return;
     }
 
@@ -147,8 +144,6 @@ export default function AddAddress() {
         }
       );
 
-      toast.success('Address added successfully');
-
       const newAddress =
         res.data.addresses?.[res.data.addresses.length - 1];
 
@@ -159,7 +154,7 @@ export default function AddAddress() {
         navigate('/profile/addresses');
       }
     } catch (error) {
-      toast.error(
+      setFormMsg(
         error?.response?.data?.message ||
           'Failed to add address'
       );
@@ -216,32 +211,15 @@ export default function AddAddress() {
               required
             />
 
-            {/* STREET / AREA */}
-            {areas.length > 0 ? (
-              <select
-                name="street"
-                value={formData.street}
-                onChange={handleChange}
-                className="w-full h-[44px] px-4 border border-[#E6E8EC] rounded-lg text-sm bg-white"
-              >
-                {areas.map((area, index) => (
-                  <option key={index} value={area}>
-                    {area}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <input
-                name="street"
-                value={formData.street}
-                onChange={handleChange}
-                className="w-full h-[44px] px-4 border border-[#E6E8EC] rounded-lg text-sm"
-                placeholder={
-                  fields?.landmarkPlaceholder ||
-                  'Street / Landmark'
-                }
-              />
-            )}
+            {/* VILLAGE (entered by user — rural areas may not resolve by pincode) */}
+            <input
+              name="street"
+              value={formData.street}
+              onChange={handleChange}
+              className="w-full h-[44px] px-4 border border-[#E6E8EC] rounded-lg text-sm"
+              placeholder="Enter Village"
+              required
+            />
 
             {/* PINCODE */}
             <div>
@@ -261,6 +239,9 @@ export default function AddAddress() {
                 <p className="text-xs text-[#901CDB] mt-2">
                   Verifying pincode...
                 </p>
+              )}
+              {pinMsg && (
+                <p className="text-xs text-red-500 mt-2">{pinMsg}</p>
               )}
             </div>
 
@@ -311,6 +292,11 @@ export default function AddAddress() {
               />
               Set as default address
             </label>
+
+            {/* INLINE FORM ERROR */}
+            {formMsg && (
+              <p className="text-sm text-red-500">{formMsg}</p>
+            )}
 
             {/* SUBMIT */}
             <button

@@ -1,5 +1,5 @@
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { useContext } from 'react';
+import { useContext, useEffect } from 'react';
 import { ShopContext } from '../../context/ShopContext';
 
 const sidebarLinks = [
@@ -13,6 +13,11 @@ export default function ProfileLayout() {
   const location = useLocation();
   const { logout } = useContext(ShopContext);
   const navigate = useNavigate();
+
+  // Scroll to top whenever the profile route changes.
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [location.pathname]);
 
   const handleLogout = () => {
     logout();

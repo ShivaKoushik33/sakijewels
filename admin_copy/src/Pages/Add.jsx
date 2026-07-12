@@ -68,6 +68,7 @@ const [image1, setImage1] = useState(false);
   const [finalPrice, setFinalPrice] = useState("");
 const [discountRate, setDiscountRate] = useState(0);
   const [stock, setStock] = useState("");
+  const [isNewArrival, setIsNewArrival] = useState(false);
 
   const [isLoading, setIsLoading] = useState(false); // ✅ Added
 
@@ -104,6 +105,7 @@ setDiscountRate(calculatedDiscount);
 formData.append("finalPrice", final);
 formData.append("discountRate", calculatedDiscount);
       formData.append("stock", stock);
+      formData.append("isNewArrival", isNewArrival);
 
       if (image1) formData.append("images", image1);
       if (image2) formData.append("images", image2);
@@ -127,6 +129,7 @@ formData.append("discountRate", calculatedDiscount);
         setFinalPrice("");
         setDiscountRate(0);
         setStock("");
+        setIsNewArrival(false);
         setImage1(false);
         setImage2(false);
         setImage3(false);
@@ -285,6 +288,16 @@ formData.append("discountRate", calculatedDiscount);
           />
         </div>
       </div>
+
+      {/* New Arrival */}
+      <label className="flex gap-2 items-center">
+        <input
+          type="checkbox"
+          checked={isNewArrival}
+          onChange={() => setIsNewArrival(prev => !prev)}
+        />
+        Mark as New Arrival
+      </label>
 
       {/* Submit */}
       <button

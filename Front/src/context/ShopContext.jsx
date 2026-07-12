@@ -1,5 +1,4 @@
 import { createContext, useEffect, useState } from 'react';
-import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
@@ -67,11 +66,13 @@ const ShopContextProvider = ({ children }) => {
           localStorage.removeItem("token");
           setToken("");
           setCartItems({});
-          if (code === "TOKEN_EXPIRED") {
-            toast.info("Session expired. Please login again.");
-          } else {
-            toast.info("Please login to continue.");
-          }
+          // Pass the reason to the login page (shown inline there).
+          localStorage.setItem(
+            "authNotice",
+            code === "TOKEN_EXPIRED"
+              ? "Session expired. Please login again."
+              : "Please login to continue."
+          );
           navigate("/login");
         }
         return Promise.reject(error);
@@ -85,17 +86,19 @@ const ShopContextProvider = ({ children }) => {
   const getProductsData = async () => {
     try {
       const response = await axios.get(`${backendUrl}/api/products`);
-      const inStock = response.data?.filter(p => p.stock > 0) || [];
-      setAllProducts(inStock);
-      setProducts(inStock.filter(p => p.variantType === variantType));
+      const all = response.data || [];
+      // Keep ALL products (including out-of-stock) so the cart can still show
+      // items that went out of stock and let the user remove them.
+      setAllProducts(all);
+      // Collections page shows only in-stock products of the current variant.
+      setProducts(all.filter(p => p.stock > 0 && p.variantType === variantType));
     } catch (error) {
-      toast.error("Failed to fetch products");
+      // silent — products just won't load
     }
   };
 
   const addToCart = async (itemId) => {
     if (!token) {
-      toast.info("Please login to add items to cart");
       navigate("/login");
       return;
     }
@@ -118,13 +121,9 @@ const ShopContextProvider = ({ children }) => {
         }
       );
 
-      if (response.status !== 200) {
-        toast.error(response.data.message);
-      }
+      // success is silent; cart badge/state updates reflect the change
     } catch (error) {
-      if (error?.response?.status !== 401) {
-        toast.error(error.response?.data?.message || "Failed to add to cart");
-      }
+      // silent — 401 handled by interceptor
     }
   };
 
@@ -178,7 +177,9 @@ const ShopContextProvider = ({ children }) => {
   };
 
   const getCartSummary = () => {
-    const cartProducts = getCartProducts();
+    // Only in-stock items count toward totals — out-of-stock items are shown
+    // in the cart but excluded from the payable amount.
+    const cartProducts = getCartProducts().filter((p) => p.stock > 0);
 
     const subtotal = cartProducts.reduce(
       (acc, item) => acc + item.price * item.quantity,

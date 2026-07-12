@@ -2,8 +2,16 @@ import { useContext, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ShopContext } from "../../context/ShopContext";
 
+// UI-only display overrides for specific category types.
+const TYPE_LABEL_OVERRIDES = {
+  EARINGS_JUMKA: "Ear Rings",
+  FASHION_EARINGS_JUMKA: "Ear Rings",
+  BRACELET_BANGLES: "Bangles",
+};
+
 const formatTypeLabel = (type) => {
   if (!type) return "";
+  if (TYPE_LABEL_OVERRIDES[type]) return TYPE_LABEL_OVERRIDES[type];
   return type
     .replace(/^FASHION_/, "")
     .replaceAll("_", " ");

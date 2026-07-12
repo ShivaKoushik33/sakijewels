@@ -6,6 +6,8 @@ export default function OrderCard({ order }) {
   // Status color mapping
   const getToneClasses = (status) => {
     switch (status) {
+      case "CONFIRMED":
+        return "text-[#0EA5A5] border-[#0EA5A5]/30 bg-[#0EA5A5]/10";
       case "ACCEPTED":
         return "text-[#34C759] border-[#34C759]/30 bg-[#34C759]/10";
       case "PENDING":

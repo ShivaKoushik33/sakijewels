@@ -4,7 +4,6 @@ import { getProfileUi, getAddressById } from '../services/profileService';
 import { useContext } from "react";
 import { ShopContext } from "../context/ShopContext";
 import axios from "axios";
-import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 
 export default function EditAddress() {
@@ -24,6 +23,7 @@ const navigate = useNavigate();
   const { id } = useParams();
   const [ui, setUi] = useState(null);
   const [address, setAddress] = useState(null);
+  const [formMsg, setFormMsg] = useState("");   // inline error
 
 useEffect(() => {
   getProfileUi().then((data) => setUi(data || null));
@@ -58,7 +58,7 @@ useEffect(() => {
       }
 
     } catch (error) {
-      toast.error("Failed to load address");
+      // silent — form just stays blank if load fails
     }
   };
 
@@ -83,6 +83,7 @@ const handleChange = (e) => {
 };
 
  const handleUpdate = async () => {
+  setFormMsg("");
   try {
     await axios.put(
       `${backendUrl}/api/addresses/${id}`,
@@ -94,13 +95,12 @@ const handleChange = (e) => {
       }
     );
 
-    toast.success("Address updated successfully");
     navigate("/profile/addresses");
 
   } catch (error) {
-    toast.error(error?.response?.data?.message || "Update failed");
+    setFormMsg(error?.response?.data?.message || "Update failed");
   }
-}; 
+};
 
 
   const pageUi = ui?.pages?.editAddress;
@@ -236,6 +236,10 @@ const handleChange = (e) => {
                 </div>
               )}
             </div>
+
+            {formMsg && (
+              <p className="text-sm text-red-500">{formMsg}</p>
+            )}
 
             {pageUi?.primaryCtaText && (
               <button

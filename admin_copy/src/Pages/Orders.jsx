@@ -73,6 +73,7 @@ const Orders = ({ token }) => {
           <option value="">All Status</option>
           <option value="PENDING">PENDING</option>
           <option value="ACCEPTED">ACCEPTED</option>
+          <option value="CONFIRMED">CONFIRMED</option>
           <option value="DELIVERED">DELIVERED</option>
           <option value="REJECTED">REJECTED</option>
         </select>
@@ -143,6 +144,7 @@ const Orders = ({ token }) => {
                   >
                     <option value="PENDING">PENDING</option>
                     <option value="ACCEPTED">ACCEPTED</option>
+                    <option value="CONFIRMED">CONFIRMED</option>
                     <option value="DELIVERED">DELIVERED</option>
                     <option value="REJECTED">REJECTED</option>
                   </select>

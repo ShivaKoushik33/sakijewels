@@ -1,7 +1,6 @@
 import { useEffect, useState, useContext } from 'react';
 import axios from "axios";
 import { Link, useNavigate } from 'react-router-dom';
-import { toast } from 'react-toastify';
 import { ShopContext } from '../context/ShopContext';
 import { getProfileUi, getUserAddresses } from '../services/profileService';
 
@@ -17,6 +16,7 @@ export default function Profile() {
   const [formName, setFormName] = useState("");
   const [formEmail, setFormEmail] = useState("");
   const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState("");   // inline validation error
 
   useEffect(() => {
     getProfileUi().then((data) => setUi(data || null));
@@ -55,8 +55,10 @@ export default function Profile() {
   };
 
   const handleSave = async () => {
+    setFormError("");
+
     if (!formName.trim() || !formEmail.trim()) {
-      toast.error("Name and email are required");
+      setFormError("Name and email are required");
       return;
     }
     setSaving(true);
@@ -68,9 +70,8 @@ export default function Profile() {
       );
       setPersonalInfo(res.data);
       setEditing(false);
-      toast.success("Profile updated");
     } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to update profile");
+      setFormError(err.response?.data?.message || "Failed to update profile");
     } finally {
       setSaving(false);
     }
@@ -154,6 +155,10 @@ export default function Profile() {
                 className="w-full h-[44px] px-4 border border-[#E6E8EC] rounded-lg bg-gray-100 text-sm"
               />
             </div>
+
+            {editing && formError && (
+              <p className="text-sm text-red-500">{formError}</p>
+            )}
 
             {editing && (
               <div className="flex gap-3 mt-2">
