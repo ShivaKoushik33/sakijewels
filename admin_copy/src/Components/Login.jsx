@@ -1,36 +1,52 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { backendUrl } from '../App';
+import { isAdminToken } from '../utils/token';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
-
 
 const Login = ({ setToken }) => {
   const [email, seteMail] = useState('');
   const [password, setPassword] = useState('');
+  const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
+
   const onSubmitHandler = async (e) => {
+    e.preventDefault();
+    if (submitting) return;
+
     try {
-      e.preventDefault();
+      setSubmitting(true);
 
       const response = await axios.post(backendUrl + '/api/auth/login', {
         email,
         password,
       });
-      // console.log(response);
-      const token = response.data.token;
 
-     if (response.status===200) {
-  setToken(token);
-  toast.success('Login Successful!');
-  navigate('/add');   // or '/dashboard' or '/add'
-}
- else {
-        toast.error(response.data.message);
+      const token = response.data?.token;
+
+      if (!token) {
+        toast.error(response.data?.message || 'Login failed');
+        return;
       }
+
+      // A customer account can sign in here successfully but has no admin
+      // rights, so every page would just 403. Say so instead.
+      if (!isAdminToken(token)) {
+        toast.error('This account does not have admin access');
+        return;
+      }
+
+      setToken(token);
+      toast.success('Login Successful!');
+      navigate('/add');
     } catch (error) {
-      console.log(error);
-      toast.error(error.response.data.message); // This will show an error message if the request failed
+      toast.error(
+        error?.response?.data?.message ||
+          'Could not sign in. Please check your connection and try again.'
+      );
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -41,7 +57,7 @@ const Login = ({ setToken }) => {
         <form onSubmit={onSubmitHandler}>
           <div className='mb-3 min-w-72'>
             <p className='text-sm font-medium text-gray-700 mb-2'>
-              Email Addres
+              Email Address
             </p>
             <input
               className='rounded-md w-full px-3 py-2 border border-gray-300 outline-none'
@@ -69,10 +85,11 @@ const Login = ({ setToken }) => {
           </div>
 
           <button
-            className='mt-2 w-full py-2 px-4 rounded-md text-white bg-gray-800 cursor-pointer'
+            className='mt-2 w-full py-2 px-4 rounded-md text-white bg-gray-800 cursor-pointer disabled:opacity-60'
             type='submit'
+            disabled={submitting}
           >
-            Login
+            {submitting ? 'Signing in...' : 'Login'}
           </button>
         </form>
       </div>

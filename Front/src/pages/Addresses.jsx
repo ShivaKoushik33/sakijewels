@@ -8,10 +8,10 @@ import { useContext } from 'react';
 
 export default function Addresses() {
   const { token, backendUrl } = useContext(ShopContext);
-
   const [addresses, setAddresses] = useState([]);
   const [ui, setUi] = useState(null);
 
+  
   useEffect(() => {
   getProfileUi().then((data) => setUi(data || null));
 

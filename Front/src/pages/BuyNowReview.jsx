@@ -32,7 +32,7 @@ export default function BuyNowReview() {
   const [orderMsg, setOrderMsg] = useState("");        // inline order error
 
   // Only in-stock items are ordered/charged, so only show those in review.
-  const cartProductsBase = getCartProducts().filter((p) => p.stock > 0);
+  const cartProductsBase = getCartProducts().filter((p) => p.stock >= p.quantity);
   const cartSummaryBase = getCartSummary();
 
   const cartProducts = isBuyNow

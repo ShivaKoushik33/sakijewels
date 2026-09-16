@@ -46,7 +46,7 @@ export default function BuyNowPayment() {
         image: buyNowItem.image,
         quantity: buyNowItem.quantity,
       }]
-    : getCartProducts().filter((p) => p.stock > 0);
+    : getCartProducts().filter((p) => p.stock >= p.quantity);
 
   // Expected delivery = 7 days from today (order placed now).
   const deliveryDate = (() => {

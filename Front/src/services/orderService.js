@@ -1,3 +1,4 @@
+// NOTE: sample/placeholder data only - this module is not imported anywhere.
 // Mock order / checkout data service
 // Replace with real API calls later
 
@@ -25,12 +26,12 @@ const mockReviewUi = {
 
 const mockReviewOrder = {
   address: {
-    name: 'Shaik Muzammil',
-    phone: '+91 7032371104',
-    line1: 'Stay with friends gents pg, Hosapalaya, 8th Cross Road, Muneshwara Nagar,',
+    name: 'Sample Name',
+    phone: '+91 90000 00000',
+    line1: 'Sample address line',
     city: 'Bengaluru',
     state: 'Karnataka',
-    pincode: '560068',
+    pincode: '560001',
   },
   items: [
     {

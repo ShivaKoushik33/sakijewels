@@ -1,3 +1,5 @@
-.env
 node_modules
-Backend/src/config/firebaseServiceAccount.json 
+.env
+.env.*
+!.env.example
+Backend/src/config/firebaseServiceAccount.json

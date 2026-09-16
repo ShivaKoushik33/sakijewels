@@ -97,106 +97,18 @@ const UI = {
   },
 };
 
-const mockPersonalInfo = {
-  fullName: 'Shaik Muzammil',
-  email: 'muzammil@example.com',
-  phone: '+91 7032371104',
-};
 
-const mockOrders = [
-  {
-    id: 1,
-    orderId: 'TSJ-ORD-10293',
-    productName: 'Silver Classic Solitaire Ring',
-    productImage: '/images/product-ring-56586a.png',
-    price: 3799,
-    orderDate: '19 Dec 2025',
-    status: 'Delivered',
-    ui: {
-      statusTone: 'success',
-    },
-  },
-  {
-    id: 2,
-    orderId: 'TSJ-ORD-10294',
-    productName: 'Rose Gold Princess Earrings',
-    productImage: '/images/product-ring-56586a.png',
-    price: 2599,
-    orderDate: '03 Jan 2026',
-    status: 'Shipped',
-    ui: {
-      statusTone: 'info',
-    },
-  },
-  {
-    id: 3,
-    orderId: 'TSJ-ORD-10295',
-    productName: 'Silver Classic Solitaire Ring',
-    productImage: '/images/product-ring-56586a.png',
-    price: 3799,
-    orderDate: '08 Jan 2026',
-    status: 'Processing',
-    ui: {
-      statusTone: 'warning',
-    },
-  },
-];
 
-const mockAddresses = [
-  {
-    id: 1,
-    name: 'Shaik Muzammil',
-    phone: '+91 7032371104',
-    addressLine:
-      'Stay with friends gents pg, Hosapalaya, 8th Cross Road, Muneshwara Nagar,',
-    city: 'Bengaluru',
-    state: 'Karnataka',
-    pincode: '560068',
-    ui: {
-      editText: UI.common.editText,
-      deleteText: UI.common.deleteText,
-    },
-  },
-  {
-    id: 2,
-    name: 'Shaik Muzammil',
-    phone: '+91 7032371104',
-    addressLine:
-      'Stay with friends gents pg, Hosapalaya, 8th Cross Road, Muneshwara Nagar,',
-    city: 'Bengaluru',
-    state: 'Karnataka',
-    pincode: '560068',
-    ui: {
-      editText: UI.common.editText,
-      deleteText: UI.common.deleteText,
-    },
-  },
-];
 
-const mockBankAndUpiDetails = {
-  accountHolderName: 'Shaik Muzammil',
-  bankName: 'HDFC Bank',
-  accountNumber: 'XXXXXX1104',
-  ifscCode: 'HDFC0000123',
-  upiId: 'muzammil@upi',
-  ui: {
-    editText: UI.common.editText,
-    fields: {
-      accountHolderName: 'Account holder',
-      bankName: 'Bank',
-      accountNumber: 'Account number',
-      ifscCode: 'IFSC',
-      upiId: 'UPI ID',
-    },
-  },
-};
 
 function withDelay(result, delayMs = 300) {
   return new Promise((resolve) => setTimeout(() => resolve(result), delayMs));
 }
 
+// Orders come from the API (see pages/MyOrders.jsx). Kept so any remaining
+// import resolves; it no longer ships sample orders in the bundle.
 export async function getMyOrders() {
-  return withDelay(mockOrders);
+  return withDelay([]);
 }
 
 
@@ -267,15 +179,21 @@ export async function getAddressById(id, token, backendUrl) {
 }
 
 
+/**
+ * No bank/UPI details are stored for customers yet, so this returns null and
+ * the page shows its empty state. It previously returned hardcoded account
+ * details that were displayed to every logged-in customer as their own.
+ */
 export async function getBankAndUpiDetails() {
-  return withDelay(mockBankAndUpiDetails);
+  return withDelay(null);
 }
 
 export async function getProfileUi() {
   return withDelay(UI);
 }
 
+// Profile data comes from GET /api/auth/me (see pages/Profile.jsx).
 export async function getPersonalInfo() {
-  return withDelay(mockPersonalInfo);
+  return withDelay(null);
 }
 

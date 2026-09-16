@@ -1,25 +1,31 @@
 import "./src/config/env.js"; // MUST be first import
 
+import dns from "node:dns/promises";
 import app from "./src/app.js";
 import connectDB from "./src/config/db.js";
-import helmet from "helmet";
-import cors from "cors";
 import connectToCloudinary from "./src/config/cloudinary.js";
-import dns from "node:dns/promises";
 
-dns.setServers(['1.1.1.1', '8.8.8.8']);
-
+// Some networks block the SRV lookups that mongodb+srv:// needs.
+dns.setServers(["1.1.1.1", "8.8.8.8"]);
 
 connectDB();
 connectToCloudinary();
+
 const PORT = process.env.PORT || 5000;
 
-
-// app.use(cors({
-//   origin: process.env.CLIENT_URL,
-//   credentials: true
-// }));
-
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+const server = app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT} (${process.env.NODE_ENV || "development"})`);
 });
+
+// Never let an unhandled rejection take the process down silently.
+process.on("unhandledRejection", (reason) => {
+  console.error("Unhandled rejection:", reason);
+});
+
+const shutdown = (signal) => () => {
+  console.log(`${signal} received, shutting down.`);
+  server.close(() => process.exit(0));
+};
+
+process.on("SIGTERM", shutdown("SIGTERM"));
+process.on("SIGINT", shutdown("SIGINT"));

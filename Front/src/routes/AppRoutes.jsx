@@ -25,6 +25,7 @@ import Collections from '../pages/Collections';
 import SearchBar from '../components/common/SearchBar';
 import ProtectedRoute from './ProtectedRoute';
 import Terms from '../pages/Terms';
+import NotFound from '../pages/NotFound';
 export default function AppRoutes() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -76,6 +77,8 @@ export default function AppRoutes() {
 
             <Route path="bank-details" element={<BankDetails />} />
           </Route>
+          {/* Unknown URLs rendered an empty page between header and footer. */}
+          <Route path="*" element={<NotFound />} />
           </Routes>
         </main>
         <Footer />

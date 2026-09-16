@@ -6,11 +6,12 @@ import {
   createPaymentOrder,
   verifyPaymentAndPlaceOrder,
   getSingleOrder,
-  placeOrderCOD
+  placeOrderCOD,
 } from "../controllers/order.controller.js";
 
 import authMiddleware from "../middlewares/auth.middleware.js";
 import adminOnly from "../middlewares/role.middleware.js";
+import { checkoutLimiter } from "../middlewares/rateLimit.js";
 
 const router = express.Router();
 
@@ -21,14 +22,12 @@ router.get("/my-orders", authMiddleware, getUserOrders);
 router.get("/", authMiddleware, adminOnly, getAllOrders);
 router.put("/:id", authMiddleware, adminOnly, updateOrderStatus);
 
-
-//admin and user
+/* Owner or admin — enforced inside the controller */
 router.get("/single/:id", authMiddleware, getSingleOrder);
 
-/* USER */
-router.post("/create-payment", authMiddleware, createPaymentOrder);
+/* USER — checkout */
+router.post("/create-payment", authMiddleware, checkoutLimiter, createPaymentOrder);
 router.post("/verify-payment", authMiddleware, verifyPaymentAndPlaceOrder);
-router.post("/place-cod", authMiddleware, placeOrderCOD);
-
+router.post("/place-cod", authMiddleware, checkoutLimiter, placeOrderCOD);
 
 export default router;

@@ -102,4 +102,18 @@ const orderSchema = new mongoose.Schema(
   }
 );
 
+/**
+ * A captured Razorpay payment must map to exactly one order. Partial so the
+ * many COD orders (paymentId: null) do not collide with each other.
+ */
+orderSchema.index(
+  { paymentId: 1 },
+  { unique: true, partialFilterExpression: { paymentId: { $type: "string" } } }
+);
+
+// "My orders" and the admin list both sort by date within a scope.
+orderSchema.index({ user: 1, createdAt: -1 });
+orderSchema.index({ createdAt: -1 });
+orderSchema.index({ status: 1, createdAt: -1 });
+
 export default mongoose.model("Order", orderSchema);

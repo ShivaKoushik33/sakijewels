@@ -179,7 +179,9 @@ const ShopContextProvider = ({ children }) => {
   const getCartSummary = () => {
     // Only in-stock items count toward totals — out-of-stock items are shown
     // in the cart but excluded from the payable amount.
-    const cartProducts = getCartProducts().filter((p) => p.stock > 0);
+    // Must match the server rule in order.controller.js: a line is only
+    // ordered (and only charged) when the full quantity is in stock.
+    const cartProducts = getCartProducts().filter((p) => p.stock >= p.quantity);
 
     const subtotal = cartProducts.reduce(
       (acc, item) => acc + item.price * item.quantity,
