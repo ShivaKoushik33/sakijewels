@@ -66,18 +66,17 @@ const UI = {
         nameLabel: 'Name*',
         phoneLabel: 'Phone Number*',
         addressLabel: 'Address (Area and Street)*',
-        landmarkLabel: 'Landmark(optional)',
+        villageLabel: 'Village*',
         pincodeLabel: 'Pincode*',
         cityLabel: 'City/town*',
         stateLabel: 'State*',
         namePlaceholder: 'Enter your name',
-        phonePlaceholder: '+91XXXXXXXXXX',
+        phonePlaceholder: '10 digit mobile number',
         addressPlaceholder: 'Enter Area and street no.',
-        landmarkPlaceholder: 'Enter landmark',
+        villagePlaceholder: 'Enter village',
         pincodePlaceholder: 'Enter pincode',
         cityPlaceholder: 'Enter city/town',
-        statePlaceholder: 'Select State',
-        addressErrorText: 'Please fill the address',
+        statePlaceholder: 'Filled from pincode',
       },
     },
     bankDetails: {
@@ -113,8 +112,22 @@ export async function getMyOrders() {
 
 
 
+// Transform backend format → UI format
+const toUiAddress = (addr) => ({
+  id: addr._id,
+  name: addr.fullName,
+  phone: addr.phone,
+  addressLine: [addr.house, addr.street].filter(Boolean).join(", "),
+  city: addr.city,
+  state: addr.state,
+  pincode: addr.pincode,
+  ui: {
+    editText: "Edit",
+    deleteText: "Delete"
+  }
+});
+
 export async function getUserAddresses(token, backendUrl) {
- 
   try {
     const response = await axios.get(
       `${backendUrl}/api/addresses`,
@@ -125,20 +138,7 @@ export async function getUserAddresses(token, backendUrl) {
       }
     );
 
-    // Transform backend format → UI format
-    return response.data.map((addr) => ({
-      id: addr._id,
-      name: addr.fullName,
-      phone: addr.phone,
-      addressLine: `${addr.house}, ${addr.street || ""}`,
-      city: addr.city,
-      state: addr.state,
-      pincode: addr.pincode,
-      ui: {
-        editText: "Edit",
-        deleteText: "Delete"
-      }
-    }));
+    return response.data.map(toUiAddress);
   } catch (error) {
     return [];
   }
@@ -147,34 +147,40 @@ export async function getUserAddresses(token, backendUrl) {
 
 
 
-export async function getAddressById(id, token, backendUrl) {
-  try {
-    const response = await axios.get(
-      `${backendUrl}/api/addresses/${id}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
+/** Deletes an address and resolves to the customer's remaining addresses. */
+export async function deleteUserAddress(id, token, backendUrl) {
+  const response = await axios.delete(
+    `${backendUrl}/api/addresses/${id}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`
       }
-    );
+    }
+  );
 
-    const address = response.data.find(
-      (addr) => addr._id === id
-    );
+  return response.data.addresses.map(toUiAddress);
+}
 
-    if (!address) return null;
+/**
+ * Look up a 6-digit pincode for the address forms. Resolves to
+ * { cities, state } for a known pincode and null for an unknown one;
+ * throws when the lookup itself failed.
+ */
+export async function lookupPincode(pin, backendUrl) {
+  try {
+    const response = await axios.get(`${backendUrl}/api/pincode/${pin}`);
+    const result = response.data?.[0];
+    const offices = result?.Status === "Success" ? result.PostOffice : null;
+    if (!offices?.length) return null;
 
     return {
-      id: address._id,
-      name: address.fullName,
-      phone: address.phone,
-      addressLine: `${address.house}, ${address.street || ""}`,
-      city: address.city,
-      state: address.state,
-      pincode: address.pincode,
+      cities: [...new Set(offices.map((office) => office.District))],
+      state: offices[0].State
     };
   } catch (error) {
-    return null;
+    // The server answers 400 for pincodes that cannot exist (e.g. leading 0).
+    if (error?.response?.status === 400) return null;
+    throw error;
   }
 }
 

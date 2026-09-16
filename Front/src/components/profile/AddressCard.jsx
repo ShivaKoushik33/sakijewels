@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 
-export default function AddressCard({ address }) {
+export default function AddressCard({ address, onDelete, deleting = false }) {
   if (!address) return null;
 
   return (
@@ -24,8 +24,13 @@ export default function AddressCard({ address }) {
           >
             <span>{address.ui?.editText}</span>
           </Link>
-          <button type="button" className="flex items-center gap-2 text-sm font-medium text-[#FF3B30] hover:underline">
-            <span>{address.ui?.deleteText}</span>
+          <button
+            type="button"
+            onClick={() => onDelete?.(address.id)}
+            disabled={deleting}
+            className="flex items-center gap-2 text-sm font-medium text-[#FF3B30] hover:underline disabled:opacity-50 disabled:no-underline"
+          >
+            <span>{deleting ? 'Deleting...' : address.ui?.deleteText}</span>
           </button>
         </div>
       </div>

@@ -1,6 +1,6 @@
 import { useEffect, useState, useContext } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { getProfileUi } from '../services/profileService';
+import { getProfileUi, lookupPincode } from '../services/profileService';
 import { ShopContext } from '../context/ShopContext';
 import axios from 'axios';
 
@@ -42,18 +42,9 @@ export default function AddAddress() {
       setLoadingPin(true);
       setPinMsg("");
 
-      const res = await axios.get(
-        `${backendUrl}/api/pincode/${pin}`
-      );
+      const result = await lookupPincode(pin, backendUrl);
 
-      const result = res.data?.[0];
-
-      if (
-        !result ||
-        result.Status !== 'Success' ||
-        !result.PostOffice ||
-        result.PostOffice.length === 0
-      ) {
+      if (!result) {
         setPinMsg('Invalid pincode');
         setCities([]);
         setFormData((prev) => ({
@@ -64,18 +55,14 @@ export default function AddAddress() {
         return;
       }
 
-      const offices = result.PostOffice;
-
-      const cityList = [...new Set(offices.map((item) => item.District))];
-
-      setCities(cityList);
+      setCities(result.cities);
 
       // Only auto-fill city & state. Village is always entered by the user
       // (rural villages may not be listed under a pincode).
       setFormData((prev) => ({
         ...prev,
-        state: offices[0].State,
-        city: cityList[0]
+        state: result.state,
+        city: result.cities[0]
       }));
     } catch (error) {
       setPinMsg('Failed to verify pincode');
