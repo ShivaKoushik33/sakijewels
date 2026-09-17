@@ -1,632 +1,687 @@
+import mongoose from "mongoose";
+import crypto from "node:crypto";
+
 import Order from "../models/Order.js";
 import User from "../models/User.js";
 import Product from "../models/Product.js";
+import PaymentIntent from "../models/PaymentIntent.js";
 import razorpay from "../config/razorpay.js";
-import crypto from "crypto";
-import mongoose from "mongoose";
+import { priceOrder, MIN_ORDER_SUBTOTAL } from "../utils/pricing.js";
 
+const INTENT_TTL_MINUTES = 60;
+
+/* ------------------------------------------------------------------ *
+ * Helpers
+ * ------------------------------------------------------------------ */
+
+const isPositiveInt = (value) =>
+  Number.isInteger(value) && value > 0 && value <= 100;
 
 /**
- * PLACE ORDER (USER)
+ * Turn the customer's cart (or a buy-now request) into priced line items.
+ *
+ * Cart keys and quantities are user-controlled and were never validated, so a
+ * junk key used to throw a CastError mid-checkout. Anything unusable is skipped
+ * here instead.
  */
+const collectItems = async ({ user, buyNow, variantType, session }) => {
+  const items = [];
 
+  if (buyNow && buyNow.productId) {
+    if (!mongoose.isValidObjectId(buyNow.productId)) {
+      return { items, error: "Product not found" };
+    }
+
+    const quantity = Math.max(1, Math.trunc(Number(buyNow.quantity) || 1));
+    if (!isPositiveInt(quantity)) {
+      return { items, error: "Invalid quantity" };
+    }
+
+    const product = await Product.findById(buyNow.productId).session(session ?? null);
+
+    if (!product || !product.isActive) {
+      return { items, error: "Product not found" };
+    }
+    if (product.stock < quantity) {
+      return { items, error: `${product.name} is out of stock` };
+    }
+
+    items.push({
+      product: product._id,
+      name: product.name,
+      image: product.images?.[0]?.url,
+      price: product.finalPrice,
+      quantity,
+    });
+
+    return { items, error: null };
+  }
+
+  const cartData = user?.cartData || {};
+
+  for (const [productId, rawQuantity] of Object.entries(cartData)) {
+    if (!mongoose.isValidObjectId(productId)) continue;
+
+    const quantity = Math.trunc(Number(rawQuantity));
+    if (!isPositiveInt(quantity)) continue;
+
+    const product = await Product.findById(productId).session(session ?? null);
+    if (!product || !product.isActive) continue;
+
+    if (variantType && product.variantType !== variantType) continue;
+
+    // Not enough stock to fulfil the requested quantity: leave it in the cart
+    // rather than charging for it.
+    if (product.stock < quantity) continue;
+
+    items.push({
+      product: product._id,
+      name: product.name,
+      image: product.images?.[0]?.url,
+      price: product.finalPrice,
+      quantity,
+    });
+  }
+
+  return { items, error: null };
+};
+
+const resolveAddress = (user, addressId) => {
+  if (!addressId || !mongoose.isValidObjectId(addressId)) return null;
+  return user.addresses.id(addressId) || null;
+};
+
+const toAddressSnapshot = (address) => ({
+  fullName: address.fullName,
+  phone: address.phone,
+  house: address.house,
+  street: address.street,
+  city: address.city,
+  state: address.state,
+  pincode: address.pincode,
+  country: address.country,
+});
+
+/* ------------------------------------------------------------------ *
+ * USER - my orders
+ * ------------------------------------------------------------------ */
 
 export const getUserOrders = async (req, res) => {
   try {
-    const orders = await Order.find({ user: req.user._id })
-      .sort({ createdAt: -1 });
+    const orders = await Order.find({ user: req.user._id }).sort({
+      createdAt: -1,
+    });
 
     res.status(200).json(orders);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("getUserOrders error:", error);
+    res.status(500).json({ message: "Could not load your orders" });
   }
 };
+
+/* ------------------------------------------------------------------ *
+ * ONLINE - step 1: create the Razorpay order and record what we quoted
+ * ------------------------------------------------------------------ */
 
 export const createPaymentOrder = async (req, res) => {
   try {
     const { coupon, addressId, variantType, buyNow } = req.body;
 
     const user = await User.findById(req.user._id);
-
-    let subtotal = 0;
-
-    if (buyNow && buyNow.productId) {
-      const qty = Math.max(1, Number(buyNow.quantity) || 1);
-      const product = await Product.findById(buyNow.productId);
-
-      if (!product) {
-        return res.status(400).json({ message: "Product not found" });
-      }
-      if (product.stock < qty) {
-        return res.status(400).json({ message: `${product.name} is out of stock` });
-      }
-      subtotal = product.finalPrice * qty;
-    } else {
-      if (!user || !user.cartData) {
-        return res.status(400).json({ message: "Cart is empty" });
-      }
-
-      const productIds = Object.keys(user.cartData);
-
-      if (productIds.length === 0) {
-        return res.status(400).json({ message: "Cart is empty" });
-      }
-
-      const productFilter = { _id: { $in: productIds } };
-      if (variantType) productFilter.variantType = variantType;
-
-      const products = await Product.find(productFilter);
-
-      if (products.length === 0) {
-        return res.status(400).json({ message: "Cart is empty" });
-      }
-
-      products.forEach(product => {
-        const quantity = user.cartData[product._id];
-        // Skip out-of-stock items so they aren't included in the charged
-        // amount. They stay hidden in the cart UI but must not block/inflate
-        // a legitimate checkout of the remaining in-stock items.
-        if (product.stock < quantity) return;
-        subtotal += product.finalPrice * quantity;
-      });
+    if (!user) {
+      return res.status(401).json({ message: "User not found" });
     }
 
-    if (subtotal < 249) {
-  return res.status(400).json({ message: "Minimum order amount is ₹249" });
-}
-
-    // 🔥 DELIVERY FEE (adjust if needed)
-    let deliveryFee = 49;
-
-    // 🔥 CHECK FIRST ORDER
-    const previousOrders = await Order.find({ user: user._id });
-    const isFirstOrder = previousOrders.length === 0;
-
-    // 🔥 APPLY COUPON LOGIC (SECURE)
-    let discount = 0;
-
-    if (coupon) {
-      const code = coupon.toUpperCase();
-
-      if (code === "TSJFIRST" && isFirstOrder && subtotal >= 599) {
-        discount = 100;
-      }
-
-      else if (code === "TSJSSFIRST" && isFirstOrder && subtotal >= 999) {
-        discount = 100;
-        deliveryFee = 0;
-      }
-
-      else if (code === "TSJ10" && subtotal >= 999) {
-        discount = Math.floor(subtotal * 0.10);
-      }
-
-      else if (code === "TSJSS15" && subtotal >= 1499) {
-        discount = Math.floor(subtotal * 0.15);
-        deliveryFee = 0;
-      }
-    }
-
-    // 🔥 PREPAID 5% DISCOUNT
-const prepaidDiscount = Math.floor(subtotal * 0.03);
-discount += prepaidDiscount;
-
-    const totalAmount = subtotal - discount + deliveryFee;
-
-    if (totalAmount <= 0) {
-      return res.status(400).json({ message: "Invalid total amount" });
-    }
-
-    const options = {
-      amount: totalAmount * 100,
-      currency: "INR",
-      receipt: `receipt_${Date.now()}`
-    };
-
-    const razorpayOrder = await razorpay.orders.create(options);
-
-    res.status(200).json({
-      razorpayOrder,
-      subtotal,
-      discount,
-      deliveryFee,
-      totalAmount
-    });
-
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-export const verifyPaymentAndPlaceOrder = async (req, res) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
-  let {razorpay_payment_id} = req.body;
-
-  try {
-    const {
-      razorpay_order_id,
-      razorpay_payment_id,
-      razorpay_signature,
-      addressId,
-      coupon,
-      variantType,
-      buyNow
-    } = req.body;
-
-    // 🔐 VERIFY SIGNATURE
-    const body = razorpay_order_id + "|" + razorpay_payment_id;
-
-    const expectedSignature = crypto
-      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
-      .update(body)
-      .digest("hex");
-
-    if (expectedSignature !== razorpay_signature) {
-      await session.abortTransaction();
-      session.endSession();
-      return res.status(400).json({ message: "Payment verification failed" });
-    }
-
-    const user = await User.findById(req.user._id).session(session);
-
-    const isBuyNow = !!(buyNow && buyNow.productId);
-
-    if (!isBuyNow && (!user || !user.cartData || Object.keys(user.cartData).length === 0)) {
-      await session.abortTransaction();
-      session.endSession();
-      return res.status(400).json({ message: "Cart is empty" });
-    }
-
-    const address = user.addresses.id(addressId);
-
+    const address = resolveAddress(user, addressId);
     if (!address) {
-      await session.abortTransaction();
-      session.endSession();
       return res.status(400).json({ message: "Invalid address" });
     }
 
-    let subtotal = 0;
-    let deliveryFee = 49;
-    let discount = 0;
+    const { items, error } = await collectItems({ user, buyNow, variantType });
 
-    const orderItems = [];
-
-    // 🔥 CHECK FIRST ORDER
-    const previousOrders = await Order.find({ user: user._id }).session(session);
-    const isFirstOrder = previousOrders.length === 0;
-
-    const processedProductIds = [];
-
-    if (isBuyNow) {
-      const qty = Math.max(1, Number(buyNow.quantity) || 1);
-      const product = await Product.findById(buyNow.productId).session(session);
-
-      if (!product) {
-        await session.abortTransaction();
-        session.endSession();
-        return res.status(400).json({ message: "Product not found" });
-      }
-
-      if (product.stock < qty) {
-        await session.abortTransaction();
-        session.endSession();
-        return res.status(400).json({
-          message: `${product.name} is out of stock`
-        });
-      }
-
-      product.stock -= qty;
-      await product.save({ session });
-
-      subtotal += product.finalPrice * qty;
-
-      orderItems.push({
-        product: product._id,
-        name: product.name,
-        image: product.images?.[0]?.url,
-        price: product.finalPrice,
-        quantity: qty
-      });
-    } else {
-      for (const productId of Object.keys(user.cartData)) {
-
-        const quantity = user.cartData[productId];
-        if (quantity <= 0) continue;
-
-        const product = await Product.findById(productId).session(session);
-
-        if (!product) continue;
-
-        if (variantType && product.variantType !== variantType) continue;
-
-        // Out-of-stock items are skipped (not ordered, not charged) instead of
-        // aborting the whole payment. They remain in the cart for the user to
-        // handle later. This matches the amount computed in createPaymentOrder.
-        if (product.stock < quantity) continue;
-
-        product.stock -= quantity;
-        await product.save({ session });
-
-        subtotal += product.finalPrice * quantity;
-
-        processedProductIds.push(product._id.toString());
-
-        orderItems.push({
-          product: product._id,
-          name: product.name,
-          image: product.images?.[0]?.url,
-          price: product.finalPrice,
-          quantity
-        });
-      }
+    if (error) {
+      return res.status(400).json({ message: error });
     }
-
-    if (orderItems.length === 0) {
-      await session.abortTransaction();
-      session.endSession();
+    if (items.length === 0) {
       return res.status(400).json({ message: "Cart is empty" });
     }
 
-    if (subtotal < 249) {
-  await session.abortTransaction();
-  session.endSession();
-  return res.status(400).json({ message: "Minimum order amount is ₹249" });
-}
+    const isFirstOrder = !(await Order.exists({ user: user._id }));
 
-    // 🔥 APPLY COUPON AGAIN (SECURE CHECK)
-    if (coupon) {
-      const code = coupon.toUpperCase();
-
-      if (code === "TSJFIRST" && isFirstOrder && subtotal >= 599) {
-        discount = 100;
-      }
-
-      else if (code === "TSJSSFIRST" && isFirstOrder && subtotal >= 999) {
-        discount = 100;
-        deliveryFee = 0;
-      }
-
-      else if (code === "TSJ10" && subtotal >= 999) {
-        discount = Math.floor(subtotal * 0.10);
-      }
-
-      else if (code === "TSJSS15" && subtotal >= 1499) {
-        discount = Math.floor(subtotal * 0.15);
-        deliveryFee = 0;
-      }
-    }
-
-    // 🔥 PREPAID 5% DISCOUNT
-const prepaidDiscount = Math.floor(subtotal * 0.03);
-discount += prepaidDiscount;
-
-    const totalAmount = subtotal - discount + deliveryFee;
-
-    const order = await Order.create([{
-      user: user._id,
-      items: orderItems,
-      shippingAddress: address,
-      subtotal,
-      discount,
-      deliveryFee,
-      codCharge: 0,
-      totalAmount,
-      coupon: coupon || null,
-      status: "CONFIRMED",
+    const quote = priceOrder({
+      items,
+      coupon,
+      isFirstOrder,
       paymentMethod: "ONLINE",
-      paymentId: razorpay_payment_id,
-      isPaid: true
-    }], { session });
-
-    // 🛒 CLEAR CART (only the items that were just ordered — keep other variant)
-    if (!isBuyNow) {
-      for (const pid of processedProductIds) {
-        delete user.cartData[pid];
-      }
-      user.markModified("cartData");
-      await user.save({ session });
-    }
-
-    await session.commitTransaction();
-    session.endSession();
-
-    res.status(201).json({
-      message: "Payment successful & order placed",
-      order: order[0]
     });
 
+    if (quote.subtotal < MIN_ORDER_SUBTOTAL) {
+      return res
+        .status(400)
+        .json({ message: `Minimum order amount is ₹${MIN_ORDER_SUBTOTAL}` });
+    }
+
+    if (!Number.isFinite(quote.totalAmount) || quote.totalAmount <= 0) {
+      return res.status(400).json({ message: "Invalid total amount" });
+    }
+
+    const amountInPaise = Math.round(quote.totalAmount * 100);
+
+    const razorpayOrder = await razorpay.orders.create({
+      amount: amountInPaise,
+      currency: "INR",
+      receipt: `receipt_${Date.now()}`,
+    });
+
+    // Record exactly what we asked them to pay. verifyPaymentAndPlaceOrder
+    // reads this back instead of re-pricing the cart.
+    await PaymentIntent.create({
+      user: user._id,
+      razorpayOrderId: razorpayOrder.id,
+      amount: amountInPaise,
+      currency: "INR",
+      items,
+      shippingAddress: toAddressSnapshot(address),
+      subtotal: quote.subtotal,
+      discount: quote.discount,
+      deliveryFee: quote.deliveryFee,
+      totalAmount: quote.totalAmount,
+      coupon: quote.coupon,
+      expiresAt: new Date(Date.now() + INTENT_TTL_MINUTES * 60 * 1000),
+    });
+
+    res.status(200).json({
+      razorpayOrder,
+      subtotal: quote.subtotal,
+      discount: quote.discount,
+      deliveryFee: quote.deliveryFee,
+      totalAmount: quote.totalAmount,
+      coupon: quote.coupon,
+      items: items.map((item) => ({
+        product: item.product,
+        name: item.name,
+        image: item.image,
+        price: item.price,
+        quantity: item.quantity,
+      })),
+    });
   } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
-    try {
-  if (razorpay_payment_id) {
-    await razorpay.payments.refund(razorpay_payment_id);
+    console.error("createPaymentOrder error:", error);
+    res.status(500).json({ message: "Could not start payment. Please retry." });
   }
-} catch (refundError) {
-  // refund failed silently
-}
-    res.status(500).json({
-      message: "Payment verification failed. Please retry payment.",
-      error
+};
+
+/* ------------------------------------------------------------------ *
+ * ONLINE - step 2: verify the payment and place the order
+ * ------------------------------------------------------------------ */
+
+export const verifyPaymentAndPlaceOrder = async (req, res) => {
+  const { razorpay_order_id, razorpay_payment_id, razorpay_signature } =
+    req.body;
+
+  if (
+    typeof razorpay_order_id !== "string" ||
+    typeof razorpay_payment_id !== "string" ||
+    typeof razorpay_signature !== "string"
+  ) {
+    return res.status(400).json({ message: "Payment verification failed" });
+  }
+
+  try {
+    /* 1. Signature — proves the pair really came from Razorpay. */
+    const expectedSignature = crypto
+      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+      .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+      .digest("hex");
+
+    const expected = Buffer.from(expectedSignature, "utf8");
+    const received = Buffer.from(razorpay_signature, "utf8");
+
+    if (
+      expected.length !== received.length ||
+      !crypto.timingSafeEqual(expected, received)
+    ) {
+      return res.status(400).json({ message: "Payment verification failed" });
+    }
+
+    /* 2. Already processed? Return the existing order instead of a second one. */
+    const existingOrder = await Order.findOne({ paymentId: razorpay_payment_id });
+    if (existingOrder) {
+      if (!existingOrder.user.equals(req.user._id)) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+      return res.status(200).json({
+        message: "Order already placed",
+        order: existingOrder,
+      });
+    }
+
+    /* 3. The quote we issued. */
+    const intent = await PaymentIntent.findOne({
+      razorpayOrderId: razorpay_order_id,
+    });
+
+    if (!intent) {
+      return res.status(400).json({ message: "Payment verification failed" });
+    }
+
+    if (!intent.user.equals(req.user._id)) {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+
+    /* 4. What was actually paid, straight from Razorpay. */
+    let payment = await razorpay.payments.fetch(razorpay_payment_id);
+
+    if (payment.order_id !== razorpay_order_id) {
+      return res.status(400).json({ message: "Payment verification failed" });
+    }
+
+    if (Number(payment.amount) !== intent.amount) {
+      console.error(
+        `Amount mismatch on ${razorpay_payment_id}: paid ${payment.amount}, quoted ${intent.amount}`
+      );
+      return res.status(400).json({ message: "Payment amount mismatch" });
+    }
+
+    // Auto-capture is normally on, but capture explicitly if the payment is
+    // only authorised — otherwise the money is never actually collected.
+    if (payment.status === "authorized") {
+      payment = await razorpay.payments.capture(
+        razorpay_payment_id,
+        intent.amount,
+        intent.currency
+      );
+    }
+
+    if (payment.status !== "captured") {
+      return res
+        .status(400)
+        .json({ message: "Payment not completed. Please try again." });
+    }
+
+    /* 5. Place the order from the recorded quote, not from the live cart. */
+    const session = await mongoose.startSession();
+    let placedOrder;
+    let committed = false;
+
+    try {
+      session.startTransaction();
+
+      // Single-use claim. A replay finds status CONSUMED and gets nothing.
+      const claimed = await PaymentIntent.findOneAndUpdate(
+        { _id: intent._id, status: "CREATED" },
+        { status: "CONSUMED", paymentId: razorpay_payment_id },
+        { session, new: true }
+      );
+
+      if (!claimed) {
+        await session.abortTransaction();
+        return res
+          .status(409)
+          .json({ message: "This payment has already been processed." });
+      }
+
+      const shortfalls = [];
+
+      for (const item of claimed.items) {
+        const updated = await Product.findOneAndUpdate(
+          { _id: item.product, stock: { $gte: item.quantity } },
+          { $inc: { stock: -item.quantity } },
+          { session, new: true }
+        );
+
+        // The customer has already paid for this line, so it stays on the
+        // order; flag it for the admin rather than silently dropping it.
+        if (!updated) {
+          shortfalls.push(`${item.name} (x${item.quantity})`);
+        }
+      }
+
+      const created = await Order.create(
+        [
+          {
+            user: claimed.user,
+            items: claimed.items,
+            shippingAddress: claimed.shippingAddress,
+            subtotal: claimed.subtotal,
+            discount: claimed.discount,
+            deliveryFee: claimed.deliveryFee,
+            codCharge: 0,
+            totalAmount: claimed.totalAmount,
+            coupon: claimed.coupon,
+            status: "CONFIRMED",
+            paymentMethod: "ONLINE",
+            paymentId: razorpay_payment_id,
+            isPaid: true,
+            adminRemark: shortfalls.length
+              ? `Paid but out of stock at capture: ${shortfalls.join(", ")}`
+              : undefined,
+          },
+        ],
+        { session }
+      );
+
+      placedOrder = created[0];
+
+      // Clear only the lines that were just ordered.
+      const user = await User.findById(claimed.user).session(session);
+      if (user) {
+        let changed = false;
+        for (const item of claimed.items) {
+          const key = item.product.toString();
+          if (user.cartData && key in user.cartData) {
+            delete user.cartData[key];
+            changed = true;
+          }
+        }
+        if (changed) {
+          user.markModified("cartData");
+          await user.save({ session });
+        }
+      }
+
+      await session.commitTransaction();
+      committed = true;
+    } catch (txError) {
+      if (!committed) {
+        await session.abortTransaction().catch(() => {});
+      }
+      throw txError;
+    } finally {
+      session.endSession();
+    }
+
+    return res.status(201).json({
+      message: "Payment successful & order placed",
+      order: placedOrder,
+    });
+  } catch (error) {
+    console.error("verifyPaymentAndPlaceOrder error:", error);
+
+    // The payment succeeded but we could not record the order — refund so the
+    // customer is never charged for nothing. Only reached when no order was
+    // committed, so this can no longer refund a completed order.
+    try {
+      await razorpay.payments.refund(razorpay_payment_id, {
+        speed: "normal",
+      });
+      console.error(`Refunded ${razorpay_payment_id} after failed checkout`);
+    } catch (refundError) {
+      console.error(
+        `REFUND FAILED for ${razorpay_payment_id} — refund manually:`,
+        refundError?.message
+      );
+    }
+
+    return res.status(500).json({
+      message:
+        "We could not complete your order. Any amount debited will be refunded.",
     });
   }
 };
 
+/* ------------------------------------------------------------------ *
+ * COD
+ * ------------------------------------------------------------------ */
 
-/**
- * ADMIN – Get All Orders
- */
-export const getAllOrders = async (req, res) => {
+export const placeOrderCOD = async (req, res) => {
+  const session = await mongoose.startSession();
+  let committed = false;
+
   try {
-    const {
-      page = 1,
-      limit = 10,
-      status,
-      sort = "DATE_DESC"
-    } = req.query;
+    session.startTransaction();
 
-    // Filtering
-    let filter = {};
-    if (status) {
-      filter.status = status;
+    const { addressId, coupon, variantType, buyNow } = req.body;
+
+    const user = await User.findById(req.user._id).session(session);
+    if (!user) {
+      await session.abortTransaction();
+      return res.status(401).json({ message: "User not found" });
     }
 
-    // Sorting
-    let sortOption = { createdAt: -1 };
+    const address = resolveAddress(user, addressId);
+    if (!address) {
+      await session.abortTransaction();
+      return res.status(400).json({ message: "Invalid address" });
+    }
 
+    const { items, error } = await collectItems({
+      user,
+      buyNow,
+      variantType,
+      session,
+    });
+
+    if (error) {
+      await session.abortTransaction();
+      return res.status(400).json({ message: error });
+    }
+    if (items.length === 0) {
+      await session.abortTransaction();
+      return res.status(400).json({ message: "Cart is empty" });
+    }
+
+    const isFirstOrder = !(await Order.exists({ user: user._id }).session(
+      session
+    ));
+
+    const quote = priceOrder({
+      items,
+      coupon,
+      isFirstOrder,
+      paymentMethod: "COD",
+    });
+
+    if (quote.subtotal < MIN_ORDER_SUBTOTAL) {
+      await session.abortTransaction();
+      return res
+        .status(400)
+        .json({ message: `Minimum order amount is ₹${MIN_ORDER_SUBTOTAL}` });
+    }
+
+    if (!Number.isFinite(quote.totalAmount) || quote.totalAmount <= 0) {
+      await session.abortTransaction();
+      return res.status(400).json({ message: "Invalid total amount" });
+    }
+
+    // Reserve stock atomically; drop any line we lose the race for.
+    const reserved = [];
+
+    for (const item of items) {
+      const updated = await Product.findOneAndUpdate(
+        { _id: item.product, stock: { $gte: item.quantity } },
+        { $inc: { stock: -item.quantity } },
+        { session, new: true }
+      );
+
+      if (updated) reserved.push(item);
+    }
+
+    if (reserved.length === 0) {
+      await session.abortTransaction();
+      return res
+        .status(400)
+        .json({ message: "The items in your cart are out of stock" });
+    }
+
+    // Re-price against what we actually reserved so the customer is never
+    // billed for a line we could not fulfil.
+    const finalQuote =
+      reserved.length === items.length
+        ? quote
+        : priceOrder({
+            items: reserved,
+            coupon,
+            isFirstOrder,
+            paymentMethod: "COD",
+          });
+
+    if (finalQuote.subtotal < MIN_ORDER_SUBTOTAL) {
+      await session.abortTransaction();
+      return res
+        .status(400)
+        .json({ message: `Minimum order amount is ₹${MIN_ORDER_SUBTOTAL}` });
+    }
+
+    const created = await Order.create(
+      [
+        {
+          user: user._id,
+          items: reserved,
+          shippingAddress: toAddressSnapshot(address),
+          subtotal: finalQuote.subtotal,
+          discount: finalQuote.discount,
+          deliveryFee: finalQuote.deliveryFee,
+          codCharge: finalQuote.codCharge,
+          totalAmount: finalQuote.totalAmount,
+          coupon: finalQuote.coupon,
+          status: "ACCEPTED",
+          paymentMethod: "COD",
+          paymentId: null,
+          isPaid: false,
+        },
+      ],
+      { session }
+    );
+
+    if (!buyNow || !buyNow.productId) {
+      let changed = false;
+      for (const item of reserved) {
+        const key = item.product.toString();
+        if (user.cartData && key in user.cartData) {
+          delete user.cartData[key];
+          changed = true;
+        }
+      }
+      if (changed) {
+        user.markModified("cartData");
+        await user.save({ session });
+      }
+    }
+
+    await session.commitTransaction();
+    committed = true;
+
+    res.status(201).json({
+      message: "Order placed successfully (Cash on Delivery)",
+      order: created[0],
+    });
+  } catch (error) {
+    if (!committed) {
+      await session.abortTransaction().catch(() => {});
+    }
+    console.error("placeOrderCOD error:", error);
+    res.status(500).json({ message: "Failed to place COD order" });
+  } finally {
+    session.endSession();
+  }
+};
+
+/* ------------------------------------------------------------------ *
+ * ADMIN
+ * ------------------------------------------------------------------ */
+
+export const getAllOrders = async (req, res) => {
+  try {
+    const { status, sort = "DATE_DESC" } = req.query;
+
+    const page = Math.max(1, Number(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 10));
+
+    const filter = {};
+    if (typeof status === "string" && status.trim()) {
+      filter.status = status.trim();
+    }
+
+    let sortOption = { createdAt: -1 };
     if (sort === "DATE_ASC") sortOption = { createdAt: 1 };
     if (sort === "PRICE_DESC") sortOption = { totalAmount: -1 };
     if (sort === "PRICE_ASC") sortOption = { totalAmount: 1 };
 
     const skip = (page - 1) * limit;
 
-    const totalOrders = await Order.countDocuments(filter);
-
-    const orders = await Order.find(filter)
-      .populate("user", "name email phone")
-      .sort(sortOption)
-      .skip(skip)
-      .limit(Number(limit));
+    const [totalOrders, orders] = await Promise.all([
+      Order.countDocuments(filter),
+      Order.find(filter)
+        .populate("user", "name email phone")
+        .sort(sortOption)
+        .skip(skip)
+        .limit(limit),
+    ]);
 
     res.status(200).json({
       orders,
       totalOrders,
       totalPages: Math.ceil(totalOrders / limit),
-      currentPage: Number(page)
+      currentPage: page,
     });
-
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("getAllOrders error:", error);
+    res.status(500).json({ message: "Could not load orders" });
   }
 };
 
-
-/**
- * ADMIN – Update Order Status
- */
 export const updateOrderStatus = async (req, res) => {
   try {
     const { status, adminRemark } = req.body;
 
-    const order = await Order.findByIdAndUpdate(
-      req.params.id,
-      { status, adminRemark },
-      { new: true }
-    );
+    const updates = {};
+    if (status !== undefined) updates.status = status;
+    if (adminRemark !== undefined) updates.adminRemark = adminRemark;
 
-    res.status(200).json({
-      message: "Order updated",
-      order
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ message: "Nothing to update" });
+    }
+
+    const order = await Order.findByIdAndUpdate(req.params.id, updates, {
+      new: true,
+      runValidators: true,
     });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-
-
-//Get single order details (Admin)
-export const getSingleOrder = async (req, res) => {
-  try {
-    const order = await Order.findById(req.params.id)
-      .populate("user", "name email phone");
 
     if (!order) {
       return res.status(404).json({ message: "Order not found" });
     }
 
-    res.status(200).json(order);
-
+    res.status(200).json({ message: "Order updated", order });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    if (error.name === "ValidationError") {
+      return res.status(400).json({ message: "Invalid order status" });
+    }
+    console.error("updateOrderStatus error:", error);
+    res.status(500).json({ message: "Could not update order" });
   }
 };
 
-export const placeOrderCOD = async (req, res) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
+/**
+ * Single order — the customer who placed it, or an admin. Nothing else.
+ */
+export const getSingleOrder = async (req, res) => {
   try {
-    const { addressId, coupon, variantType, buyNow } = req.body;
-
-
-    const user = await User.findById(req.user._id).session(session);
-
-    const isBuyNow = !!(buyNow && buyNow.productId);
-
-    if (!isBuyNow && (!user || !user.cartData || Object.keys(user.cartData).length === 0)) {
-      await session.abortTransaction();
-      session.endSession();
-      return res.status(400).json({ message: "Cart is empty" });
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return res.status(404).json({ message: "Order not found" });
     }
 
-    const address = user.addresses.id(addressId);
+    const order = await Order.findById(req.params.id).populate(
+      "user",
+      "name email phone"
+    );
 
-    if (!address) {
-      await session.abortTransaction();
-      session.endSession();
-      return res.status(400).json({ message: "Invalid address" });
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
     }
 
-    let subtotal = 0;
-    let deliveryFee = 49;
-    let codCharge = 29;
-    let discount = 0;
+    const ownerId = order.user?._id ?? order.user;
+    const isOwner = ownerId?.equals(req.user._id);
+    const isAdmin = req.user.role === "ADMIN";
 
-    const orderItems = [];
-
-    // 🔥 CHECK FIRST ORDER
-    const previousOrders = await Order.find({ user: user._id }).session(session);
-    const isFirstOrder = previousOrders.length === 0;
-
-    const processedProductIds = [];
-
-    if (isBuyNow) {
-      const qty = Math.max(1, Number(buyNow.quantity) || 1);
-
-      const updatedProduct = await Product.findOneAndUpdate(
-        { _id: buyNow.productId, stock: { $gte: qty } },
-        { $inc: { stock: -qty } },
-        { session, new: true }
-      );
-
-      if (!updatedProduct) {
-        await session.abortTransaction();
-        session.endSession();
-        return res.status(400).json({ message: "Product is out of stock" });
-      }
-
-      subtotal += updatedProduct.finalPrice * qty;
-
-      orderItems.push({
-        product: updatedProduct._id,
-        name: updatedProduct.name,
-        image: updatedProduct.images?.[0]?.url,
-        price: updatedProduct.finalPrice,
-        quantity: qty
-      });
-    } else {
-      for (const productId of Object.keys(user.cartData)) {
-
-        const quantity = user.cartData[productId];
-        if (quantity <= 0) continue;
-
-        const product = await Product.findById(productId).session(session);
-
-        if (!product) continue;
-
-        if (variantType && product.variantType !== variantType) continue;
-
-        // Out-of-stock items are skipped (not ordered) instead of blocking the
-        // whole order. They stay in the cart for the user to handle later.
-        if (product.stock < quantity) continue;
-
-        const updatedProduct = await Product.findOneAndUpdate(
-    { _id: productId, stock: { $gte: quantity } },
-    { $inc: { stock: -quantity } },
-    { session, new: true }
-  );
-
-  // Lost a race for the last unit(s): skip rather than abort the whole order.
-  if (!updatedProduct) continue;
-
-        subtotal += product.finalPrice * quantity;
-
-        processedProductIds.push(product._id.toString());
-
-        orderItems.push({
-          product: product._id,
-          name: product.name,
-          image: product.images?.[0]?.url,
-          price: product.finalPrice,
-          quantity
-        });
-      }
+    // Same 404 as a missing order, so order ids cannot be probed for existence.
+    if (!isOwner && !isAdmin) {
+      return res.status(404).json({ message: "Order not found" });
     }
 
-    if (orderItems.length === 0) {
-      await session.abortTransaction();
-      session.endSession();
-      return res.status(400).json({ message: "Cart is empty" });
-    }
-
-    if (subtotal < 249) {
-   await session.abortTransaction();
-   session.endSession();
-
-   return res.status(400).json({
-      message: "Minimum order amount is ₹249"
-   });
-}
-    // 🔥 APPLY COUPON (SECURE CHECK)
-    if (coupon) {
-      const code = coupon.toUpperCase();
-
-      if (code === "TSJFIRST" && isFirstOrder && subtotal >= 599) {
-        discount = 100;
-      }
-
-      else if (code === "TSJSSFIRST" && isFirstOrder && subtotal >= 999) {
-        discount = 100;
-        deliveryFee = 0;
-      }
-
-      else if (code === "TSJ10" && subtotal >= 999) {
-        discount = Math.floor(subtotal * 0.10);
-      }
-
-      else if (code === "TSJSS15" && subtotal >= 1499) {
-        discount = Math.floor(subtotal * 0.15);
-        deliveryFee = 0;
-      }
-    }
-    const totalAmount = subtotal - discount + deliveryFee + codCharge;
-
-    if (totalAmount <= 0) {
-      await session.abortTransaction();
-      session.endSession();
-      return res.status(400).json({ message: "Invalid total amount" });
-    }
-
-    const order = await Order.create([{
-      user: user._id,
-      items: orderItems,
-      shippingAddress: address,
-      subtotal,
-      discount,
-      deliveryFee,
-      codCharge,
-      totalAmount,
-      coupon: coupon || null,
-      status: "ACCEPTED",
-      paymentMethod: "COD",
-      paymentId: null,
-      isPaid: false
-    }], { session });
-    // 🛒 CLEAR CART (only the items that were just ordered — keep other variant)
-    if (!isBuyNow) {
-      for (const pid of processedProductIds) {
-        delete user.cartData[pid];
-      }
-      user.markModified("cartData");
-      await user.save({ session });
-    }
-
-    await session.commitTransaction();
-    session.endSession();
-    res.status(201).json({
-      message: "Order placed successfully (Cash on Delivery)",
-      order: order[0]
-    });
-
+    res.status(200).json(order);
   } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
-
-    res.status(500).json({
-      message: "Failed to place COD order",
-      error: error.message
-    });
+    console.error("getSingleOrder error:", error);
+    res.status(500).json({ message: "Could not load order" });
   }
 };

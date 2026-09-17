@@ -1,40 +1,44 @@
-import https from "https";
-
 /**
  * Proxy for api.postalpincode.in
- * Their SSL cert is currently expired, so the browser refuses to call it
- * directly. We fetch server-side with a tolerant agent and forward JSON.
+ *
+ * The browser cannot call it directly, so we forward server-side. Certificate
+ * verification stays ON: turning it off (the previous workaround for their
+ * expired cert) makes the response — which populates a customer's city and
+ * state — trivially tamperable in transit.
  */
+const UPSTREAM = "https://api.postalpincode.in/pincode";
+const TIMEOUT_MS = 6000;
+
 export const lookupPincode = async (req, res) => {
   const { pin } = req.params;
 
-  if (!/^\d{6}$/.test(pin)) {
+  if (!/^[1-9][0-9]{5}$/.test(pin)) {
     return res.status(400).json({ message: "Invalid pincode" });
   }
 
-  const options = {
-    hostname: "api.postalpincode.in",
-    path: `/pincode/${pin}`,
-    method: "GET",
-    agent: new https.Agent({ rejectUnauthorized: false }),
-  };
+  // Without a timeout a slow upstream holds the socket open indefinitely.
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
-  const upstream = https.request(options, (upRes) => {
-    let body = "";
-    upRes.on("data", (chunk) => (body += chunk));
-    upRes.on("end", () => {
-      try {
-        const data = JSON.parse(body);
-        res.status(200).json(data);
-      } catch (err) {
-        res.status(502).json({ message: "Invalid upstream response" });
-      }
+  try {
+    const response = await fetch(`${UPSTREAM}/${pin}`, {
+      signal: controller.signal,
+      headers: { Accept: "application/json" },
     });
-  });
 
-  upstream.on("error", (err) => {
-    res.status(502).json({ message: "Pincode lookup failed", error: err.message });
-  });
+    if (!response.ok) {
+      return res.status(502).json({ message: "Pincode lookup failed" });
+    }
 
-  upstream.end();
+    const data = await response.json();
+    return res.status(200).json(data);
+  } catch (error) {
+    if (error.name === "AbortError") {
+      return res.status(504).json({ message: "Pincode lookup timed out" });
+    }
+    console.error("lookupPincode error:", error.message);
+    return res.status(502).json({ message: "Pincode lookup failed" });
+  } finally {
+    clearTimeout(timer);
+  }
 };

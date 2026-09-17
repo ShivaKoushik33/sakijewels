@@ -1,17 +1,19 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import AddressCard from '../components/profile/AddressCard';
-import { getProfileUi, getUserAddresses } from '../services/profileService';
+import { deleteUserAddress, getProfileUi, getUserAddresses } from '../services/profileService';
 import { ShopContext } from '../context/ShopContext';
 import { useContext } from 'react';
 
 
 export default function Addresses() {
-  const { token, backendUrl } = useContext(ShopContext);
-
+  const { token, backendUrl, selectedAddress, setSelectedAddress } = useContext(ShopContext);
   const [addresses, setAddresses] = useState([]);
   const [ui, setUi] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
+  const [error, setError] = useState('');
 
+  
   useEffect(() => {
   getProfileUi().then((data) => setUi(data || null));
 
@@ -21,6 +23,22 @@ export default function Addresses() {
     );
   }
 }, [token]);
+
+  const handleDelete = async (id) => {
+    if (deletingId || !window.confirm('Delete this address?')) return;
+
+    setError('');
+    setDeletingId(id);
+    try {
+      setAddresses(await deleteUserAddress(id, token, backendUrl));
+      // An in-progress checkout must not keep pointing at a deleted address.
+      if (selectedAddress?._id === id) setSelectedAddress(null);
+    } catch (err) {
+      setError(err?.response?.data?.message || 'Could not delete address. Please try again.');
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const pageUi = ui?.pages?.addresses;
 
@@ -42,6 +60,8 @@ export default function Addresses() {
             </Link>
           )}
         </div>
+
+        {error && <p className="text-sm text-red-500 mb-4">{error}</p>}
 
         {addresses.length === 0 ? (
           <div className="w-full min-h-[60vh] flex items-center justify-center">
@@ -76,7 +96,12 @@ export default function Addresses() {
         ) : (
           <div className="flex flex-col gap-6">
             {addresses.map((address) => (
-              <AddressCard key={address.id} address={address} />
+              <AddressCard
+                key={address.id}
+                address={address}
+                onDelete={handleDelete}
+                deleting={deletingId === address.id}
+              />
             ))}
           </div>
         )}

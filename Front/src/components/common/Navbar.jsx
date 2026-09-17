@@ -359,7 +359,6 @@ const changeLanguage = (langCode, label) => {
                 </span>
                 Home
               </Link>
-
               {/* Traditional */}
               <button type="button" onClick={() => goToVariant("TRADITIONAL")} className="flex items-center gap-3 px-5 py-3 text-[15px] font-medium text-[#141416] hover:bg-[#F4F5F6] transition-colors text-left w-full">
                 <span className="w-8 h-8 flex items-center justify-center rounded-full bg-[#901CDB]/10">
@@ -367,7 +366,6 @@ const changeLanguage = (langCode, label) => {
                 </span>
                 Traditional
               </button>
-
               {/* Modern */}
               <button type="button" onClick={() => goToVariant("FASHION")} className="flex items-center gap-3 px-5 py-3 text-[15px] font-medium text-[#141416] hover:bg-[#F4F5F6] transition-colors text-left w-full">
                 <span className="w-8 h-8 flex items-center justify-center rounded-full bg-[#901CDB]/10">
@@ -375,7 +373,19 @@ const changeLanguage = (langCode, label) => {
                 </span>
                 Modern
               </button>
-
+              <div className="border-t border-[#E6E8EC] my-1 mx-5"></div>
+              <Link to="/#essentials" onClick={() => toggleMenu(false)} className="flex items-center gap-3 px-5 py-3 text-[15px] font-medium text-[#141416] hover:bg-[#F4F5F6] transition-colors">
+                <span className="w-8 h-8 flex items-center justify-center rounded-full bg-[#901CDB]/10">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#901CDB" strokeWidth="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                </span>
+                Mens Collection
+              </Link>
+              <Link to="/#shop-category" onClick={() => toggleMenu(false)} className="flex items-center gap-3 px-5 py-3 text-[15px] font-medium text-[#141416] hover:bg-[#F4F5F6] transition-colors">
+                <span className="w-8 h-8 flex items-center justify-center rounded-full bg-[#901CDB]/10">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#901CDB" strokeWidth="2"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/></svg>
+                </span>
+                Shop by Category
+              </Link>
               {/* New Arrivals */}
               <Link to="/#new-arrivals" onClick={() => toggleMenu(false)} className="flex items-center gap-3 px-5 py-3 text-[15px] font-medium text-[#141416] hover:bg-[#F4F5F6] transition-colors">
                 <span className="w-8 h-8 flex items-center justify-center rounded-full bg-[#901CDB]/10">
@@ -383,32 +393,17 @@ const changeLanguage = (langCode, label) => {
                 </span>
                 New Arrivals
               </Link>
-
-              <div className="border-t border-[#E6E8EC] my-1 mx-5"></div>
-
-              <Link to="/#shop-category" onClick={() => toggleMenu(false)} className="flex items-center gap-3 px-5 py-3 text-[15px] font-medium text-[#141416] hover:bg-[#F4F5F6] transition-colors">
+              <Link to="/#best-selling" onClick={() => toggleMenu(false)} className="flex items-center gap-3 px-5 py-3 text-[15px] font-medium text-[#141416] hover:bg-[#F4F5F6] transition-colors">
                 <span className="w-8 h-8 flex items-center justify-center rounded-full bg-[#901CDB]/10">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#901CDB" strokeWidth="2"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/></svg>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#901CDB" strokeWidth="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
                 </span>
-                Shop by Category
-              </Link>
-              <Link to="/#essentials" onClick={() => toggleMenu(false)} className="flex items-center gap-3 px-5 py-3 text-[15px] font-medium text-[#141416] hover:bg-[#F4F5F6] transition-colors">
-                <span className="w-8 h-8 flex items-center justify-center rounded-full bg-[#901CDB]/10">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#901CDB" strokeWidth="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                </span>
-                Mens Collection
+                Best Selling
               </Link>
               <Link to="/#most-gifted" onClick={() => toggleMenu(false)} className="flex items-center gap-3 px-5 py-3 text-[15px] font-medium text-[#141416] hover:bg-[#F4F5F6] transition-colors">
                 <span className="w-8 h-8 flex items-center justify-center rounded-full bg-[#901CDB]/10">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#901CDB" strokeWidth="2"><path d="M20 12v6a2 2 0 01-2 2H6a2 2 0 01-2-2v-6M12 2v16M12 2l4 4M12 2L8 6"/></svg>
                 </span>
                 Most Gifted
-              </Link>
-              <Link to="/#best-selling" onClick={() => toggleMenu(false)} className="flex items-center gap-3 px-5 py-3 text-[15px] font-medium text-[#141416] hover:bg-[#F4F5F6] transition-colors">
-                <span className="w-8 h-8 flex items-center justify-center rounded-full bg-[#901CDB]/10">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#901CDB" strokeWidth="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-                </span>
-                Best Selling
               </Link>
               <Link to="/#reviews" onClick={() => toggleMenu(false)} className="flex items-center gap-3 px-5 py-3 text-[15px] font-medium text-[#141416] hover:bg-[#F4F5F6] transition-colors">
                 <span className="w-8 h-8 flex items-center justify-center rounded-full bg-[#901CDB]/10">

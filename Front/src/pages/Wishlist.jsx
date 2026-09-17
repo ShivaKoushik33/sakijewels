@@ -8,16 +8,19 @@ import { ShopContext } from "../context/ShopContext";
 export default function Wishlist() {
   const [wishlist, setWishlist] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { token} = useContext(ShopContext);
+  const { token, isWishlisted } = useContext(ShopContext);
 
   useEffect(() => {
       window.scrollTo(0, 0);
     }, []);
 
   useEffect(() => {
+    let cancelled = false;
+
     async function fetchData() {
       try {
         const data = await getWishlistData(token);
+        if (cancelled) return;
         const normalizedWishlist = data.map((item) => ({
               id: item._id,
               name: item.name,
@@ -27,6 +30,7 @@ export default function Wishlist() {
               rating: item.rating,
               reviews: item.ratingCount,
               image: item.images?.[0]?.url,
+              stock: item.stock,
               couponPrice: item.finalPrice, // optional if needed
               isBestseller: false, // optional
             }));
@@ -39,7 +43,14 @@ export default function Wishlist() {
     }
 
     fetchData();
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
+
+  // Hearts update the shared wishlist, so an item un-hearted here disappears
+  // straight away instead of after a refresh.
+  const visibleWishlist = wishlist.filter((product) => isWishlisted(product.id));
 
 
   if (loading) {
@@ -50,7 +61,7 @@ export default function Wishlist() {
     );
   }
 
-  if (!wishlist.length) {
+  if (!visibleWishlist.length) {
     return (
       <div className="min-h-screen bg-white">
         <div className="max-w-[1440px] mx-auto px-4 sm:px-6 md:px-8 lg:px-[120px] py-10">
@@ -85,8 +96,8 @@ export default function Wishlist() {
         </h1>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {wishlist.map((product) => (
-            <ProductCard key={product._id} product={product} />
+          {visibleWishlist.map((product) => (
+            <ProductCard key={product.id} product={product} />
           ))}
         </div>
 

@@ -1,173 +1,162 @@
+import mongoose from "mongoose";
 import User from "../models/User.js";
 import Product from "../models/Product.js";
+
+// A cart line can hold at most this many units, and a cart at most this many
+// distinct products. Without a bound, cartData is an unvalidated user-writable
+// object growing against MongoDB's 16 MB document limit.
+const MAX_QUANTITY_PER_ITEM = 100;
+const MAX_CART_LINES = 100;
+
+const parseQuantity = (value) => {
+  const quantity = Math.trunc(Number(value));
+  if (!Number.isFinite(quantity)) return null;
+  return quantity;
+};
 
 /**
  * ADD TO CART
  */
-// export const addToCart = async (req, res) => {
-//   try {
-    
-//     const userId = req.user._id;
-//     console.log(userId);
-//     const {  itemId} = req.body;
-
-//     const userData = await User.findById(userId);
-//     const cartData = await userData.cartData;
-
-//     if(cartData[itemId]){
-//       cartData[itemId] += 1;
-//     }else{
-//       cartData[itemId]=1;
-//     }
-//      await User.findByIdAndUpdate(userId, { cartData });
-//       res.status(200).json({
-//       success: true,
-//       message: 'Item added to cart successfully',
-//     });
-    
-//   } catch (error) {
-//    res.status(500).json({
-//       success: false,
-//       message: error.message,
-//     });
-//   }
-// };
-
-
 export const addToCart = async (req, res) => {
   try {
-    const user = req.user;
-    const cartData = await user.cartData;
     const { itemId } = req.body;
 
+    if (!mongoose.isValidObjectId(itemId)) {
+      return res.status(400).json({ success: false, message: "Invalid product" });
+    }
+
+    const product = await Product.findById(itemId).select("_id isActive");
+    if (!product || !product.isActive) {
+      return res.status(404).json({ success: false, message: "Product not found" });
+    }
+
+    const user = await User.findById(req.user._id);
     if (!user) {
-      return res.status(401).json({ message: "User not found" });
+      return res.status(401).json({ success: false, message: "User not found" });
     }
 
-    // initialize if empty
-    if (!user.cartData) {
-      user.cartData = {};
+    if (!user.cartData) user.cartData = {};
+
+    const key = product._id.toString();
+    const current = parseQuantity(user.cartData[key]) || 0;
+
+    if (!(key in user.cartData) && Object.keys(user.cartData).length >= MAX_CART_LINES) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Your cart is full" });
     }
 
-    if (cartData[itemId]) {
-      cartData[itemId] += 1;
-    } else {
-      cartData[itemId] = 1;
-    }
+    // The product page can add several at once; anything else adds one.
+    const addQuantity = Math.max(parseQuantity(req.body.quantity) ?? 1, 1);
+    user.cartData[key] = Math.min(current + addQuantity, MAX_QUANTITY_PER_ITEM);
 
-    await User.findByIdAndUpdate(user._id, { cartData });
+    user.markModified("cartData");
+    await user.save();
 
     res.status(200).json({
       success: true,
       message: "Item added successfully",
-      cartData: user.cartData
+      cartData: user.cartData,
     });
-
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    console.error("addToCart error:", error);
+    res.status(500).json({ success: false, message: "Could not update cart" });
   }
 };
-
-
-
-// export const getCart = async (req, res) => {
-//   try {
-//     const userId = req.user;
-
-//     const userData = await User.findById(userId);
-//     const cartData = await userData.cartData;
-
-//     res.status(200).json({
-//       success: true,
-//       cartData,
-//     });
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({
-//       success: false,
-//       message: error.message,
-//     });
-//   }
-// };
-
-// update user cart
 
 export const getCart = async (req, res) => {
-  try {
-    const user = req.user;
-
-    res.status(200).json({
-      success: true,
-      cartData: user.cartData || {}
-    });
-
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
+  res.status(200).json({
+    success: true,
+    cartData: req.user.cartData || {},
+  });
 };
-
-
 
 export const updateCart = async (req, res) => {
   try {
-    const { itemId, quantity } = req.body;
+    const { itemId } = req.body;
+
+    if (!mongoose.isValidObjectId(itemId)) {
+      return res.status(400).json({ success: false, message: "Invalid product" });
+    }
+
+    const quantity = parseQuantity(req.body.quantity);
+    if (quantity === null) {
+      return res.status(400).json({ success: false, message: "Invalid quantity" });
+    }
 
     const user = await User.findById(req.user._id);
-
     if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found"
-      });
+      return res.status(404).json({ success: false, message: "User not found" });
     }
+
+    if (!user.cartData) user.cartData = {};
+
+    const key = String(itemId);
 
     if (quantity <= 0) {
-      delete user.cartData[itemId];
+      delete user.cartData[key];
     } else {
-      user.cartData[itemId] = quantity;
+      const product = await Product.findById(key).select("_id isActive");
+      if (!product || !product.isActive) {
+        return res
+          .status(404)
+          .json({ success: false, message: "Product not found" });
+      }
+
+      if (
+        !(key in user.cartData) &&
+        Object.keys(user.cartData).length >= MAX_CART_LINES
+      ) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Your cart is full" });
+      }
+
+      user.cartData[key] = Math.min(quantity, MAX_QUANTITY_PER_ITEM);
     }
+
     user.markModified("cartData");
     await user.save();
 
     res.status(200).json({
       success: true,
       message: "Cart updated successfully",
-      cartData: user.cartData
+      cartData: user.cartData,
     });
-
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    console.error("updateCart error:", error);
+    res.status(500).json({ success: false, message: "Could not update cart" });
   }
 };
 
-
+/**
+ * REMOVE FROM CART
+ *
+ * Previously read `user.cart`, a field that does not exist on the schema, so
+ * every call threw. The cart lives in `cartData`.
+ */
 export const removeFromCart = async (req, res) => {
   try {
     const { productId } = req.params;
 
     const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
 
-    user.cart = user.cart.filter(
-      (item) => item.product.toString() !== productId
-    );
-
-    await user.save();
+    if (user.cartData && productId in user.cartData) {
+      delete user.cartData[productId];
+      user.markModified("cartData");
+      await user.save();
+    }
 
     res.status(200).json({
+      success: true,
       message: "Item removed from cart",
-      cart: user.cart
+      cartData: user.cartData || {},
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("removeFromCart error:", error);
+    res.status(500).json({ success: false, message: "Could not update cart" });
   }
 };
-

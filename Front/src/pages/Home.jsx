@@ -49,10 +49,6 @@ useEffect(() => {
     );
   }
 
-  const filteredCategories = homepage.categories.filter(
-  cat => cat.variantType === variantType
-);
-
   if (!homepage) {
     return (
       <div className="min-h-screen bg-[#FCFDFC] flex items-center justify-center">
@@ -60,6 +56,10 @@ useEffect(() => {
       </div>
     );
   }
+
+  const filteredCategories = homepage.categories.filter(
+  cat => cat.variantType === variantType
+);
 
   return (
     <div className="min-h-screen bg-[#FCFDFC]">
@@ -158,7 +158,7 @@ useEffect(() => {
       )}
 
       {/* Testimonials */}
-      {homepage.testimonials && (
+      {homepage.testimonials?.length > 0 && (
         <div id="reviews" className="scroll-mt-24 sm:scroll-mt-44my-10 md:my-20">
           <Testimonials data={homepage.testimonials} />
         </div>

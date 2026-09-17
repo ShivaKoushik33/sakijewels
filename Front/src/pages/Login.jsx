@@ -42,10 +42,16 @@ export default function Login() {
     try {
       setIsLoading(true);
 
-      await axios.post(backendUrl + "/api/auth/send-otp", { phone });
+      const { data } = await axios.post(backendUrl + "/api/auth/send-otp", {
+        phone,
+      });
 
       setOtpSent(true);
-      setInfo("OTP sent to your number");
+      setInfo(
+        data?.channel === "whatsapp"
+          ? "OTP sent to your WhatsApp"
+          : "OTP sent to your number"
+      );
     } catch (error) {
       setError(error.response?.data?.message || "Failed to send OTP");
     } finally {

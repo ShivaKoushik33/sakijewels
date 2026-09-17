@@ -5,8 +5,8 @@ import banner from '../assets/images/banner.png';
 import dup_category from '../assets/images/dup_category.png';
 import JewelleryEssentials from '../assets/images/jewelery_essentials.png';
 import productBanner from '../assets/images/product_banner.png';
-import pendants from '../assets/images/Earrings.jpeg';
-import MODERN_MINIMUM_NECKLACES from '../assets/images/modern_min.jpeg';
+import pendants from '../assets/images/Pendants_latest.jpeg';
+import MODERN_MINIMUM_NECKLACES from '../assets/images/minimal_LATEST.jpeg';
 
 // Traditional category images
 import ONE_GRAM_GOLD_NECKLACES from '../assets/images/trad_one_gram_gold_necklaces.jpeg';
@@ -16,15 +16,16 @@ import EARINGS_JUMKA_TRAD from '../assets/images/trad_earrings_jumka.jpeg';
 import Bangles from '../assets/images/trad_bangles.jpeg';
 import MANGALASUTRA from '../assets/images/trad_mangalsutra.jpeg';
 
+
 // Fashion category images
 import FASHIONNECKLACES from '../assets/images/fashion_necklaces.jpeg';
 import FASHION_EARINGS_JUMKA from '../assets/images/fashion_earrings_jumka.jpeg';
 import FASHION_BRACELET_BANGLES from '../assets/images/fashion_bracelet_bangles.jpeg';
-import FASHION_RINGS from '../assets/images/fashion_rings.jpeg';
+import FASHION_RINGS from '../assets/images/RINGS_LATEST.jpeg';
 import FASHION_ANKLETS from '../assets/images/fashion_anklets.jpeg';
 import FASHION_HAIR_ACCESSORIES from '../assets/images/fashion_hair_accessories.jpeg';
-import FASHION_MANGALSUTRA from '../assets/images/fashion_mangalsutra.jpeg';
-import FASHION_GIFT_HAMPER from '../assets/images/fashion_gift_hamper.jpeg';
+import FASHION_MANGALSUTRA from '../assets/images/Mangalsutra_latest.jpeg';
+import FASHION_GIFT_HAMPER from '../assets/images/GiftHamper_latest.jpeg';
 
 import api from "./apiService";
 
@@ -116,7 +117,7 @@ export const categoryConfig = [
     image: RUBYNECKLACES
   },
   {
-    name: "Ear Rings",
+    name: "Earrings",
     type: "EARINGS_JUMKA",
     variantType: "TRADITIONAL",
     image: EARINGS_JUMKA_TRAD
@@ -156,7 +157,7 @@ export const categoryConfig = [
     image: FASHIONNECKLACES
   },
   {
-    name: "Ear Rings",
+    name: "Earrings",
     type: "FASHION_EARINGS_JUMKA",
     variantType: "FASHION",
     image: FASHION_EARINGS_JUMKA
@@ -290,63 +291,6 @@ const mockHomepage = {
 
 
 
-const mockTestimonials = [
-  {
-    id: 1,
-    name: 'Virda',
-    rating: 4.5,
-    stars: 5,
-    review: "A big shout out to you guys for improving my hubby's gifting tastes. Completely in love with my ring!",
-    date: '19 Dec 2025',
-    image: '/images/testimonial-1-56586a.png'
-  },
-  {
-    id: 2,
-    name: 'Virda',
-    rating: 4.5,
-    stars: 5,
-    review: "A big shout out to you guys for improving my hubby's gifting tastes. Completely in love with my ring!",
-    date: '19 Dec 2025',
-    image: '/images/testimonial-1-56586a.png'
-  },
-  {
-    id: 3,
-    name: 'Virda',
-    rating: 4.5,
-    stars: 5,
-    review: "A big shout out to you guys for improving my hubby's gifting tastes. Completely in love with my ring!",
-    date: '19 Dec 2025',
-    image: '/images/testimonial-1-56586a.png'
-  },
-  {
-    id: 4,
-    name: 'Virda',
-    rating: 4.5,
-    stars: 5,
-    review: "A big shout out to you guys for improving my hubby's gifting tastes. Completely in love with my ring!",
-    date: '19 Dec 2025',
-    image: '/images/testimonial-1-56586a.png'
-  },
-  {
-    id: 5,
-    name: 'Virda',
-    rating: 4.5,
-    stars: 5,
-    review: "A big shout out to you guys for improving my hubby's gifting tastes. Completely in love with my ring!",
-    date: '19 Dec 2025',
-    image: '/images/testimonial-1-56586a.png'
-  },
-  {
-    id: 6,
-    name: 'Virda',
-    rating: 4.5,
-    stars: 5,
-    review: "A big shout out to you guys for improving my hubby's gifting tastes. Completely in love with my ring!",
-    date: '19 Dec 2025',
-    image: '/images/testimonial-1-56586a.png'
-  }
-];
-
 const mockOurStory = {
   title: 'Our Story\nThe Sakhi Jewels',
   description: 'Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry\'s standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book.',
@@ -374,10 +318,12 @@ const mockOurStory = {
 
 export async function getHomepageData() {
   try {
-    const [bestSellersRes, mostGiftedRes, newArrivalsRes] = await Promise.all([
+    const [bestSellersRes, mostGiftedRes, newArrivalsRes, reviewsRes] = await Promise.all([
       api.get("/products/best-sellers"),
       api.get("/products/most-gifted"),
-      api.get("/products/new-arrivals")
+      api.get("/products/new-arrivals"),
+      // Reviews are a nice-to-have here: a failure must not blank the homepage.
+      api.get("/reviews/featured").catch(() => ({ data: [] }))
     ]);
 
     // const {bestSellers, mostGifted} = useContext(ShopContext);
@@ -391,7 +337,22 @@ export async function getHomepageData() {
       rating: product.rating,
       reviews: product.ratingCount,
       image: product.images?.[0]?.url,
-      variantType: product.variantType
+      variantType: product.variantType,
+      stock: product.stock
+    });
+
+    const formatReview = (review) => ({
+      id: review.id,
+      name: review.name,
+      rating: review.rating,
+      stars: review.rating,
+      review: review.message,
+      date: new Date(review.date).toLocaleDateString("en-IN", {
+        day: "numeric",
+        month: "short",
+        year: "numeric"
+      }),
+      image: review.image
     });
     return {
       hero: mockHero,
@@ -400,7 +361,7 @@ export async function getHomepageData() {
       mostGifted: mostGiftedRes.data.map(formatProduct),
       bestSelling: bestSellersRes.data.map(formatProduct),
       newArrivals: newArrivalsRes.data.map(formatProduct),
-      testimonials: mockTestimonials,
+      testimonials: (reviewsRes.data || []).map(formatReview),
       ourStory: mockOurStory,
       promoBanner: mockHomepage
     };

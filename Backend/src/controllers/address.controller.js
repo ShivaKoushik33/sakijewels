@@ -1,38 +1,108 @@
+import mongoose from "mongoose";
 import User from "../models/User.js";
 
 /**
- * ADD ADDRESS
+ * Addresses were previously built straight from req.body, which let a client
+ * set fields the schema never intended to expose (including _id). Only these
+ * fields are ever read, and they are validated here rather than only in the
+ * browser — a malformed pincode ends up printed on a real parcel.
  */
+const ADDRESS_FIELDS = [
+  "fullName",
+  "phone",
+  "house",
+  "street",
+  "city",
+  "state",
+  "pincode",
+  "country",
+];
+
+const REQUIRED_FIELDS = ["fullName", "phone", "house", "city", "state", "pincode"];
+
+const pickAddress = (body) => {
+  const address = {};
+  for (const field of ADDRESS_FIELDS) {
+    if (typeof body[field] === "string") {
+      const value = body[field].trim();
+      if (value) address[field] = value;
+    }
+  }
+  return address;
+};
+
+const validateAddress = (address, { partial = false } = {}) => {
+  if (!partial) {
+    for (const field of REQUIRED_FIELDS) {
+      if (!address[field]) return "Please fill all required address fields";
+    }
+  }
+
+  if (address.phone !== undefined && !/^[0-9]{10}$/.test(address.phone)) {
+    return "Enter a valid 10 digit phone number";
+  }
+
+  if (address.pincode !== undefined && !/^[1-9][0-9]{5}$/.test(address.pincode)) {
+    return "Enter a valid 6 digit pincode";
+  }
+
+  if (address.fullName !== undefined && address.fullName.length > 100) {
+    return "Name is too long";
+  }
+
+  return null;
+};
+
 export const addAddress = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
-
-    const newAddress = req.body;
-
-    // If this is default, unset others
-    if (newAddress.isDefault) {
-      user.addresses.forEach(addr => (addr.isDefault = false));
+    if (!user) {
+      return res.status(401).json({ message: "User not found" });
     }
 
-    user.addresses.push(newAddress);
+    if (user.addresses.length >= 20) {
+      return res
+        .status(400)
+        .json({ message: "You have reached the maximum number of addresses" });
+    }
+
+    const newAddress = pickAddress(req.body);
+    const problem = validateAddress(newAddress);
+    if (problem) {
+      return res.status(400).json({ message: problem });
+    }
+
+    const makeDefault =
+      req.body.isDefault === true ||
+      req.body.isDefault === "true" ||
+      user.addresses.length === 0;
+
+    if (makeDefault) {
+      user.addresses.forEach((addr) => {
+        addr.isDefault = false;
+      });
+    }
+
+    user.addresses.push({ ...newAddress, isDefault: makeDefault });
     await user.save();
 
     res.status(201).json({
       message: "Address added successfully",
-      addresses: user.addresses
+      addresses: user.addresses,
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("addAddress error:", error);
+    res.status(500).json({ message: "Could not save address" });
   }
 };
 
 export const getAddresses = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id);
-
-    res.status(200).json(user.addresses);
+    const user = await User.findById(req.user._id).select("addresses");
+    res.status(200).json(user?.addresses ?? []);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("getAddresses error:", error);
+    res.status(500).json({ message: "Could not load addresses" });
   }
 };
 
@@ -40,27 +110,40 @@ export const updateAddress = async (req, res) => {
   try {
     const { addressId } = req.params;
 
+    if (!mongoose.isValidObjectId(addressId)) {
+      return res.status(404).json({ message: "Address not found" });
+    }
+
     const user = await User.findById(req.user._id);
-    const address = user.addresses.id(addressId);
+    const address = user?.addresses.id(addressId);
 
     if (!address) {
       return res.status(404).json({ message: "Address not found" });
     }
 
-    // If setting default, unset others
-    if (req.body.isDefault) {
-      user.addresses.forEach(addr => (addr.isDefault = false));
+    const updates = pickAddress(req.body);
+    const problem = validateAddress(updates, { partial: true });
+    if (problem) {
+      return res.status(400).json({ message: problem });
     }
 
-    Object.assign(address, req.body);
+    if (req.body.isDefault === true || req.body.isDefault === "true") {
+      user.addresses.forEach((addr) => {
+        addr.isDefault = false;
+      });
+      address.isDefault = true;
+    }
+
+    Object.assign(address, updates);
     await user.save();
 
     res.status(200).json({
       message: "Address updated",
-      addresses: user.addresses
+      addresses: user.addresses,
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("updateAddress error:", error);
+    res.status(500).json({ message: "Could not update address" });
   }
 };
 
@@ -69,19 +152,30 @@ export const deleteAddress = async (req, res) => {
     const { addressId } = req.params;
 
     const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(401).json({ message: "User not found" });
+    }
+
+    const wasDefault = user.addresses.id(addressId)?.isDefault;
 
     user.addresses = user.addresses.filter(
-      addr => addr._id.toString() !== addressId
+      (addr) => addr._id.toString() !== addressId
     );
+
+    // Never leave the customer without a default address.
+    if (wasDefault && user.addresses.length > 0) {
+      user.addresses[0].isDefault = true;
+    }
 
     await user.save();
 
     res.status(200).json({
       message: "Address deleted",
-      addresses: user.addresses
+      addresses: user.addresses,
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("deleteAddress error:", error);
+    res.status(500).json({ message: "Could not delete address" });
   }
 };
 
@@ -90,10 +184,13 @@ export const setDefaultAddress = async (req, res) => {
     const { addressId } = req.params;
 
     const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(401).json({ message: "User not found" });
+    }
 
     let found = false;
 
-    user.addresses.forEach(addr => {
+    user.addresses.forEach((addr) => {
       if (addr._id.toString() === addressId) {
         addr.isDefault = true;
         found = true;
@@ -110,9 +207,10 @@ export const setDefaultAddress = async (req, res) => {
 
     res.status(200).json({
       message: "Default address updated",
-      addresses: user.addresses
+      addresses: user.addresses,
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("setDefaultAddress error:", error);
+    res.status(500).json({ message: "Could not update address" });
   }
 };

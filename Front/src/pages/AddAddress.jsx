@@ -1,6 +1,6 @@
 import { useEffect, useState, useContext } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { getProfileUi } from '../services/profileService';
+import { getProfileUi, lookupPincode } from '../services/profileService';
 import { ShopContext } from '../context/ShopContext';
 import axios from 'axios';
 
@@ -42,18 +42,9 @@ export default function AddAddress() {
       setLoadingPin(true);
       setPinMsg("");
 
-      const res = await axios.get(
-        `${backendUrl}/api/pincode/${pin}`
-      );
+      const result = await lookupPincode(pin, backendUrl);
 
-      const result = res.data?.[0];
-
-      if (
-        !result ||
-        result.Status !== 'Success' ||
-        !result.PostOffice ||
-        result.PostOffice.length === 0
-      ) {
+      if (!result) {
         setPinMsg('Invalid pincode');
         setCities([]);
         setFormData((prev) => ({
@@ -64,18 +55,14 @@ export default function AddAddress() {
         return;
       }
 
-      const offices = result.PostOffice;
-
-      const cityList = [...new Set(offices.map((item) => item.District))];
-
-      setCities(cityList);
+      setCities(result.cities);
 
       // Only auto-fill city & state. Village is always entered by the user
       // (rural villages may not be listed under a pincode).
       setFormData((prev) => ({
         ...prev,
-        state: offices[0].State,
-        city: cityList[0]
+        state: result.state,
+        city: result.cities[0]
       }));
     } catch (error) {
       setPinMsg('Failed to verify pincode');
@@ -245,31 +232,25 @@ export default function AddAddress() {
               )}
             </div>
 
-            {/* CITY */}
-            {cities.length > 0 ? (
-              <select
-                name="city"
-                value={formData.city}
-                onChange={handleChange}
-                className="w-full h-[44px] px-4 border border-[#E6E8EC] rounded-lg text-sm bg-white"
-                required
-              >
-                {cities.map((city, index) => (
-                  <option key={index} value={city}>
-                    {city}
-                  </option>
-                ))}
-              </select>
-            ) : (
+            {/* CITY/DISTRICT/TOWN — filled in from the pincode but always
+                editable: the pincode's district is often not the customer's
+                own town. The pincode's districts are offered as suggestions. */}
+            <div>
               <input
                 name="city"
+                list="pincode-cities"
                 value={formData.city}
                 onChange={handleChange}
                 className="w-full h-[44px] px-4 border border-[#E6E8EC] rounded-lg text-sm"
-                placeholder={fields?.cityPlaceholder || 'City'}
+                placeholder={fields?.cityPlaceholder || 'City/District/Town'}
                 required
               />
-            )}
+              <datalist id="pincode-cities">
+                {cities.map((city) => (
+                  <option key={city} value={city} />
+                ))}
+              </datalist>
+            </div>
 
             {/* STATE */}
             <input

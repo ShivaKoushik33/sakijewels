@@ -8,41 +8,37 @@ import "@fontsource/roboto";
 import left_arrow from "../assets/images/left_arrow.svg?url";
 import right_arrow from "../assets/images/right_arrow.svg?url";
 import share from "../assets/images/share.svg?url";
-import { addToWishlistApi,removeFromWishlistApi } from "../services/wishlistService";
-import { getWishlistData } from "../services/wishlistService";
 
-
-export default function ProductDetails() {
+// Keyed by the product id, so opening another product (e.g. from Related
+// Products) starts from fresh state instead of the previous product's image,
+// quantity and messages.
+export default function ProductDetailsPage() {
   const { id } = useParams();
-  const { addToCart, token, navigate, setBuyNowItem } = useContext(ShopContext);
+  return <ProductDetails key={id} id={id} />;
+}
+
+function ProductDetails({ id }) {
+  const {
+    addToCart,
+    cartItems,
+    isWishlisted: isInWishlist,
+    toggleWishlist,
+    token,
+    navigate,
+    setBuyNowItem,
+  } = useContext(ShopContext);
 
   const [product, setProduct] = useState(null);
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedFinish, setSelectedFinish] = useState(null);
-  const [isWishlisted, setIsWishlisted] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [stockMsg, setStockMsg] = useState("");   // inline stock message
+  const [adding, setAdding] = useState(false);
 
- const handleAddToWishlist = async () => {
-  if (!token) {
-    navigate("/login");
-    return;
-  }
-
-  try {
-    if (!isWishlisted) {
-      await addToWishlistApi(product._id, token);
-      setIsWishlisted(true);
-    } else {
-      await removeFromWishlistApi(product._id, token);
-      setIsWishlisted(false);
-    }
-  } catch (error) {
-    // silent
-  }
-};
+  const isWishlisted = Boolean(product && isInWishlist(product._id));
+  const handleAddToWishlist = () => toggleWishlist(product._id);
 
   const handleShare = () => {
     // no-op for now (share not yet implemented)
@@ -75,6 +71,31 @@ export default function ProductDetails() {
     });
 
     navigate("/checkout/review");
+  };
+
+  const inCart = Boolean(product && cartItems[product._id]);
+
+  const handleAddToCart = async () => {
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+    if (inCart) {
+      navigate("/cart");
+      return;
+    }
+
+    setStockMsg("");
+    const stock = product?.stock ?? 0;
+    if (stock <= 0) {
+      setStockMsg("Product is out of stock");
+      return;
+    }
+
+    setAdding(true);
+    const added = await addToCart(product._id, Math.min(Math.max(1, quantity), stock));
+    setAdding(false);
+    if (!added) setStockMsg("Could not add to cart. Please try again.");
   };
 
   const decreaseQty = () => setQuantity((q) => Math.max(1, q - 1));
@@ -136,31 +157,25 @@ export default function ProductDetails() {
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
-    async function fetchData() {
-      try {
-        const data = await getProductDetailsData(id);
+    let cancelled = false;
 
+    getProductDetailsData(id)
+      .then((data) => {
+        if (cancelled) return;
         setProduct(data.product);
         setReviews(data.reviews || []);
+      })
+      .catch(() => {
+        if (!cancelled) setProduct(null);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
 
-        // Check if product is in wishlist
-        if (token) {
-        const wishlist = await getWishlistData(token);
-        const exists = wishlist.some(
-          (item) => item._id === id
-        );
-        setIsWishlisted(exists);
-      }
-        
-      } catch (err) {
-        setProduct(null);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchData();
-  }, [id, token]);
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
 
   if (loading) {
     return (
@@ -554,19 +569,34 @@ export default function ProductDetails() {
                     Buy Now
                   </button>
                   <button
-                    onClick={() => {
-                      if (!token) {
-                        navigate("/login");
-                        return;
-                      }
-                      addToCart(product._id);
-                    }}
-                    className="flex-1 px-4 py-2.5 bg-[#901CDB] text-white rounded-lg font-medium hover:bg-[#7A16C0] transition-colors text-sm"
+                    type="button"
+                    onClick={handleAddToCart}
+                    disabled={adding || (!inCart && !(product?.stock > 0))}
+                    className="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 border-2 border-[#901CDB] bg-[#901CDB] text-white rounded-lg font-medium hover:bg-[#7A16C0] hover:border-[#7A16C0] transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                     style={{ fontFamily: "'Lato', sans-serif", fontWeight: 600 }}
                   >
-                    Add to Cart
+                    {inCart ? (
+                      <>
+                        Go to Cart
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                          <path d="M5 12h14M13 6l6 6-6 6" />
+                        </svg>
+                      </>
+                    ) : adding ? (
+                      "Adding..."
+                    ) : (
+                      "Add to Cart"
+                    )}
                   </button>
                 </div>
+                {inCart && (
+                  <p className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-[#34C759]">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M20 6 9 17l-5-5" />
+                    </svg>
+                    Added to your cart
+                  </p>
+                )}
               </div>
             </div>
           </div>

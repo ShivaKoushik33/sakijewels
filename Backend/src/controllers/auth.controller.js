@@ -1,4 +1,5 @@
 import bcrypt from "bcryptjs";
+import crypto from "node:crypto";
 import User from "../models/User.js";
 import Otp from "../models/Otp.js";
 import OtpThrottle from "../models/OtpThrottle.js";
@@ -13,37 +14,68 @@ const RESEND_COOLDOWN_SECONDS = 30;
 const MAX_OTPS_PER_DAY = 5;
 const THROTTLE_WINDOW_HOURS = 24;
 
-const isValidPhone = (phone) => /^[0-9]{10}$/.test(phone);
+const isValidPhone = (phone) =>
+  typeof phone === "string" && /^[0-9]{10}$/.test(phone);
+
+const isNonEmptyString = (value) =>
+  typeof value === "string" && value.trim().length > 0;
+
+/**
+ * Build a login filter from the identifiers that were actually supplied.
+ *
+ * Mongoose drops undefined keys, so a literal { $or: [{ email }, { phone }] }
+ * with only one of them present becomes { $or: [{ email }, {}] } — and an
+ * empty clause inside $or matches every document, returning an arbitrary user.
+ */
+const buildIdentifierClauses = ({ email, phone }) => {
+  const clauses = [];
+  if (isNonEmptyString(email)) clauses.push({ email: email.trim().toLowerCase() });
+  if (isNonEmptyString(phone)) clauses.push({ phone: phone.trim() });
+  return clauses;
+};
 
 /**
  * REGISTER USER
  */
 export const registerUser = async (req, res) => {
   try {
-    const { name, email, phone, password,role } = req.body;
+    const { name, email, phone, password } = req.body;
 
-    if (!name || !email || !phone || !password) {
+    if (
+      !isNonEmptyString(name) ||
+      !isNonEmptyString(email) ||
+      !isNonEmptyString(password) ||
+      !isValidPhone(phone)
+    ) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
+    if (password.length < 8) {
+      return res
+        .status(400)
+        .json({ message: "Password must be at least 8 characters" });
+    }
+
     const existingUser = await User.findOne({
-      $or: [{ email }, { phone }]
+      $or: buildIdentifierClauses({ email, phone }),
     });
 
     if (existingUser) {
       return res.status(400).json({
-        message: "User already exists with email or phone"
+        message: "User already exists with email or phone",
       });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // `role` is deliberately NOT taken from the request body. Accepting it let
+    // anyone register themselves as an ADMIN with a single public request.
+    // Admins are provisioned directly in the database.
     const user = await User.create({
-      name,
-      email,
-      phone,
+      name: name.trim(),
+      email: email.trim().toLowerCase(),
+      phone: phone.trim(),
       password: hashedPassword,
-      role
     });
 
     const token = generateToken(user);
@@ -56,35 +88,34 @@ export const registerUser = async (req, res) => {
         name: user.name,
         email: user.email,
         phone: user.phone,
-      }
+      },
     });
-  } 
-  catch (error) {
-    console.error(error);
-
-    res.status(500).json({
-      message: "Server error"
-    });
+  } catch (error) {
+    console.error("registerUser error:", error);
+    res.status(500).json({ message: "Server error" });
   }
 };
 
 /**
- * LOGIN USER
+ * LOGIN USER (email or phone + password)
  */
 export const loginUser = async (req, res) => {
   try {
     const { email, phone, password } = req.body;
 
-    if ((!email && !phone) || !password) {
-      return res.status(400).json({ message: "Email/Phone and password required" });
+    const clauses = buildIdentifierClauses({ email, phone });
+
+    if (clauses.length === 0 || !isNonEmptyString(password)) {
+      return res
+        .status(400)
+        .json({ message: "Email/Phone and password required" });
     }
 
-    const user = await User.findOne({
-      $or: [{ email }, { phone }]
-    }).select("+password");
+    const user = await User.findOne({ $or: clauses }).select("+password");
 
-
-    if (!user) {
+    // Identical response for "no such account" and "wrong password" so this
+    // endpoint cannot be used to enumerate users.
+    if (!user || !user.password) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
@@ -108,14 +139,14 @@ export const loginUser = async (req, res) => {
         name: user.name,
         email: user.email,
         phone: user.phone,
-        role: user.role
-      }
+        role: user.role,
+      },
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("loginUser error:", error);
+    res.status(500).json({ message: "Server error" });
   }
 };
-
 
 /**
  * SEND OTP
@@ -125,9 +156,10 @@ export const loginUser = async (req, res) => {
 export const sendOtp = async (req, res) => {
   try {
     const { phone } = req.body;
-
     if (!isValidPhone(phone)) {
-      return res.status(400).json({ message: "Enter a valid 10 digit phone number" });
+      return res
+        .status(400)
+        .json({ message: "Enter a valid 10 digit phone number" });
     }
 
     // Cooldown: block rapid re-sends to avoid SMS abuse / cost.
@@ -153,8 +185,9 @@ export const sendOtp = async (req, res) => {
       });
     }
 
-    // Generate a 6-digit code (100000–999999).
-    const code = String(Math.floor(100000 + Math.random() * 900000));
+    // Generate a 6-digit code (100000-999999) from a CSPRNG. Math.random is
+    // not a secure generator and must not be used for credentials.
+    const code = String(crypto.randomInt(100000, 1000000));
     const codeHash = await bcrypt.hash(code, 10);
     const expiresAt = new Date(now + OTP_EXPIRY_MINUTES * 60 * 1000);
 
@@ -162,8 +195,8 @@ export const sendOtp = async (req, res) => {
     await Otp.deleteMany({ phone });
     await Otp.create({ phone, codeHash, expiresAt });
 
-    // Send it (throws if the provider fails).
-    await sendOtpSms(phone, code);
+    // Send it (throws if every provider fails).
+    const channel = await sendOtpSms(phone, code);
 
     // Count this send against the daily cap (only after a successful send).
     if (windowActive) {
@@ -181,7 +214,7 @@ export const sendOtp = async (req, res) => {
       );
     }
 
-    res.status(200).json({ message: "OTP sent" });
+    res.status(200).json({ message: "OTP sent", channel });
   } catch (error) {
     console.error("sendOtp error:", error);
     res.status(500).json({ message: "Failed to send OTP. Please try again." });
@@ -198,21 +231,27 @@ export const verifyOtp = async (req, res) => {
     const { phone, otp } = req.body;
 
     if (!isValidPhone(phone)) {
-      return res.status(400).json({ message: "Enter a valid 10 digit phone number" });
+      return res
+        .status(400)
+        .json({ message: "Enter a valid 10 digit phone number" });
     }
-    if (!otp || !/^[0-9]{6}$/.test(otp)) {
+    if (typeof otp !== "string" || !/^[0-9]{6}$/.test(otp)) {
       return res.status(400).json({ message: "Enter a valid 6 digit OTP" });
     }
 
     const record = await Otp.findOne({ phone }).sort({ createdAt: -1 });
 
     if (!record) {
-      return res.status(400).json({ message: "OTP expired. Please request a new one." });
+      return res
+        .status(400)
+        .json({ message: "OTP expired. Please request a new one." });
     }
 
     if (record.expiresAt.getTime() < Date.now()) {
       await Otp.deleteMany({ phone });
-      return res.status(400).json({ message: "OTP expired. Please request a new one." });
+      return res
+        .status(400)
+        .json({ message: "OTP expired. Please request a new one." });
     }
 
     if (record.attempts >= MAX_VERIFY_ATTEMPTS) {
@@ -230,7 +269,7 @@ export const verifyOtp = async (req, res) => {
       return res.status(400).json({ message: "Invalid OTP" });
     }
 
-    // ✅ Correct code — consume it.
+    // Correct code - consume it.
     await Otp.deleteMany({ phone });
 
     // Auto-register if this phone has never logged in.
@@ -262,86 +301,34 @@ export const verifyOtp = async (req, res) => {
   }
 };
 
-
-
-export const adminLogin = async (req, res) => {
-  try {
-    const { email, password } = req.body;
-
-    if (
-      email !== process.env.ADMIN_EMAIL ||
-      password !== process.env.ADMIN_PASSWORD
-    ) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid email or password",
-      });
-    }
-
-    let admin = await User.findOne({ email });
-
-    if (!admin) {
-      const hashedPassword = await bcrypt.hash(password, 10);
-      admin = await User.create({
-        name: "Admin",
-        email,
-        phone: "0000000000",
-        password: hashedPassword,
-        role: "ADMIN",
-      });
-    } else if (admin.role !== "ADMIN") {
-      admin.role = "ADMIN";
-      await admin.save();
-    }
-
-    const token = generateToken(admin);
-
-    return res.status(200).json({
-      success: true,
-      message: "Admin signed in successfully",
-      data: { token },
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
-
 export const getMyProfile = async (req, res) => {
-  try {
-    // req.user comes from protect middleware
-    res.status(200).json({
-      id: req.user._id,
-      name: req.user.name,
-      email: req.user.email,
-      phone: req.user.phone,
-      role: req.user.role,
-    });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
+  res.status(200).json({
+    id: req.user._id,
+    name: req.user.name,
+    email: req.user.email,
+    phone: req.user.phone,
+    role: req.user.role,
+  });
 };
-
 
 /**
- * UPDATE PROFILE (name, email only — phone not editable)
+ * UPDATE PROFILE (name, email only - phone not editable)
  */
 export const updateMyProfile = async (req, res) => {
   try {
     const { name, email } = req.body;
 
-    if (!name && !email) {
-      return res.status(400).json({ message: "Nothing to update" });
-    }
-
     const updates = {};
-    if (typeof name === "string" && name.trim()) {
+
+    if (isNonEmptyString(name)) {
       updates.name = name.trim();
     }
-    if (typeof email === "string" && email.trim()) {
+
+    if (isNonEmptyString(email)) {
       const normalized = email.trim().toLowerCase();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) {
+        return res.status(400).json({ message: "Enter a valid email" });
+      }
       const existing = await User.findOne({
         email: normalized,
         _id: { $ne: req.user._id },
@@ -350,6 +337,10 @@ export const updateMyProfile = async (req, res) => {
         return res.status(400).json({ message: "Email already in use" });
       }
       updates.email = normalized;
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ message: "Nothing to update" });
     }
 
     const user = await User.findByIdAndUpdate(req.user._id, updates, {
@@ -365,6 +356,7 @@ export const updateMyProfile = async (req, res) => {
       role: user.role,
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("updateMyProfile error:", error);
+    res.status(500).json({ message: "Could not update profile" });
   }
 };

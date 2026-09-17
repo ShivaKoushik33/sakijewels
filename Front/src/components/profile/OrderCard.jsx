@@ -62,6 +62,12 @@ export default function OrderCard({ order }) {
             {order.status}
           </div>
 
+          {order.status === "DELIVERED" && (
+            <span className="text-xs md:text-sm font-medium text-[#901CDB] whitespace-nowrap">
+              ★ Rate this order
+            </span>
+          )}
+
         </div>
 
       </div>
