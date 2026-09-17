@@ -40,7 +40,14 @@ export default function AppRoutes() {
             <Route path="/products/:id" element={<ProductDetails />} />
             <Route path="/cart" element={<Cart />} />
             <Route path="/collections" element={<Collections />} />
-            <Route path="/wishlist" element={<Wishlist />} />
+            <Route
+              path="/wishlist"
+              element={
+                <ProtectedRoute>
+                  <Wishlist />
+                </ProtectedRoute>
+              }
+            />
             <Route path="/checkout/review" element={<BuyNowReview />} />
             <Route path="/checkout/payment" element={<BuyNowPayment />} />
             <Route path="/login" element={<Login />} />

@@ -9,6 +9,7 @@ import wishlistRoutes from "./routes/wishlist.routes.js";
 import orderRoutes from "./routes/order.routes.js";
 import addressRoutes from "./routes/address.routes.js";
 import pincodeRoutes from "./routes/pincode.routes.js";
+import reviewRoutes from "./routes/review.routes.js";
 import { apiLimiter } from "./middlewares/rateLimit.js";
 
 const app = express();
@@ -66,6 +67,7 @@ app.use("/api/wishlist", wishlistRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/addresses", addressRoutes);
 app.use("/api/pincode", pincodeRoutes);
+app.use("/api/reviews", reviewRoutes);
 
 app.get("/", (req, res) => {
   res.send("Saki Jewels API is running");

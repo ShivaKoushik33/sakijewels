@@ -46,7 +46,9 @@ export const addToCart = async (req, res) => {
         .json({ success: false, message: "Your cart is full" });
     }
 
-    user.cartData[key] = Math.min(current + 1, MAX_QUANTITY_PER_ITEM);
+    // The product page can add several at once; anything else adds one.
+    const addQuantity = Math.max(parseQuantity(req.body.quantity) ?? 1, 1);
+    user.cartData[key] = Math.min(current + addQuantity, MAX_QUANTITY_PER_ITEM);
 
     user.markModified("cartData");
     await user.save();

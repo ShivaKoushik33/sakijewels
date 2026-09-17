@@ -267,29 +267,23 @@ export default function EditAddress() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-5">
                 <div className="flex flex-col gap-1">
                   <label className={labelClass}>{fields.cityLabel}</label>
-                  {cities.length > 0 ? (
-                    <select
-                      name="city"
-                      value={formData.city}
-                      onChange={handleChange}
-                      className={`${fieldClass} bg-white`}
-                    >
-                      {cities.map((city) => (
-                        <option key={city} value={city}>
-                          {city}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <input
-                      type="text"
-                      name="city"
-                      value={formData.city}
-                      onChange={handleChange}
-                      className={`${fieldClass} bg-white`}
-                      placeholder={fields.cityPlaceholder}
-                    />
-                  )}
+                  {/* Filled in from the pincode but always editable: the
+                      pincode's district is often not the customer's own town.
+                      The pincode's districts are offered as suggestions. */}
+                  <input
+                    type="text"
+                    name="city"
+                    list="pincode-cities"
+                    value={formData.city}
+                    onChange={handleChange}
+                    className={`${fieldClass} bg-white`}
+                    placeholder={fields.cityPlaceholder}
+                  />
+                  <datalist id="pincode-cities">
+                    {cities.map((city) => (
+                      <option key={city} value={city} />
+                    ))}
+                  </datalist>
                 </div>
 
                 <div className="flex flex-col gap-1">

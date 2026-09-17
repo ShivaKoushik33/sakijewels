@@ -2,6 +2,7 @@ import { useEffect, useState, useContext } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { ShopContext } from '../context/ShopContext';
+import OrderReviewSection from '../components/profile/OrderReviewSection';
 
 const getToneClasses = (status) => {
   switch (status) {
@@ -171,6 +172,8 @@ export default function OrderDetails() {
                 ))}
               </div>
             </section>
+
+            {order.status === "DELIVERED" && <OrderReviewSection order={order} />}
 
             <section className="bg-white border border-[#E6E8EC] rounded-lg p-4 md:p-6">
               <h2 className="text-base md:text-lg font-semibold text-[#141416] mb-4">

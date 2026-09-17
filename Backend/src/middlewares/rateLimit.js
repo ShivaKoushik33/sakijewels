@@ -54,6 +54,14 @@ export const otpVerifyLimiter = rateLimit({
   message: { message: "Too many attempts. Please request a new OTP shortly." },
 });
 
+/** Reviews: a customer rates the handful of items they bought, not hundreds. */
+export const reviewLimiter = rateLimit({
+  ...common,
+  windowMs: 60 * 60 * 1000,
+  limit: 30,
+  message: { message: "Too many reviews submitted. Please try again later." },
+});
+
 /** Checkout: one shopper does not need more than this in 15 minutes. */
 export const checkoutLimiter = rateLimit({
   ...common,

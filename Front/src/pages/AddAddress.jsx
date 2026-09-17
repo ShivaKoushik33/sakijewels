@@ -232,31 +232,25 @@ export default function AddAddress() {
               )}
             </div>
 
-            {/* CITY */}
-            {cities.length > 0 ? (
-              <select
-                name="city"
-                value={formData.city}
-                onChange={handleChange}
-                className="w-full h-[44px] px-4 border border-[#E6E8EC] rounded-lg text-sm bg-white"
-                required
-              >
-                {cities.map((city, index) => (
-                  <option key={index} value={city}>
-                    {city}
-                  </option>
-                ))}
-              </select>
-            ) : (
+            {/* CITY/DISTRICT/TOWN — filled in from the pincode but always
+                editable: the pincode's district is often not the customer's
+                own town. The pincode's districts are offered as suggestions. */}
+            <div>
               <input
                 name="city"
+                list="pincode-cities"
                 value={formData.city}
                 onChange={handleChange}
                 className="w-full h-[44px] px-4 border border-[#E6E8EC] rounded-lg text-sm"
-                placeholder={fields?.cityPlaceholder || 'City'}
+                placeholder={fields?.cityPlaceholder || 'City/District/Town'}
                 required
               />
-            )}
+              <datalist id="pincode-cities">
+                {cities.map((city) => (
+                  <option key={city} value={city} />
+                ))}
+              </datalist>
+            </div>
 
             {/* STATE */}
             <input

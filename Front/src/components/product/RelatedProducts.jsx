@@ -1,15 +1,13 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useMemo } from "react";
 import { ShopContext } from "../../context/ShopContext";
 import ProductCard from "../home/ProductCard";
 
 const RelatedProducts = ({ currentProduct }) => {
   const { products } = useContext(ShopContext);
-  const [related, setRelated] = useState([]);
 
-  useEffect(() => {
-    if (!currentProduct || products.length === 0) return;
-
-    const filtered = products
+  const related = useMemo(() => {
+    if (!currentProduct) return [];
+    return products
       .filter(
         (p) =>
           p._id !== currentProduct._id &&
@@ -17,8 +15,6 @@ const RelatedProducts = ({ currentProduct }) => {
           p.isActive
       )
       .slice(0, 5);
-
-    setRelated(filtered);
   }, [products, currentProduct]);
 
   if (related.length === 0) return null;
@@ -40,6 +36,7 @@ const RelatedProducts = ({ currentProduct }) => {
               originalPrice: product.rate,
               discount: product.discountRate,
               image: product.images?.[0]?.url,
+              stock: product.stock,
             }}
           />
         ))}

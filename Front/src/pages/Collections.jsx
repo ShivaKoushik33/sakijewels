@@ -166,7 +166,7 @@
 
 
 
-import { useContext, useEffect, useState, useMemo } from "react";
+import { useContext, useState, useMemo } from "react";
 import { ShopContext } from "../context/ShopContext";
 import ProductCard from "../components/home/ProductCard";
 import { useLocation } from "react-router-dom";
@@ -186,13 +186,29 @@ const formatTypeLabel = (type) => {
     .replaceAll("_", " ");
 };
 
+// The type filter carried in ?type=..., e.g. from a category link.
+const typesFromSearch = (search) => {
+  const type = new URLSearchParams(search).get("type");
+  return type ? [type] : [];
+};
+
 export default function Collections() {
   const location = useLocation();
-  const { products, search, showSearch, variantType } =
+  const { products, productsLoaded, search, showSearch } =
     useContext(ShopContext);
 
   // const [filteredProducts, setFilteredProducts] = useState([]);
-  const [selectedTypes, setSelectedTypes] = useState([]);
+  // Filters start from the URL on the first render (no flash of unfiltered
+  // products) and are reset only when the URL changes, so the user's own
+  // ticks survive a product reload (e.g. after logging in).
+  const [selectedTypes, setSelectedTypes] = useState(() =>
+    typesFromSearch(location.search)
+  );
+  const [filtersForSearch, setFiltersForSearch] = useState(location.search);
+  if (filtersForSearch !== location.search) {
+    setFiltersForSearch(location.search);
+    setSelectedTypes(typesFromSearch(location.search));
+  }
   const [sortType, setSortType] = useState("relevant");
   const [showFilter, setShowFilter] = useState(false);
   const [showSort, setShowSort] = useState(false);   // mobile sort menu
@@ -203,24 +219,14 @@ export default function Collections() {
     { value: "high-low", label: "Price: High to Low" },
   ];
 
-  // ✅ Get available product types dynamically
+  // ✅ Get available product types dynamically. A selected type stays listed
+  // even when this collection has nothing of it (e.g. from a category link),
+  // so it can always be unticked.
   const availableTypes = useMemo(() => {
-    return [...new Set(products.map((p) => p.type))];
-  }, [products]);
-
-  // ✅ Handle URL type param
-  useEffect(() => {
-    if(products.length === 0) return; // Wait for products to load
-
-    const params = new URLSearchParams(location.search);
-    const typeFromURL = params.get("type");
-    
-    if (typeFromURL) {
-      setSelectedTypes([typeFromURL]);
-    } else {
-      setSelectedTypes([]);
-    }
-  }, [location.search,products]);
+    const types = new Set(products.map((p) => p.type));
+    selectedTypes.forEach((type) => types.add(type));
+    return [...types];
+  }, [products, selectedTypes]);
 
   // ✅ Reset filters when variant changes
   // useEffect(() => {
@@ -330,7 +336,7 @@ const filteredProducts = useMemo(() => {
         <div className="flex flex-row justify-between items-center gap-3 mb-6">
           <h1 className="font-olivera text-xl font-bold text-[#141416]">
             {selectedTypes.length > 0
-              ? formatTypeLabel(selectedTypes[0])
+              ? selectedTypes.map(formatTypeLabel).join(", ")
               : "All Collections"}
           </h1>
 
@@ -403,7 +409,9 @@ const filteredProducts = useMemo(() => {
         </div>
 
         {/* PRODUCT GRID */}
-        {filteredProducts.length === 0 ? (
+        {!productsLoaded ? (
+          <p className="text-gray-500">Loading products...</p>
+        ) : filteredProducts.length === 0 ? (
           <p className="text-gray-500">No products found.</p>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -419,6 +427,7 @@ const filteredProducts = useMemo(() => {
                   rating: product.rating,
                   reviews: product.ratingCount,
                   image: product.images?.[0]?.url,
+                  stock: product.stock,
                 }}
               />
             ))}

@@ -9,6 +9,7 @@ export default function BuyNowReview() {
   const {
     getCartProducts,
     getCartSummary,
+    cartReady,
     selectedAddress,
     setSelectedAddress,
     delivery_fee,
@@ -51,14 +52,16 @@ export default function BuyNowReview() {
 
   const summary = isBuyNow
     ? (() => {
-        const subtotal = (buyNowItem.price || 0) * (buyNowItem.quantity || 1);
-        const discount =
-          ((buyNowItem.originalPrice || 0) - (buyNowItem.price || 0)) *
-          (buyNowItem.quantity || 1);
+        const quantity = buyNowItem.quantity || 1;
+        const subtotal = (buyNowItem.price || 0) * quantity;
+        const mrpTotal =
+          (buyNowItem.originalPrice || buyNowItem.price || 0) * quantity;
         return {
           itemCount: 1,
+          unitCount: quantity,
+          mrpTotal,
           subtotal,
-          discount,
+          discount: mrpTotal - subtotal,
           total: subtotal
         };
       })()
@@ -66,7 +69,7 @@ export default function BuyNowReview() {
 
   const isBelowMinimum = summary.subtotal < 249;
   const savings = summary.discount + couponDiscount;
-  const itemCount = summary.itemCount;
+  const itemLabel = `${summary.unitCount} ${summary.unitCount === 1 ? "item" : "items"}`;
 
   const effectiveDeliveryFee = freeShipping ? 0 : delivery_fee;
   const finalTotal =
@@ -87,10 +90,14 @@ export default function BuyNowReview() {
 
         setAddresses(res.data);
 
-        if (res.data.length > 0) {
-          const defaultAddr = res.data.find(a => a.isDefault);
-          setSelectedAddress(defaultAddr || res.data[0]);
-        }
+        // Keep the address the customer already picked (or just added);
+        // fall back to the default only when there is none.
+        setSelectedAddress((current) => {
+          const stillThere =
+            current && res.data.find((a) => a._id === current._id);
+          if (stillThere) return stillThere;
+          return res.data.find((a) => a.isDefault) || res.data[0] || null;
+        });
 
       } catch (error) {
         // silent — address list just stays empty
@@ -221,6 +228,16 @@ export default function BuyNowReview() {
     setCouponMsg({ type: "success", text: "Coupon applied successfully" });
   };
 
+  // After a refresh the cart arrives a moment later; don't show a zero total
+  // and a "minimum order" warning in the meantime.
+  if (!isBuyNow && !cartReady) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center text-[#777E90]">
+        Loading your order...
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-white">
       <div className="max-w-[1440px] mx-auto px-4 sm:px-6 md:px-8 lg:px-[120px] py-6 md:py-10">
@@ -329,8 +346,8 @@ export default function BuyNowReview() {
               </h2>
 
               <div className="flex justify-between mb-3">
-                <span>Subtotal ({itemCount} items)</span>
-                <span>₹ {summary.subtotal.toLocaleString()}</span>
+                <span>Price ({itemLabel})</span>
+                <span>₹ {summary.mrpTotal.toLocaleString()}</span>
               </div>
 
               <div className="flex justify-between mb-3">
@@ -386,9 +403,11 @@ export default function BuyNowReview() {
                 <span>₹ {finalTotal.toLocaleString()}</span>
               </div>
 
-              <p className="text-sm text-green-600 mb-6">
-                You saved ₹{savings.toLocaleString()} on this order
-              </p>
+              {savings > 0 && (
+                <p className="text-sm text-green-600 mb-6">
+                  You saved ₹{savings.toLocaleString()} on this order
+                </p>
+              )}
 
               <div className="flex flex-col gap-3">
 

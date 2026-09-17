@@ -1,13 +1,21 @@
-import { createContext, useEffect, useState } from 'react';
+import { createContext, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import {
+  addToWishlistApi,
+  getWishlistData,
+  removeFromWishlistApi,
+} from '../services/wishlistService';
 
 export const ShopContext = createContext();
 
+const backendUrl = import.meta.env.VITE_API_BASE_URL;
+
 const ShopContextProvider = ({ children }) => {
-  const backendUrl = import.meta.env.VITE_API_BASE_URL;
-  const [products, setProducts] = useState([]);
+  // Every product, including out-of-stock ones, so the cart can still show
+  // items that went out of stock and let the user remove them.
   const [allProducts, setAllProducts] = useState([]);
+  const [productsLoaded, setProductsLoaded] = useState(false);
   const [token, setToken] = useState(() => {
     return localStorage.getItem("token") || "";
   });
@@ -17,6 +25,11 @@ const ShopContextProvider = ({ children }) => {
   const [search, setSearch] = useState('');
   const [showSearch, setShowSearch] = useState(false);
   const [cartItems, setCartItems] = useState({});
+  // Token whose cart and wishlist are loaded (null = none yet), so pages can
+  // tell a loading cart from an empty one.
+  const [userDataFor, setUserDataFor] = useState(null);
+  // One shared list, so every heart on every page agrees.
+  const [wishlistIds, setWishlistIds] = useState([]);
 
   const [selectedAddress, setSelectedAddress] = useState(null);
   const [delivery_fee, setDeliveryFee] = useState(49);
@@ -45,6 +58,7 @@ const ShopContextProvider = ({ children }) => {
     localStorage.removeItem("buyNowItem");
     setToken("");
     setCartItems({});
+    setWishlistIds([]);
     setBuyNowItem(null);
     setSelectedAddress(null);
   };
@@ -66,6 +80,7 @@ const ShopContextProvider = ({ children }) => {
           localStorage.removeItem("token");
           setToken("");
           setCartItems({});
+          setWishlistIds([]);
           // Pass the reason to the login page (shown inline there).
           localStorage.setItem(
             "authNotice",
@@ -83,37 +98,34 @@ const ShopContextProvider = ({ children }) => {
     };
   }, [navigate]);
 
-  const getProductsData = async () => {
-    try {
-      const response = await axios.get(`${backendUrl}/api/products`);
-      const all = response.data || [];
-      // Keep ALL products (including out-of-stock) so the cart can still show
-      // items that went out of stock and let the user remove them.
-      setAllProducts(all);
-      // Collections page shows only in-stock products of the current variant.
-      setProducts(all.filter(p => p.stock > 0 && p.variantType === variantType));
-    } catch (error) {
-      // silent — products just won't load
-    }
-  };
+  // Collections show in-stock products of the chosen variant. Deriving this
+  // instead of refetching on every variant switch means a slow response for
+  // the previous variant can never overwrite the current one.
+  const products = useMemo(
+    () =>
+      allProducts.filter(
+        (p) => p.stock > 0 && p.variantType === variantType
+      ),
+    [allProducts, variantType]
+  );
 
-  const addToCart = async (itemId) => {
+  /**
+   * Adds `quantity` units and resolves to true on success. The badge updates
+   * immediately; the server's cart then replaces the local copy, and a failed
+   * request takes the units back out.
+   */
+  const addToCart = async (itemId, quantity = 1) => {
     if (!token) {
       navigate("/login");
-      return;
-    }
-    let cartData = structuredClone(cartItems);
-    if (cartData[itemId]) {
-      cartData[itemId] += 1;
-    } else {
-      cartData[itemId] = 1;
+      return false;
     }
 
-    setCartItems(cartData);
+    setCartItems((prev) => ({ ...prev, [itemId]: (prev[itemId] || 0) + quantity }));
+
     try {
       const response = await axios.post(
         backendUrl + '/api/cart/add',
-        { itemId },
+        { itemId, quantity },
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -121,9 +133,50 @@ const ShopContextProvider = ({ children }) => {
         }
       );
 
-      // success is silent; cart badge/state updates reflect the change
-    } catch (error) {
-      // silent — 401 handled by interceptor
+      if (response.data?.cartData) {
+        setCartItems(response.data.cartData);
+      }
+      return true;
+    } catch {
+      // 401 is handled by the interceptor; undo only this add.
+      setCartItems((prev) => {
+        const next = { ...prev };
+        const remaining = (next[itemId] || 0) - quantity;
+        if (remaining > 0) next[itemId] = remaining;
+        else delete next[itemId];
+        return next;
+      });
+      return false;
+    }
+  };
+
+  const isWishlisted = (productId) => wishlistIds.includes(productId);
+
+  /**
+   * Adds or removes a product from the wishlist and resolves to true on
+   * success. Every heart updates at once; a failed request rolls it back.
+   */
+  const toggleWishlist = async (productId) => {
+    if (!token) {
+      navigate("/login");
+      return false;
+    }
+
+    const removing = wishlistIds.includes(productId);
+    const add = (prev) => (prev.includes(productId) ? prev : [...prev, productId]);
+    const remove = (prev) => prev.filter((id) => id !== productId);
+
+    setWishlistIds(removing ? remove : add);
+    try {
+      if (removing) {
+        await removeFromWishlistApi(productId, token);
+      } else {
+        await addToWishlistApi(productId, token);
+      }
+      return true;
+    } catch {
+      setWishlistIds(removing ? add : remove);
+      return false;
     }
   };
 
@@ -171,7 +224,7 @@ const ShopContextProvider = ({ children }) => {
       if (response.data.success) {
         setCartItems(response.data.cartData);
       }
-    } catch (error) {
+    } catch {
       // 401 handled by interceptor; stay silent on cart load errors
     }
   };
@@ -188,16 +241,18 @@ const ShopContextProvider = ({ children }) => {
       0
     );
 
-    const discount = cartProducts.reduce(
-      (acc, item) =>
-        acc + ((item.originalPrice - item.price) * item.quantity),
+    // Price before discount (MRP), so summaries read MRP − discount = subtotal.
+    const mrpTotal = cartProducts.reduce(
+      (acc, item) => acc + (item.originalPrice || item.price) * item.quantity,
       0
     );
 
     return {
       itemCount: cartProducts.length,
+      unitCount: cartProducts.reduce((acc, item) => acc + item.quantity, 0),
+      mrpTotal,
       subtotal,
-      discount,
+      discount: mrpTotal - subtotal,
       total: subtotal,
     };
   };
@@ -206,30 +261,78 @@ const ShopContextProvider = ({ children }) => {
     localStorage.setItem("variantType", variantType);
   }, [variantType]);
 
+  // Products: on first load, and again on login/logout so stock is fresh.
   useEffect(() => {
-    const initialize = async () => {
-      await getProductsData();
+    let cancelled = false;
 
-      if (token) {
-        await getUserCart(token);
+    axios
+      .get(`${backendUrl}/api/products`)
+      .then((response) => {
+        if (!cancelled) setAllProducts(response.data || []);
+      })
+      .catch(() => {
+        // silent — products just won't load
+      })
+      .finally(() => {
+        if (!cancelled) setProductsLoaded(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
+
+  // The logged-in user's cart and wishlist. Logging out (logout() or the 401
+  // interceptor) already clears both.
+  useEffect(() => {
+    if (!token) return;
+
+    // A response for a token that has since changed must not be applied.
+    let cancelled = false;
+    const headers = { Authorization: `Bearer ${token}` };
+
+    const loadUserData = async () => {
+      const [cartResponse, wishlist] = await Promise.all([
+        axios.get(`${backendUrl}/api/cart`, { headers }).catch(() => null),
+        getWishlistData(token).catch(() => null),
+      ]);
+      if (cancelled) return;
+
+      if (cartResponse?.data?.success) {
+        setCartItems(cartResponse.data.cartData);
       }
+      if (Array.isArray(wishlist)) {
+        setWishlistIds(wishlist.map((item) => item._id));
+      }
+      setUserDataFor(token);
     };
 
-    initialize();
-  }, [token, variantType]);
+    loadUserData();
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
+
+  const cartReady = productsLoaded && (!token || userDataFor === token);
 
   const value = {
     products,
+    allProducts,
+    productsLoaded,
     search,
     setSearch,
     showSearch,
     setShowSearch,
     cartItems,
     setCartItems,
+    cartReady,
     addToCart,
     getCartCount,
     getCartProducts,
     getCartSummary,
+    wishlistIds,
+    isWishlisted,
+    toggleWishlist,
     token,
     setToken,
     backendUrl,
