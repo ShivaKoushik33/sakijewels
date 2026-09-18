@@ -10,6 +10,7 @@ import orderRoutes from "./routes/order.routes.js";
 import addressRoutes from "./routes/address.routes.js";
 import pincodeRoutes from "./routes/pincode.routes.js";
 import reviewRoutes from "./routes/review.routes.js";
+import webhookRoutes from "./routes/webhook.routes.js";
 import { apiLimiter } from "./middlewares/rateLimit.js";
 
 const app = express();
@@ -53,6 +54,16 @@ app.use(
     origin: allowedOrigins.length ? allowedOrigins : defaultOrigins,
     credentials: true,
   })
+);
+
+/**
+ * Razorpay signs the exact bytes it posts, so the webhook reads its own raw
+ * body and has to be mounted before express.json() touches the request.
+ */
+app.use(
+  "/api/webhooks",
+  express.raw({ type: "application/json", limit: "1mb" }),
+  webhookRoutes
 );
 
 app.use(express.json({ limit: "100kb" }));
