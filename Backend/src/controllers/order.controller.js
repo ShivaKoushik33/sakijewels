@@ -7,6 +7,7 @@ import Product from "../models/Product.js";
 import PaymentIntent from "../models/PaymentIntent.js";
 import razorpay from "../config/razorpay.js";
 import { priceOrder, MIN_ORDER_SUBTOTAL } from "../utils/pricing.js";
+import { placeOrderFromIntent } from "../utils/placeOrderFromIntent.js";
 
 const INTENT_TTL_MINUTES = 60;
 
@@ -300,96 +301,18 @@ export const verifyPaymentAndPlaceOrder = async (req, res) => {
     }
 
     /* 5. Place the order from the recorded quote, not from the live cart. */
-    const session = await mongoose.startSession();
-    let placedOrder;
-    let committed = false;
+    const { order, alreadyProcessed } = await placeOrderFromIntent({
+      intent,
+      paymentId: razorpay_payment_id,
+    });
 
-    try {
-      session.startTransaction();
-
-      // Single-use claim. A replay finds status CONSUMED and gets nothing.
-      const claimed = await PaymentIntent.findOneAndUpdate(
-        { _id: intent._id, status: "CREATED" },
-        { status: "CONSUMED", paymentId: razorpay_payment_id },
-        { session, new: true }
-      );
-
-      if (!claimed) {
-        await session.abortTransaction();
-        return res
-          .status(409)
-          .json({ message: "This payment has already been processed." });
-      }
-
-      const shortfalls = [];
-
-      for (const item of claimed.items) {
-        const updated = await Product.findOneAndUpdate(
-          { _id: item.product, stock: { $gte: item.quantity } },
-          { $inc: { stock: -item.quantity } },
-          { session, new: true }
-        );
-
-        // The customer has already paid for this line, so it stays on the
-        // order; flag it for the admin rather than silently dropping it.
-        if (!updated) {
-          shortfalls.push(`${item.name} (x${item.quantity})`);
-        }
-      }
-
-      const created = await Order.create(
-        [
-          {
-            user: claimed.user,
-            items: claimed.items,
-            shippingAddress: claimed.shippingAddress,
-            subtotal: claimed.subtotal,
-            discount: claimed.discount,
-            deliveryFee: claimed.deliveryFee,
-            codCharge: 0,
-            totalAmount: claimed.totalAmount,
-            coupon: claimed.coupon,
-            status: "CONFIRMED",
-            paymentMethod: "ONLINE",
-            paymentId: razorpay_payment_id,
-            isPaid: true,
-            adminRemark: shortfalls.length
-              ? `Paid but out of stock at capture: ${shortfalls.join(", ")}`
-              : undefined,
-          },
-        ],
-        { session }
-      );
-
-      placedOrder = created[0];
-
-      // Clear only the lines that were just ordered.
-      const user = await User.findById(claimed.user).session(session);
-      if (user) {
-        let changed = false;
-        for (const item of claimed.items) {
-          const key = item.product.toString();
-          if (user.cartData && key in user.cartData) {
-            delete user.cartData[key];
-            changed = true;
-          }
-        }
-        if (changed) {
-          user.markModified("cartData");
-          await user.save({ session });
-        }
-      }
-
-      await session.commitTransaction();
-      committed = true;
-    } catch (txError) {
-      if (!committed) {
-        await session.abortTransaction().catch(() => {});
-      }
-      throw txError;
-    } finally {
-      session.endSession();
+    if (alreadyProcessed) {
+      return res
+        .status(409)
+        .json({ message: "This payment has already been processed." });
     }
+
+    const placedOrder = order;
 
     return res.status(201).json({
       message: "Payment successful & order placed",
