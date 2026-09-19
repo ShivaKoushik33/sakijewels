@@ -1,31 +1,23 @@
 import { useEffect, useState, useContext } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { getProfileUi, lookupPincode } from '../services/profileService';
-import { ShopContext } from '../context/ShopContext';
 import axios from 'axios';
+import { getProfileUi } from '../services/profileService';
+import { ShopContext } from '../context/ShopContext';
+import useAddressForm from '../hooks/useAddressForm';
+import AddressFormFields from '../components/profile/AddressFormFields';
 
 export default function AddAddress() {
   const [ui, setUi] = useState(null);
-
-  const [formData, setFormData] = useState({
-    fullName: '',
-    phone: '',
-    house: '',
-    street: '',
-    city: '',
-    state: '',
-    pincode: '',
-    isDefault: false
-  });
-
-  const [cities, setCities] = useState([]);
-  const [loadingPin, setLoadingPin] = useState(false);
-  const [pinMsg, setPinMsg] = useState("");    // inline pincode message
-  const [formMsg, setFormMsg] = useState("");  // inline form error
+  const [isDefault, setIsDefault] = useState(false);
+  const [formMsg, setFormMsg] = useState('');   // inline form error
+  const [saving, setSaving] = useState(false);
 
   const { backendUrl, token, setSelectedAddress } = useContext(ShopContext);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+
+  const { formData, handleChange, suggestions, loadingPin, pinMsg, validate } =
+    useAddressForm(backendUrl);
 
   useEffect(() => {
     getProfileUi().then((data) => setUi(data || null));
@@ -34,105 +26,32 @@ export default function AddAddress() {
   const pageUi = ui?.pages?.addAddress;
   const fields = pageUi?.fields;
 
-  /* 🔥 PINCODE VERIFY */
-  const fetchPincodeData = async (pin) => {
-    if (pin.length !== 6) return;
-
-    try {
-      setLoadingPin(true);
-      setPinMsg("");
-
-      const result = await lookupPincode(pin, backendUrl);
-
-      if (!result) {
-        setPinMsg('Invalid pincode');
-        setCities([]);
-        setFormData((prev) => ({
-          ...prev,
-          city: '',
-          state: ''
-        }));
-        return;
-      }
-
-      setCities(result.cities);
-
-      // Only auto-fill city & state. Village is always entered by the user
-      // (rural villages may not be listed under a pincode).
-      setFormData((prev) => ({
-        ...prev,
-        state: result.state,
-        city: result.cities[0]
-      }));
-    } catch (error) {
-      setPinMsg('Failed to verify pincode');
-    } finally {
-      setLoadingPin(false);
-    }
-  };
-
-  /* 🔥 HANDLE CHANGE */
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-
-    const finalValue = type === 'checkbox' ? checked : value;
-
-    setFormData((prev) => ({
-      ...prev,
-      [name]: finalValue
-    }));
-
-    if (name === 'pincode') {
-      const cleanPin = value.replace(/\D/g, '');
-
-      setFormData((prev) => ({
-        ...prev,
-        pincode: cleanPin
-      }));
-
-      if (cleanPin.length === 6) {
-        fetchPincodeData(cleanPin);
-      }
-
-      if (cleanPin.length < 6) {
-        setCities([]);
-      }
-    }
-  };
-
-  /* 🔥 SUBMIT */
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setFormMsg("");
+    if (saving) return;
+    setFormMsg('');
 
     if (!token) {
-      localStorage.setItem("authNotice", "Please login to add an address.");
+      localStorage.setItem('authNotice', 'Please login to add an address.');
       return navigate('/login');
     }
 
-    if (formData.phone.length !== 10) {
-      setFormMsg('Enter valid mobile number');
-      return;
-    }
-
-    if (formData.pincode.length !== 6) {
-      setFormMsg('Enter valid pincode');
+    const problem = validate();
+    if (problem) {
+      setFormMsg(problem);
       return;
     }
 
     try {
+      setSaving(true);
+
       const res = await axios.post(
         `${backendUrl}/api/addresses`,
-        formData, // 🔥 SAME BACKEND SCHEMA
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
+        { ...formData, isDefault },
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      const newAddress =
-        res.data.addresses?.[res.data.addresses.length - 1];
+      const newAddress = res.data.addresses?.[res.data.addresses.length - 1];
 
       if (searchParams.get('redirect') === 'checkout') {
         setSelectedAddress(newAddress);
@@ -141,150 +60,57 @@ export default function AddAddress() {
         navigate('/profile/addresses');
       }
     } catch (error) {
-      setFormMsg(
-        error?.response?.data?.message ||
-          'Failed to add address'
-      );
+      setFormMsg(error?.response?.data?.message || 'Failed to add address');
+      setSaving(false);
     }
   };
+
+  if (!pageUi) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-[#141416]">Loading...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white">
       <div className="max-w-[1440px] mx-auto px-4 sm:px-6 md:px-8 lg:px-[120px] py-6 md:py-10">
-        {pageUi?.title && (
+        {pageUi.title && (
           <h1 className="text-2xl md:text-3xl font-bold text-[#141416] mb-6 md:mb-8">
             {pageUi.title}
           </h1>
         )}
 
         <div className="max-w-[640px]">
-          <form
-            onSubmit={handleSubmit}
-            className="flex flex-col gap-5"
-          >
-            {/* FULL NAME */}
-            <input
-              name="fullName"
-              value={formData.fullName}
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4 md:gap-5">
+            <AddressFormFields
+              fields={fields}
+              formData={formData}
               onChange={handleChange}
-              className="w-full h-[44px] px-4 border border-[#E6E8EC] rounded-lg text-sm"
-              placeholder={fields?.namePlaceholder || 'Full Name'}
-              required
+              suggestions={suggestions}
+              loadingPin={loadingPin}
+              pinMsg={pinMsg}
             />
 
-            {/* PHONE */}
-            <input
-              name="phone"
-              value={formData.phone}
-              onChange={handleChange}
-              maxLength={10}
-              className="w-full h-[44px] px-4 border border-[#E6E8EC] rounded-lg text-sm"
-              placeholder={
-                fields?.phonePlaceholder || 'Phone Number'
-              }
-              required
-            />
-
-            {/* HOUSE */}
-            <textarea
-              name="house"
-              value={formData.house}
-              onChange={handleChange}
-              className="w-full min-h-[72px] px-4 py-2 border border-[#E6E8EC] rounded-lg text-sm"
-              placeholder={
-                fields?.addressPlaceholder ||
-                'House No / Flat / Building'
-              }
-              required
-            />
-
-            {/* VILLAGE (entered by user — rural areas may not resolve by pincode) */}
-            <input
-              name="street"
-              value={formData.street}
-              onChange={handleChange}
-              className="w-full h-[44px] px-4 border border-[#E6E8EC] rounded-lg text-sm"
-              placeholder="Enter Village"
-              required
-            />
-
-            {/* PINCODE */}
-            <div>
-              <input
-                name="pincode"
-                value={formData.pincode}
-                onChange={handleChange}
-                maxLength={6}
-                className="w-full h-[44px] px-4 border border-[#E6E8EC] rounded-lg text-sm"
-                placeholder={
-                  fields?.pincodePlaceholder || 'Pincode'
-                }
-                required
-              />
-
-              {loadingPin && (
-                <p className="text-xs text-[#901CDB] mt-2">
-                  Verifying pincode...
-                </p>
-              )}
-              {pinMsg && (
-                <p className="text-xs text-red-500 mt-2">{pinMsg}</p>
-              )}
-            </div>
-
-            {/* CITY/DISTRICT/TOWN — filled in from the pincode but always
-                editable: the pincode's district is often not the customer's
-                own town. The pincode's districts are offered as suggestions. */}
-            <div>
-              <input
-                name="city"
-                list="pincode-cities"
-                value={formData.city}
-                onChange={handleChange}
-                className="w-full h-[44px] px-4 border border-[#E6E8EC] rounded-lg text-sm"
-                placeholder={fields?.cityPlaceholder || 'City/District/Town'}
-                required
-              />
-              <datalist id="pincode-cities">
-                {cities.map((city) => (
-                  <option key={city} value={city} />
-                ))}
-              </datalist>
-            </div>
-
-            {/* STATE */}
-            <input
-              name="state"
-              value={formData.state}
-              onChange={handleChange}
-              className="w-full h-[44px] px-4 border border-[#E6E8EC] rounded-lg text-sm bg-gray-50"
-              placeholder={fields?.statePlaceholder || 'State'}
-              required
-              readOnly={formData.state !== ''}
-            />
-
-            {/* DEFAULT */}
             <label className="flex items-center gap-3 text-sm text-[#141416]">
               <input
                 type="checkbox"
                 name="isDefault"
-                checked={formData.isDefault}
-                onChange={handleChange}
+                checked={isDefault}
+                onChange={(e) => setIsDefault(e.target.checked)}
               />
               Set as default address
             </label>
 
-            {/* INLINE FORM ERROR */}
-            {formMsg && (
-              <p className="text-sm text-red-500">{formMsg}</p>
-            )}
+            {formMsg && <p className="text-sm text-red-500">{formMsg}</p>}
 
-            {/* SUBMIT */}
             <button
               type="submit"
-              className="mt-4 w-full sm:w-[220px] h-[44px] bg-[#901CDB] text-white rounded-lg text-base font-medium hover:bg-[#7A16C0]"
+              disabled={saving}
+              className="mt-2 w-full sm:w-[220px] h-[44px] bg-[#901CDB] text-white rounded-lg text-base font-medium hover:bg-[#7A16C0] transition-colors disabled:opacity-60"
             >
-              {pageUi?.primaryCtaText || 'Add Address'}
+              {saving ? 'Saving...' : pageUi.primaryCtaText}
             </button>
           </form>
         </div>

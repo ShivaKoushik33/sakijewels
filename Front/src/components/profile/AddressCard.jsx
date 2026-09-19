@@ -12,8 +12,13 @@ export default function AddressCard({ address, onDelete, deleting = false }) {
           </div>
           <div className="text-xs md:text-sm text-[#777E90] mt-0.5">{address.phone}</div>
           <div className="text-xs md:text-sm text-[#353945] leading-relaxed mt-2 md:mt-3">
-            {address.addressLine} {address.city}, {address.state} -{' '}
-            <span className="font-semibold text-[#141416]">{address.pincode}</span>
+            <div>{address.addressLine}</div>
+            {address.landmark && <div>Landmark: {address.landmark}</div>}
+            <div>
+              {/* district is missing on addresses saved before it was asked for */}
+              {[address.city, address.district, address.state].filter(Boolean).join(', ')} -{' '}
+              <span className="font-semibold text-[#141416]">{address.pincode}</span>
+            </div>
           </div>
         </div>
 

@@ -22,15 +22,27 @@ const addressSchema = new mongoose.Schema(
       required: true
     },
 
+    // Village or locality.
     street: {
-      type: String
+      type: String,
+      trim: true
+    },
+
+    landmark: {
+      type: String,
+      trim: true
     },
 
     city: {
       type: String,
       required: true
     },
-    
+
+    district: {
+      type: String,
+      trim: true
+    },
+
     state: {
       type: String,
       required: true
