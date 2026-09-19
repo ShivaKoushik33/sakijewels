@@ -9,6 +9,9 @@ import { getOrderReviews, saveReview } from "../../services/reviewService";
  * One rating and message per item. Saving again edits the review the customer
  * already left, so the form is always filled with what they last wrote.
  */
+// Long enough for a real opinion, short enough to read on a card.
+const MAX_REVIEW_CHARS = 300;
+
 export default function OrderReviewSection({ order }) {
   const { token } = useContext(ShopContext);
   const items = order?.items || [];
@@ -131,11 +134,14 @@ export default function OrderReviewSection({ order }) {
                   <textarea
                     value={draft.message || ""}
                     onChange={(e) => update(productId, { message: e.target.value })}
-                    maxLength={1000}
+                    maxLength={MAX_REVIEW_CHARS}
                     rows={3}
                     placeholder="Tell others what you liked (optional)"
                     className="w-full px-3 py-2 border border-[#E6E8EC] rounded-lg text-sm text-[#141416] bg-white"
                   />
+                  <p className="text-xs text-[#777E90] text-right">
+                    {(draft.message || "").length}/{MAX_REVIEW_CHARS}
+                  </p>
 
                   <div className="flex items-center gap-3 flex-wrap">
                     <button

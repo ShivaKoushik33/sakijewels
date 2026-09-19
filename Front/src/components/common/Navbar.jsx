@@ -164,8 +164,22 @@ const changeLanguage = (langCode, label) => {
     className="flex flex-col items-center gap-1 cursor-pointer"
     onClick={() => setIsLangOpen(!isLangOpen)}
   >
-    {/* Round Icon */}
-    <div className="w-[18px] h-[18px] rounded-full bg-gray-200"></div>
+    {/* Globe, drawn like the other icons in this bar */}
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="#901CDB"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="9" />
+      <path d="M3.6 9h16.8M3.6 15h16.8" />
+      <path d="M12 3c2.3 2.6 3.5 5.6 3.5 9s-1.2 6.4-3.5 9c-2.3-2.6-3.5-5.6-3.5-9S9.7 5.6 12 3z" />
+    </svg>
 
     {/* Language + Arrow (Below Icon) */}
     <div className="flex items-center gap-1">

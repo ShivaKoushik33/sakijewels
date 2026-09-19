@@ -163,7 +163,7 @@ export const categoryConfig = [
     image: FASHION_EARINGS_JUMKA
   },
   {
-    name: "Bangles",
+    name: "Bracelets",
     type: "BRACELET_BANGLES",
     variantType: "FASHION",
     image: FASHION_BRACELET_BANGLES

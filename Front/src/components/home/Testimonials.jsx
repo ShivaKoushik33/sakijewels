@@ -1,5 +1,14 @@
 import { useEffect, useState } from "react";
 
+// A card in a moving carousel can only hold so much. Anything longer is cut
+// here so every card stays the same height, whatever a customer wrote.
+const MAX_REVIEW_CHARS = 150;
+
+const shorten = (text = "") =>
+  text.length > MAX_REVIEW_CHARS
+    ? `${text.slice(0, MAX_REVIEW_CHARS).trimEnd()}...`
+    : text;
+
 export default function Testimonials({ data }) {
   if (!data || data.length === 0) return null;
 
@@ -62,8 +71,12 @@ export default function Testimonials({ data }) {
                   ))}
                   <span className="text-sm">{testimonial.rating}/5.0</span>
                 </div>
-                <h3 className="text-base md:text-xl font-medium">{testimonial.name}</h3>
-                <p className="text-xs md:text-sm line-clamp-3">{testimonial.review}</p>
+                <h3 className="text-base md:text-xl font-medium truncate">{testimonial.name}</h3>
+                {/* break-words: one very long word would otherwise run out
+                    of the card sideways, where line-clamp cannot help. */}
+                <p className="text-xs md:text-sm line-clamp-3 break-words">
+                  {shorten(testimonial.review)}
+                </p>
                 <span className="text-[10px] text-[#777E90]">{testimonial.date}</span>
               </div>
             </div>

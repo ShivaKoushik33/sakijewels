@@ -6,6 +6,13 @@ import instaMain from '../../assets/images/InstaMain.jpeg';
 
 
 
+// The shop's own contact details, used by the call, mail and chat links.
+const SHOP_PHONE = '9705653066';
+const SHOP_EMAIL = 'support@thesakhijewels.com';
+const WHATSAPP_GREETING = encodeURIComponent(
+  "Hi, I have a question about an order from The Sakhi Jewels."
+);
+
 export default function Footer() {
   return (
     <footer id="about-us" className="w-full bg-[#FFEED8]">
@@ -39,8 +46,8 @@ export default function Footer() {
                   <h4 className="font-semibold text-[#141416]">Quick Links</h4>
                   <Link to="/cart" className="text-sm md:text-base text-[#353945] hover:text-[#901CDB]">My Cart</Link>
                   <Link to="/profile" className="text-sm md:text-base text-[#353945] hover:text-[#901CDB]">My Profile</Link>
-                  <span className="text-sm md:text-base text-[#353945]">Customer Reviews</span>
-                  <span className="text-sm md:text-base text-[#353945]">About The Sakhi Jewels</span>
+                  <Link to="/#reviews" className="text-sm md:text-base text-[#353945] hover:text-[#901CDB]">Customer Reviews</Link>
+                  <Link to="/#about-us" className="text-sm md:text-base text-[#353945] hover:text-[#901CDB]">About The Sakhi Jewels</Link>
                 </div>
 
                 {/* Info & Policy */}
@@ -65,9 +72,29 @@ export default function Footer() {
                       chittoor dist Andhra Pradesh - 517234
                     </p>
                   </div>
-                  <p className="text-sm text-[#353945]">Call us: +91 97056 53066</p>
-                  <p className="text-sm text-[#353945]">Email: support@thesakhijewels.com</p>
-                  <p className="text-sm underline cursor-pointer text-[#901CDB]">Chat with us</p>
+                  <p className="text-sm text-[#353945]">
+                    Call us:{' '}
+                    <a href={`tel:+91${SHOP_PHONE}`} className="hover:text-[#901CDB]">
+                      +91 97056 53066
+                    </a>
+                  </p>
+                  <p className="text-sm text-[#353945]">
+                    Email:{' '}
+                    <a href={`mailto:${SHOP_EMAIL}`} className="hover:text-[#901CDB]">
+                      {SHOP_EMAIL}
+                    </a>
+                  </p>
+                  <a
+                    href={`https://wa.me/91${SHOP_PHONE}?text=${WHATSAPP_GREETING}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-2 text-sm underline text-[#901CDB] hover:text-[#7A16C0]"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                      <path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.4-.7-1.7-.8-.2-.1-.4-.1-.5.1l-.7.9c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.1-.2 0-.4.1-.5l.4-.5c.1-.2.1-.3 0-.5l-.7-1.7c-.2-.4-.4-.4-.5-.4h-.5c-.2 0-.5.1-.7.3-.8.8-1 1.9-.6 3a9.3 9.3 0 0 0 4.3 4.5c1.5.7 2.4.7 3.2.6.5-.1 1.4-.6 1.6-1.2.2-.6.2-1.1.1-1.2-.1-.1-.2-.2-.4-.3z" />
+                    </svg>
+                    Chat with us on WhatsApp
+                  </a>
                 </div>
               </div>
             </div>

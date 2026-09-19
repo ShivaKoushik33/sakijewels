@@ -5,6 +5,7 @@ import { getProfileUi, deleteUserAddress } from '../services/profileService';
 import { ShopContext } from '../context/ShopContext';
 import useAddressForm from '../hooks/useAddressForm';
 import AddressFormFields from '../components/profile/AddressFormFields';
+import ConfirmDialog from '../components/common/ConfirmDialog';
 
 // Addresses saved before the server validated phone numbers can hold values
 // like "+91 98765 43210"; the server now accepts only the 10-digit number.
@@ -23,6 +24,7 @@ export default function EditAddress() {
   const [formMsg, setFormMsg] = useState('');  // inline form error
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [askDelete, setAskDelete] = useState(false);
 
   const {
     formData,
@@ -116,8 +118,9 @@ export default function EditAddress() {
 
   /** Deletes the address being edited, then returns to the address list. */
   const handleDelete = async () => {
-    if (saving || deleting || !window.confirm('Delete this address?')) return;
+    if (saving || deleting) return;
 
+    setAskDelete(false);
     setFormMsg('');
     setDeleting(true);
     try {
@@ -188,7 +191,7 @@ export default function EditAddress() {
                 </button>
                 <button
                   type="button"
-                  onClick={handleDelete}
+                  onClick={() => setAskDelete(true)}
                   disabled={saving || deleting}
                   className="w-full sm:w-[200px] h-[44px] border border-[#FF3B30] text-[#FF3B30] rounded-lg text-base font-medium hover:bg-[#FFF5F5] transition-colors disabled:opacity-60"
                 >
@@ -199,6 +202,16 @@ export default function EditAddress() {
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        open={askDelete}
+        title="Delete this address?"
+        message="It will be removed from your saved addresses."
+        confirmText="Delete address"
+        busy={deleting}
+        onConfirm={handleDelete}
+        onCancel={() => setAskDelete(false)}
+      />
     </div>
   );
 }
