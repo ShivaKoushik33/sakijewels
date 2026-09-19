@@ -33,13 +33,26 @@ export default function Home() {
   const location = useLocation();
 
 useEffect(() => {
-  if (location.hash) {
-    const element = document.getElementById(location.hash.replace("#", ""));
+  if (!location.hash || loading) return undefined;
+
+  const id = location.hash.slice(1);
+  let frame = 0;
+  let attempts = 0;
+
+  // The section may still be a frame or two away: the grids above it are
+  // laying out as their images arrive. Keep looking briefly, then give up.
+  const scrollToSection = () => {
+    const element = document.getElementById(id);
     if (element) {
       element.scrollIntoView({ behavior: "smooth" });
+      return;
     }
-  }
-}, [location]);
+    if (attempts++ < 30) frame = requestAnimationFrame(scrollToSection);
+  };
+
+  frame = requestAnimationFrame(scrollToSection);
+  return () => cancelAnimationFrame(frame);
+}, [location, loading]);
 
   if (loading) {
     return (
@@ -121,15 +134,7 @@ useEffect(() => {
         </div>
       )}
       
-      {/* Most Gifted */}
-      {homepage.mostGifted && (
-        <div id="most-gifted" className="scroll-mt-24 sm:scroll-mt-44 w-full max-w-[1440px] mx-auto my-10 md:my-20 px-2 md:px-4">
-          <div className="flex flex-col items-center gap-2.5 px-2.5 py-2.5 mb-6 md:mb-10">
-            <h2 className="text-xl md:text-2xl font-semibold text-[#141416] text-center">Most Gifted</h2>
-          </div>
-          <ProductGrid title="" products={homepage.mostGifted}  />
-        </div>
-      )}
+      
 
       {/* New Arrivals */}
       {homepage.newArrivals && homepage.newArrivals.length > 0 && (
@@ -156,10 +161,19 @@ useEffect(() => {
           />
         </div>
       )}
+      {/* Most Gifted */}
+      {homepage.mostGifted && (
+        <div id="most-gifted" className="scroll-mt-24 sm:scroll-mt-44 w-full max-w-[1440px] mx-auto my-10 md:my-20 px-2 md:px-4">
+          <div className="flex flex-col items-center gap-2.5 px-2.5 py-2.5 mb-6 md:mb-10">
+            <h2 className="text-xl md:text-2xl font-semibold text-[#141416] text-center">Most Gifted</h2>
+          </div>
+          <ProductGrid title="" products={homepage.mostGifted}  />
+        </div>
+      )}
 
       {/* Testimonials */}
       {homepage.testimonials?.length > 0 && (
-        <div id="reviews" className="scroll-mt-24 sm:scroll-mt-44my-10 md:my-20">
+        <div id="reviews" className="scroll-mt-24 sm:scroll-mt-44 my-10 md:my-20">
           <Testimonials data={homepage.testimonials} />
         </div>
       )}

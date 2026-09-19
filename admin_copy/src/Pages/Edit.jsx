@@ -28,7 +28,7 @@ const Edit = ({ token }) => {
   FASHION: [
     { value: "FASHION_NECKLACES", label: "Necklaces" },
     { value: "FASHION_EARINGS_JUMKA", label: "Earrings & Jumka" },
-    { value: "BRACELET_BANGLES", label: "Bracelet & Bangles" },
+    { value: "BRACELET_BANGLES", label: "Bracelets" },
     { value: "FASHION_RINGS", label: "Rings" },
     { value: "ANKLETS", label: "Anklets" },
     { value: "HAIR_ACCESSORIES", label: "Hair Accessories" },

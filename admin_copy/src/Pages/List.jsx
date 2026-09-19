@@ -3,6 +3,7 @@ import { backendUrl, currency } from '../App';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
+import ConfirmDialog from '../Components/ConfirmDialog';
 
 const List = ({ token }) => {
   const [list, setList] = useState([]);
@@ -12,6 +13,11 @@ const List = ({ token }) => {
     variantType: "",
     sort: ""
   });
+
+  // The product waiting on the delete confirmation, and the one being
+  // deleted: a product used to disappear on a single stray click.
+  const [pendingDelete, setPendingDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   const navigate = useNavigate();
 
@@ -41,10 +47,15 @@ const List = ({ token }) => {
     }
   };
 
-  const removeProduct = async (id) => {
+  const removeProduct = async () => {
+    const product = pendingDelete;
+    if (!product || deleting) return;
+
     try {
+      setDeleting(true);
+
       const response = await axios.delete(
-        `${backendUrl}/api/products/${id}`,
+        `${backendUrl}/api/products/${product._id}`,
         {
           headers: {
             Authorization: `Bearer ${token}`
@@ -58,6 +69,9 @@ const List = ({ token }) => {
     } catch (error) {
       console.error(error);
       toast.error(error.response?.data?.message || "Error deleting product");
+    } finally {
+      setDeleting(false);
+      setPendingDelete(null);
     }
   };
 
@@ -109,7 +123,7 @@ const List = ({ token }) => {
                 <>
                   <option value="FASHION_NECKLACES">Necklaces (Fashion)</option>
                   <option value="FASHION_EARINGS_JUMKA">Earrings & Jumka (Fashion)</option>
-                  <option value="BRACELET_BANGLES">Bracelet & Bangles</option>
+                  <option value="BRACELET_BANGLES">Bracelets</option>
                   <option value="FASHION_RINGS">Rings (Fashion)</option>
                   <option value="ANKLETS">Anklets</option>
                   <option value="HAIR_ACCESSORIES">Hair Accessories</option>
@@ -198,7 +212,7 @@ const List = ({ token }) => {
               </button>
 
               <button
-                onClick={() => removeProduct(product._id)}
+                onClick={() => setPendingDelete(product)}
                 className="text-red-500 font-bold cursor-pointer"
               >
                 Delete
@@ -207,6 +221,20 @@ const List = ({ token }) => {
           </div>
         ))}
       </div>
+
+      <ConfirmDialog
+        open={Boolean(pendingDelete)}
+        title="Delete this product?"
+        message={
+          pendingDelete
+            ? `"${pendingDelete.name}" will be removed from the store. This cannot be undone.`
+            : ""
+        }
+        confirmText="Delete product"
+        busy={deleting}
+        onConfirm={removeProduct}
+        onCancel={() => setPendingDelete(null)}
+      />
     </>
   );
 };

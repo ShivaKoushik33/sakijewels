@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import AddressCard from '../components/profile/AddressCard';
+import ConfirmDialog from '../components/common/ConfirmDialog';
 import { deleteUserAddress, getProfileUi, getUserAddresses } from '../services/profileService';
 import { ShopContext } from '../context/ShopContext';
 import { useContext } from 'react';
@@ -11,6 +12,7 @@ export default function Addresses() {
   const [addresses, setAddresses] = useState([]);
   const [ui, setUi] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
+  const [pendingDelete, setPendingDelete] = useState(null);  // waiting on the dialog
   const [error, setError] = useState('');
 
   
@@ -24,8 +26,9 @@ export default function Addresses() {
   }
 }, [token]);
 
-  const handleDelete = async (id) => {
-    if (deletingId || !window.confirm('Delete this address?')) return;
+  const confirmDelete = async () => {
+    const id = pendingDelete;
+    if (!id || deletingId) return;
 
     setError('');
     setDeletingId(id);
@@ -33,8 +36,10 @@ export default function Addresses() {
       setAddresses(await deleteUserAddress(id, token, backendUrl));
       // An in-progress checkout must not keep pointing at a deleted address.
       if (selectedAddress?._id === id) setSelectedAddress(null);
+      setPendingDelete(null);
     } catch (err) {
       setError(err?.response?.data?.message || 'Could not delete address. Please try again.');
+      setPendingDelete(null);
     } finally {
       setDeletingId(null);
     }
@@ -99,13 +104,23 @@ export default function Addresses() {
               <AddressCard
                 key={address.id}
                 address={address}
-                onDelete={handleDelete}
+                onDelete={setPendingDelete}
                 deleting={deletingId === address.id}
               />
             ))}
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        open={Boolean(pendingDelete)}
+        title="Delete this address?"
+        message="It will be removed from your saved addresses."
+        confirmText="Delete address"
+        busy={Boolean(deletingId)}
+        onConfirm={confirmDelete}
+        onCancel={() => setPendingDelete(null)}
+      />
     </div>
   );
 }

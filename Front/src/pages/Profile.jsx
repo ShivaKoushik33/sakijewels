@@ -8,6 +8,7 @@ import {
   deleteUserAddress,
 } from '../services/profileService';
 import AddressCard from '../components/profile/AddressCard';
+import ConfirmDialog from '../components/common/ConfirmDialog';
 
 export default function Profile() {
   const { token, backendUrl, logout, selectedAddress, setSelectedAddress } =
@@ -25,6 +26,7 @@ export default function Profile() {
   const [formError, setFormError] = useState("");   // inline validation error
 
   const [deletingId, setDeletingId] = useState(null);
+  const [pendingDelete, setPendingDelete] = useState(null);  // waiting on the dialog
   const [addressError, setAddressError] = useState("");
 
   useEffect(() => {
@@ -86,8 +88,9 @@ export default function Profile() {
     }
   };
 
-  const handleDeleteAddress = async (id) => {
-    if (deletingId || !window.confirm("Delete this address?")) return;
+  const confirmDeleteAddress = async () => {
+    const id = pendingDelete;
+    if (!id || deletingId) return;
 
     setAddressError("");
     setDeletingId(id);
@@ -101,6 +104,7 @@ export default function Profile() {
       );
     } finally {
       setDeletingId(null);
+      setPendingDelete(null);
     }
   };
 
@@ -243,7 +247,7 @@ export default function Profile() {
                 <AddressCard
                   key={address.id}
                   address={address}
-                  onDelete={handleDeleteAddress}
+                  onDelete={setPendingDelete}
                   deleting={deletingId === address.id}
                 />
               ))}
@@ -261,6 +265,16 @@ export default function Profile() {
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={Boolean(pendingDelete)}
+        title="Delete this address?"
+        message="It will be removed from your saved addresses."
+        confirmText="Delete address"
+        busy={Boolean(deletingId)}
+        onConfirm={confirmDeleteAddress}
+        onCancel={() => setPendingDelete(null)}
+      />
     </section>
   );
 }
