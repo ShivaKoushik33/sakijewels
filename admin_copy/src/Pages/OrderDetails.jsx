@@ -79,9 +79,22 @@ const OrderDetails = ({ token }) => {
         </h3>
 
         <p>{order.shippingAddress.fullName}</p>
-        <p>{order.shippingAddress.street}</p>
         <p>
-          {order.shippingAddress.city}, {order.shippingAddress.state}
+          {[order.shippingAddress.house, order.shippingAddress.street]
+            .filter(Boolean)
+            .join(", ")}
+        </p>
+        {order.shippingAddress.landmark && (
+          <p>Landmark: {order.shippingAddress.landmark}</p>
+        )}
+        <p>
+          {[
+            order.shippingAddress.city,
+            order.shippingAddress.district,
+            order.shippingAddress.state,
+          ]
+            .filter(Boolean)
+            .join(", ")}
         </p>
         <p>
           {order.shippingAddress.country} - {order.shippingAddress.pincode}

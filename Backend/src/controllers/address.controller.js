@@ -10,23 +10,49 @@ import User from "../models/User.js";
 const ADDRESS_FIELDS = [
   "fullName",
   "phone",
-  "house",
-  "street",
-  "city",
+  "house",     // address: area or street
+  "street",    // village or locality
+  "landmark",
+  "city",      // city or town
+  "district",
   "state",
   "pincode",
   "country",
 ];
 
-const REQUIRED_FIELDS = ["fullName", "phone", "house", "city", "state", "pincode"];
+const REQUIRED_FIELDS = [
+  "fullName",
+  "phone",
+  "house",
+  "city",
+  "district",
+  "state",
+  "pincode",
+];
+
+// Nothing here ends up anywhere but a shipping label, so the limits are the
+// length of a label line rather than anything the database needs.
+const MAX_LENGTHS = {
+  fullName: 100,
+  house: 300,
+  street: 100,
+  landmark: 100,
+  city: 100,
+  district: 100,
+  state: 100,
+};
 
 const pickAddress = (body) => {
   const address = {};
   for (const field of ADDRESS_FIELDS) {
-    if (typeof body[field] === "string") {
-      const value = body[field].trim();
-      if (value) address[field] = value;
-    }
+    if (typeof body[field] !== "string") continue;
+    const value = body[field].trim();
+    // Empty is kept so the form can clear an optional field (landmark,
+    // village); a mandatory field sent empty is caught by validateAddress
+    // instead of silently keeping the old value. Country is the exception:
+    // blank means "unspecified", and the schema default applies.
+    if (!value && field === "country") continue;
+    address[field] = value;
   }
   return address;
 };
@@ -46,8 +72,10 @@ const validateAddress = (address, { partial = false } = {}) => {
     return "Enter a valid 6 digit pincode";
   }
 
-  if (address.fullName !== undefined && address.fullName.length > 100) {
-    return "Name is too long";
+  for (const [field, limit] of Object.entries(MAX_LENGTHS)) {
+    if (address[field] !== undefined && address[field].length > limit) {
+      return `${field === "fullName" ? "Name" : field} is too long`;
+    }
   }
 
   return null;
@@ -121,8 +149,11 @@ export const updateAddress = async (req, res) => {
       return res.status(404).json({ message: "Address not found" });
     }
 
+    // Validate what the address will become, not just the fields that
+    // arrived: an address saved before district existed must not stay
+    // without one once the customer edits it.
     const updates = pickAddress(req.body);
-    const problem = validateAddress(updates, { partial: true });
+    const problem = validateAddress({ ...address.toObject(), ...updates });
     if (problem) {
       return res.status(400).json({ message: problem });
     }

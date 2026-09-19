@@ -90,13 +90,21 @@ export default function OrderDetails() {
     <div className="min-h-screen bg-white">
       <div className="max-w-[1440px] mx-auto px-4 sm:px-6 md:px-8 lg:px-[120px] py-6 md:py-10">
 
-        <button
-          type="button"
-          onClick={() => navigate(-1)}
-          className="text-sm text-[#901CDB] mb-4 hover:underline"
-        >
-          &larr; Back
-        </button>
+        <div className="flex items-center flex-wrap gap-4 mb-4">
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="text-sm text-[#901CDB] hover:underline"
+          >
+            &larr; Back
+          </button>
+          <Link to="/orders" className="text-sm text-[#901CDB] hover:underline">
+            My Orders
+          </Link>
+          <Link to="/collections" className="text-sm text-[#901CDB] hover:underline">
+            Continue shopping
+          </Link>
+        </div>
 
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-8">
           <div>
@@ -187,8 +195,9 @@ export default function OrderDetails() {
                   <p>
                     {[addr.house, addr.street].filter(Boolean).join(', ')}
                   </p>
+                  {addr.landmark && <p>Landmark: {addr.landmark}</p>}
                   <p>
-                    {[addr.city, addr.state].filter(Boolean).join(', ')}
+                    {[addr.city, addr.district, addr.state].filter(Boolean).join(', ')}
                     {addr.pincode ? ` - ${addr.pincode}` : ''}
                   </p>
                   {addr.country && <p>{addr.country}</p>}

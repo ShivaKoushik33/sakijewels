@@ -42,19 +42,23 @@ const UI = {
       primaryCtaText: 'Add Address',
       fields: {
         nameLabel: 'Name*',
-        phoneLabel: 'Phone Number*',
-        addressLabel: 'Address (Area and Street)*',
-        landmarkLabel: 'Landmark(optional)',
+        phoneLabel: '10 digit mobile number*',
         pincodeLabel: 'Pincode*',
+        addressLabel: 'Address (Area or street)*',
+        villageLabel: 'Village/Locality',
         cityLabel: 'City/town*',
+        districtLabel: 'District*',
         stateLabel: 'State*',
+        landmarkLabel: 'Landmark (optional)',
         namePlaceholder: 'Enter your name',
-        phonePlaceholder: '+91XXXXXXXXXX',
-        addressPlaceholder: 'Enter Area and street no.',
-        landmarkPlaceholder: 'Enter landmark',
-        pincodePlaceholder: 'Enter pincode',
-        cityPlaceholder: 'Enter city/town',
-        statePlaceholder: 'Select State',
+        phonePlaceholder: '10 digit mobile number',
+        pincodePlaceholder: 'Enter 6 digit pincode',
+        addressPlaceholder: 'Enter area or street no.',
+        villagePlaceholder: 'Filled from pincode - editable',
+        cityPlaceholder: 'Filled from pincode - editable',
+        districtPlaceholder: 'Filled from pincode - editable',
+        statePlaceholder: 'Filled from pincode - editable',
+        landmarkPlaceholder: 'Nearby landmark to find the house',
         addressErrorText: 'Please fill the address',
       },
     },
@@ -64,19 +68,24 @@ const UI = {
       primaryCtaText: 'Update Address',
       fields: {
         nameLabel: 'Name*',
-        phoneLabel: 'Phone Number*',
-        addressLabel: 'Address (Area and Street)*',
-        villageLabel: 'Village*',
+        phoneLabel: '10 digit mobile number*',
         pincodeLabel: 'Pincode*',
+        addressLabel: 'Address (Area or street)*',
+        villageLabel: 'Village/Locality',
         cityLabel: 'City/town*',
+        districtLabel: 'District*',
         stateLabel: 'State*',
+        landmarkLabel: 'Landmark (optional)',
         namePlaceholder: 'Enter your name',
         phonePlaceholder: '10 digit mobile number',
-        addressPlaceholder: 'Enter Area and street no.',
-        villagePlaceholder: 'Enter village',
-        pincodePlaceholder: 'Enter pincode',
-        cityPlaceholder: 'Enter city/town',
-        statePlaceholder: 'Filled from pincode',
+        pincodePlaceholder: 'Enter 6 digit pincode',
+        addressPlaceholder: 'Enter area or street no.',
+        villagePlaceholder: 'Filled from pincode - editable',
+        cityPlaceholder: 'Filled from pincode - editable',
+        districtPlaceholder: 'Filled from pincode - editable',
+        statePlaceholder: 'Filled from pincode - editable',
+        landmarkPlaceholder: 'Nearby landmark to find the house',
+        addressErrorText: 'Please fill the address',
       },
     },
     bankDetails: {
@@ -118,7 +127,9 @@ const toUiAddress = (addr) => ({
   name: addr.fullName,
   phone: addr.phone,
   addressLine: [addr.house, addr.street].filter(Boolean).join(", "),
+  landmark: addr.landmark || "",
   city: addr.city,
+  district: addr.district || "",
   state: addr.state,
   pincode: addr.pincode,
   ui: {
@@ -166,6 +177,25 @@ export async function deleteUserAddress(id, token, backendUrl) {
  * { cities, state } for a known pincode and null for an unknown one;
  * throws when the lookup itself failed.
  */
+const uniqueValues = (offices, read) => [
+  ...new Set(
+    offices
+      .map((office) => String(read(office) || "").trim())
+      // The API writes "NA" where it has no value for a field.
+      .filter((value) => value && value.toUpperCase() !== "NA")
+  )
+];
+
+/**
+ * What a pincode can tell us about an address.
+ *
+ * A pincode covers many post offices (a rural one can cover 35), so each
+ * field comes back as the best guess plus the alternatives to offer as
+ * suggestions — the customer can always type their own.
+ *   localities = the post office names  (villages/areas)
+ *   cities     = the blocks             (town/mandal)
+ *   districts  = the districts
+ */
 export async function lookupPincode(pin, backendUrl) {
   try {
     const response = await axios.get(`${backendUrl}/api/pincode/${pin}`);
@@ -173,8 +203,13 @@ export async function lookupPincode(pin, backendUrl) {
     const offices = result?.Status === "Success" ? result.PostOffice : null;
     if (!offices?.length) return null;
 
+    const districts = uniqueValues(offices, (o) => o.District);
+    const cities = uniqueValues(offices, (o) => o.Block);
+
     return {
-      cities: [...new Set(offices.map((office) => office.District))],
+      localities: uniqueValues(offices, (o) => o.Name),
+      cities: cities.length ? cities : districts,
+      districts,
       state: offices[0].State
     };
   } catch (error) {

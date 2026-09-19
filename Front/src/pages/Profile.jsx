@@ -2,10 +2,16 @@ import { useEffect, useState, useContext } from 'react';
 import axios from "axios";
 import { Link, useNavigate } from 'react-router-dom';
 import { ShopContext } from '../context/ShopContext';
-import { getProfileUi, getUserAddresses } from '../services/profileService';
+import {
+  getProfileUi,
+  getUserAddresses,
+  deleteUserAddress,
+} from '../services/profileService';
+import AddressCard from '../components/profile/AddressCard';
 
 export default function Profile() {
-  const { token, backendUrl, logout } = useContext(ShopContext);
+  const { token, backendUrl, logout, selectedAddress, setSelectedAddress } =
+    useContext(ShopContext);
   const navigate = useNavigate();
 
   const [ui, setUi] = useState(null);
@@ -17,6 +23,9 @@ export default function Profile() {
   const [formEmail, setFormEmail] = useState("");
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");   // inline validation error
+
+  const [deletingId, setDeletingId] = useState(null);
+  const [addressError, setAddressError] = useState("");
 
   useEffect(() => {
     getProfileUi().then((data) => setUi(data || null));
@@ -74,6 +83,24 @@ export default function Profile() {
       setFormError(err.response?.data?.message || "Failed to update profile");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDeleteAddress = async (id) => {
+    if (deletingId || !window.confirm("Delete this address?")) return;
+
+    setAddressError("");
+    setDeletingId(id);
+    try {
+      setAddresses(await deleteUserAddress(id, token, backendUrl));
+      // An in-progress checkout must not keep pointing at a deleted address.
+      if (selectedAddress?._id === id) setSelectedAddress(null);
+    } catch (err) {
+      setAddressError(
+        err?.response?.data?.message || "Could not delete address. Please try again."
+      );
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -194,6 +221,10 @@ export default function Profile() {
             </Link>
           </div>
 
+          {addressError && (
+            <p className="text-sm text-[#FF3B30] mb-3">{addressError}</p>
+          )}
+
           {addresses.length === 0 ? (
             <div className="border border-dashed border-[#E6E8EC] rounded-xl p-6 text-center">
               <p className="text-sm text-[#777E90] mb-3">
@@ -209,33 +240,12 @@ export default function Profile() {
           ) : (
             <div className="flex flex-col gap-4">
               {addresses.map((address) => (
-                <div
+                <AddressCard
                   key={address.id}
-                  className="w-full bg-white border border-[#E6E8EC] rounded-xl p-4"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                      <div className="text-sm font-semibold text-[#141416] truncate">
-                        {address.name}
-                      </div>
-                      <div className="text-xs text-[#777E90] mt-0.5">
-                        {address.phone}
-                      </div>
-                      <div className="text-xs text-[#353945] leading-relaxed mt-2">
-                        {address.addressLine} {address.city}, {address.state} -{' '}
-                        <span className="font-semibold text-[#141416]">
-                          {address.pincode}
-                        </span>
-                      </div>
-                    </div>
-                    <Link
-                      to={`/profile/addresses/${address.id}/edit`}
-                      className="text-sm font-medium text-[#901CDB] hover:underline flex-shrink-0"
-                    >
-                      Edit
-                    </Link>
-                  </div>
-                </div>
+                  address={address}
+                  onDelete={handleDeleteAddress}
+                  deleting={deletingId === address.id}
+                />
               ))}
             </div>
           )}

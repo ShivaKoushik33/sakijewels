@@ -1,4 +1,4 @@
-import { useState, useContext,useEffect } from 'react';
+import { useState, useContext, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ShopContext } from '../context/ShopContext';
 import axios from 'axios';
@@ -28,7 +28,7 @@ export default function BuyNowPayment() {
   const grandTotal =
     subtotal - couponDiscount - prepaidDiscount + deliveryFee + codCharge;
 
- const { backendUrl, token, setCartItems, getUserCart, buyNowItem, setBuyNowItem, selectedAddress, getCartProducts } = useContext(ShopContext);
+ const { backendUrl, token, setCartItems, getUserCart, buyNowItem, setBuyNowItem, selectedAddress, getCartProducts, cartReady } = useContext(ShopContext);
 
  const buyNowPayload = buyNowItem
    ? { productId: buyNowItem.productId, quantity: buyNowItem.quantity }
@@ -83,6 +83,25 @@ useEffect(() => {
     fetchAddress();
   }, [selectedAddress, addressId, token, backendUrl]);
 
+  /**
+   * Nothing left to pay for — usually the customer pressed Back after an
+   * order went through. Send them to the cart instead of offering to pay a
+   * second time. Checked once, when the cart has loaded, so placing an order
+   * (which empties the cart) cannot trigger it.
+   */
+  const emptyCheckoutChecked = useRef(false);
+  useEffect(() => {
+    if (emptyCheckoutChecked.current || !token || !cartReady) return;
+    emptyCheckoutChecked.current = true;
+
+    const hasSomethingToPayFor =
+      Boolean(buyNowItem) || getCartProducts().some((p) => p.stock >= p.quantity);
+
+    if (!hasSomethingToPayFor) {
+      navigate("/cart", { replace: true });
+    }
+  }, [token, cartReady, buyNowItem, getCartProducts, navigate]);
+
 const handlePayment = async () => {
   setPayMsg("");
   if (!addressId) {
@@ -111,7 +130,8 @@ const handlePayment = async () => {
         await getUserCart(token);
       }
       const codOrderId = codData?.order?._id;
-      navigate(codOrderId ? `/orders/${codOrderId}` : "/orders");
+      // replace: the pay page must not come back when the customer taps Back.
+      navigate(codOrderId ? `/orders/${codOrderId}` : "/orders", { replace: true });
       return;
     }
 
@@ -161,7 +181,8 @@ const handlePayment = async () => {
             await getUserCart(token);
           }
           const orderId = verifyData?.order?._id;
-          navigate(orderId ? `/orders/${orderId}` : "/orders");
+          // replace: the pay page must not come back when the customer taps Back.
+          navigate(orderId ? `/orders/${orderId}` : "/orders", { replace: true });
 
         } catch (error) {
           setPayMsg(
@@ -233,8 +254,11 @@ const handlePayment = async () => {
                   <p className="text-sm text-[#353945]">
                     {[address.house, address.street].filter(Boolean).join(', ')}
                   </p>
+                  {address.landmark && (
+                    <p className="text-sm text-[#353945]">Landmark: {address.landmark}</p>
+                  )}
                   <p className="text-sm text-[#353945]">
-                    {[address.city, address.state].filter(Boolean).join(', ')}
+                    {[address.city, address.district, address.state].filter(Boolean).join(', ')}
                     {address.pincode ? ` - ${address.pincode}` : ''}
                   </p>
                 </div>

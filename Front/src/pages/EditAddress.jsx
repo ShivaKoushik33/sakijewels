@@ -1,8 +1,10 @@
 import { useContext, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
-import { getProfileUi, lookupPincode } from '../services/profileService';
+import { getProfileUi, deleteUserAddress } from '../services/profileService';
 import { ShopContext } from '../context/ShopContext';
+import useAddressForm from '../hooks/useAddressForm';
+import AddressFormFields from '../components/profile/AddressFormFields';
 
 // Addresses saved before the server validated phone numbers can hold values
 // like "+91 98765 43210"; the server now accepts only the 10-digit number.
@@ -11,31 +13,27 @@ const toTenDigits = (phone) => {
   return digits.length > 10 ? digits.slice(-10) : digits;
 };
 
-const fieldClass =
-  'w-full h-[44px] px-4 border border-[#E6E8EC] rounded-lg text-sm text-[#141416]';
-const labelClass = 'text-sm font-medium text-[#141416]';
-
 export default function EditAddress() {
   const { token, backendUrl, selectedAddress, setSelectedAddress } = useContext(ShopContext);
   const navigate = useNavigate();
   const { id } = useParams();
 
   const [ui, setUi] = useState(null);
-  const [formData, setFormData] = useState({
-    fullName: '',
-    phone: '',
-    house: '',
-    street: '',
-    city: '',
-    state: '',
-    pincode: '',
-  });
   const [loadMsg, setLoadMsg] = useState('');  // address could not be loaded
-  const [cities, setCities] = useState([]);
-  const [loadingPin, setLoadingPin] = useState(false);
-  const [pinMsg, setPinMsg] = useState('');    // inline pincode message
   const [formMsg, setFormMsg] = useState('');  // inline form error
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const {
+    formData,
+    setFormData,
+    handleChange,
+    applyPincode,
+    suggestions,
+    loadingPin,
+    pinMsg,
+    validate,
+  } = useAddressForm(backendUrl);
 
   useEffect(() => {
     getProfileUi().then((data) => setUi(data || null));
@@ -56,88 +54,42 @@ export default function EditAddress() {
           return;
         }
 
+        const pincode = String(address.pincode || '').replace(/\D/g, '');
+
         setFormData({
           fullName: address.fullName || '',
           phone: toTenDigits(address.phone),
+          pincode,
           house: address.house || '',
           street: address.street || '',
           city: address.city || '',
+          district: address.district || '',
           state: address.state || '',
-          pincode: String(address.pincode || '').replace(/\D/g, ''),
+          landmark: address.landmark || '',
         });
+
+        // Offers this pincode's villages/towns as suggestions, and fills the
+        // district of an address saved before that field existed. Nothing
+        // the customer already has is overwritten.
+        if (/^[1-9][0-9]{5}$/.test(pincode)) {
+          applyPincode(pincode, { keepFilled: true });
+        }
       } catch {
         setLoadMsg('Could not load this address. Please try again.');
       }
     };
 
     fetchAddress();
-  }, [id, token, backendUrl]);
-
-  /* Pincode → city & state, same rule as the Add Address page */
-  const fetchPincodeData = async (pin) => {
-    try {
-      setLoadingPin(true);
-      setPinMsg('');
-
-      const result = await lookupPincode(pin, backendUrl);
-
-      if (!result) {
-        setPinMsg('Invalid pincode');
-        setCities([]);
-        setFormData((prev) => ({ ...prev, city: '', state: '' }));
-        return;
-      }
-
-      setCities(result.cities);
-      setFormData((prev) => ({
-        ...prev,
-        state: result.state,
-        city: result.cities[0],
-      }));
-    } catch {
-      setPinMsg('Failed to verify pincode');
-    } finally {
-      setLoadingPin(false);
-    }
-  };
-
-  const handleChange = (e) => {
-    const { name } = e.target;
-    const value =
-      name === 'phone' || name === 'pincode'
-        ? e.target.value.replace(/\D/g, '')
-        : e.target.value;
-
-    setFormData((prev) => ({ ...prev, [name]: value }));
-
-    if (name === 'pincode') {
-      setPinMsg('');
-      if (value.length === 6) {
-        fetchPincodeData(value);
-      } else {
-        setCities([]);
-      }
-    }
-  };
+  }, [id, token, backendUrl, setFormData, applyPincode]);
 
   const handleUpdate = async (e) => {
     e.preventDefault();
-    if (saving) return;
+    if (saving || deleting) return;
     setFormMsg('');
 
-    const required = ['fullName', 'house', 'street', 'city', 'state'];
-    if (required.some((key) => !formData[key].trim())) {
-      setFormMsg('Please fill all required fields');
-      return;
-    }
-
-    if (formData.phone.length !== 10) {
-      setFormMsg('Enter valid mobile number');
-      return;
-    }
-
-    if (formData.pincode.length !== 6) {
-      setFormMsg('Enter valid pincode');
+    const problem = validate();
+    if (problem) {
+      setFormMsg(problem);
       return;
     }
 
@@ -159,6 +111,26 @@ export default function EditAddress() {
     } catch (error) {
       setFormMsg(error?.response?.data?.message || 'Update failed');
       setSaving(false);
+    }
+  };
+
+  /** Deletes the address being edited, then returns to the address list. */
+  const handleDelete = async () => {
+    if (saving || deleting || !window.confirm('Delete this address?')) return;
+
+    setFormMsg('');
+    setDeleting(true);
+    try {
+      await deleteUserAddress(id, token, backendUrl);
+      // An in-progress checkout must not keep pointing at a deleted address.
+      if (selectedAddress?._id === id) setSelectedAddress(null);
+      // replace: the form of a deleted address must not come back on Back.
+      navigate('/profile/addresses', { replace: true });
+    } catch (error) {
+      setFormMsg(
+        error?.response?.data?.message || 'Could not delete address. Please try again.'
+      );
+      setDeleting(false);
     }
   };
 
@@ -195,121 +167,34 @@ export default function EditAddress() {
         ) : (
           <div className="max-w-[640px]">
             <form onSubmit={handleUpdate} className="flex flex-col gap-4 md:gap-5">
-              <div className="flex flex-col gap-1">
-                <label className={labelClass}>{fields.nameLabel}</label>
-                <input
-                  type="text"
-                  name="fullName"
-                  value={formData.fullName}
-                  onChange={handleChange}
-                  className={`${fieldClass} bg-white`}
-                  placeholder={fields.namePlaceholder}
-                />
-              </div>
-
-              <div className="flex flex-col gap-1">
-                <label className={labelClass}>{fields.phoneLabel}</label>
-                <input
-                  type="tel"
-                  inputMode="numeric"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  maxLength={10}
-                  className={`${fieldClass} bg-white`}
-                  placeholder={fields.phonePlaceholder}
-                />
-              </div>
-
-              <div className="flex flex-col gap-1">
-                <label className={labelClass}>{fields.addressLabel}</label>
-                <textarea
-                  name="house"
-                  value={formData.house}
-                  onChange={handleChange}
-                  className="w-full min-h-[72px] px-4 py-2 border border-[#E6E8EC] rounded-lg text-sm text-[#141416] bg-white"
-                  placeholder={fields.addressPlaceholder}
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-5">
-                <div className="flex flex-col gap-1">
-                  <label className={labelClass}>{fields.villageLabel}</label>
-                  <input
-                    type="text"
-                    name="street"
-                    value={formData.street}
-                    onChange={handleChange}
-                    className={`${fieldClass} bg-white`}
-                    placeholder={fields.villagePlaceholder}
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label className={labelClass}>{fields.pincodeLabel}</label>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    name="pincode"
-                    value={formData.pincode}
-                    onChange={handleChange}
-                    maxLength={6}
-                    className={`${fieldClass} bg-white`}
-                    placeholder={fields.pincodePlaceholder}
-                  />
-                  {loadingPin && (
-                    <p className="text-xs text-[#901CDB] mt-1">Verifying pincode...</p>
-                  )}
-                  {pinMsg && <p className="text-xs text-red-500 mt-1">{pinMsg}</p>}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-5">
-                <div className="flex flex-col gap-1">
-                  <label className={labelClass}>{fields.cityLabel}</label>
-                  {/* Filled in from the pincode but always editable: the
-                      pincode's district is often not the customer's own town.
-                      The pincode's districts are offered as suggestions. */}
-                  <input
-                    type="text"
-                    name="city"
-                    list="pincode-cities"
-                    value={formData.city}
-                    onChange={handleChange}
-                    className={`${fieldClass} bg-white`}
-                    placeholder={fields.cityPlaceholder}
-                  />
-                  <datalist id="pincode-cities">
-                    {cities.map((city) => (
-                      <option key={city} value={city} />
-                    ))}
-                  </datalist>
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label className={labelClass}>{fields.stateLabel}</label>
-                  {/* Comes from the pincode; change the pincode to change it. */}
-                  <input
-                    type="text"
-                    name="state"
-                    value={formData.state}
-                    onChange={handleChange}
-                    readOnly={formData.state !== ''}
-                    className={`${fieldClass} ${formData.state ? 'bg-gray-50' : 'bg-white'}`}
-                    placeholder={fields.statePlaceholder}
-                  />
-                </div>
-              </div>
+              <AddressFormFields
+                fields={fields}
+                formData={formData}
+                onChange={handleChange}
+                suggestions={suggestions}
+                loadingPin={loadingPin}
+                pinMsg={pinMsg}
+              />
 
               {formMsg && <p className="text-sm text-red-500">{formMsg}</p>}
 
-              <button
-                type="submit"
-                disabled={saving || loadingPin}
-                className="mt-2 w-full sm:w-[200px] h-[44px] bg-[#901CDB] text-white rounded-lg text-base font-medium hover:bg-[#7A16C0] transition-colors disabled:opacity-60"
-              >
-                {saving ? 'Updating...' : pageUi.primaryCtaText}
-              </button>
+              <div className="mt-2 flex flex-col sm:flex-row gap-3">
+                <button
+                  type="submit"
+                  disabled={saving || deleting || loadingPin}
+                  className="w-full sm:w-[200px] h-[44px] bg-[#901CDB] text-white rounded-lg text-base font-medium hover:bg-[#7A16C0] transition-colors disabled:opacity-60"
+                >
+                  {saving ? 'Updating...' : pageUi.primaryCtaText}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  disabled={saving || deleting}
+                  className="w-full sm:w-[200px] h-[44px] border border-[#FF3B30] text-[#FF3B30] rounded-lg text-base font-medium hover:bg-[#FFF5F5] transition-colors disabled:opacity-60"
+                >
+                  {deleting ? 'Deleting...' : 'Delete Address'}
+                </button>
+              </div>
             </form>
           </div>
         )}

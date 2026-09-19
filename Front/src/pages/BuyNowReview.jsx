@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect, useContext, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ShopContext } from '../context/ShopContext';
 import axios from 'axios';
@@ -74,6 +74,21 @@ export default function BuyNowReview() {
   const effectiveDeliveryFee = freeShipping ? 0 : delivery_fee;
   const finalTotal =
     summary.subtotal - couponDiscount + effectiveDeliveryFee;
+
+  /**
+   * Nothing left to check out — typically Back after a completed order. Show
+   * the cart (with its "Continue Shopping" empty state) rather than a review
+   * that cannot be paid for.
+   */
+  const emptyCheckoutChecked = useRef(false);
+  useEffect(() => {
+    if (emptyCheckoutChecked.current || !token || !cartReady) return;
+    emptyCheckoutChecked.current = true;
+
+    if (!isBuyNow && cartProductsBase.length === 0) {
+      navigate('/cart', { replace: true });
+    }
+  }, [token, cartReady, isBuyNow, cartProductsBase.length, navigate]);
 
   useEffect(() => {
     if (!token) {
@@ -281,8 +296,11 @@ export default function BuyNowReview() {
                     >
                       <p className="font-medium">{addr.fullName}</p>
                       <p>{addr.phone}</p>
-                      <p>{addr.house}, {addr.street}</p>
-                      <p>{addr.city}, {addr.state} - {addr.pincode}</p>
+                      <p>{[addr.house, addr.street].filter(Boolean).join(', ')}</p>
+                      {addr.landmark && <p>Landmark: {addr.landmark}</p>}
+                      <p>
+                        {[addr.city, addr.district, addr.state].filter(Boolean).join(', ')} - {addr.pincode}
+                      </p>
                     </div>
                   ))}
 
