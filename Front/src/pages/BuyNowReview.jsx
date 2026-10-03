@@ -2,6 +2,28 @@ import { useState, useEffect, useContext, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ShopContext } from '../context/ShopContext';
 import axios from 'axios';
+import { getExpectedDeliveryDate } from '../utils/helpers';
+
+function AddressLines({ addr }) {
+  return (
+    <>
+      <p className="font-medium">
+        {addr.fullName}
+        {addr.isDefault && (
+          <span className="ml-2 px-2 py-0.5 rounded bg-[#F3E8FD] text-[#901CDB] text-xs font-medium align-middle">
+            Default
+          </span>
+        )}
+      </p>
+      <p>{addr.phone}</p>
+      <p>{[addr.house, addr.street].filter(Boolean).join(', ')}</p>
+      {addr.landmark && <p>Landmark: {addr.landmark}</p>}
+      <p>
+        {[addr.city, addr.district, addr.state].filter(Boolean).join(', ')} - {addr.pincode}
+      </p>
+    </>
+  );
+}
 
 export default function BuyNowReview() {
   const navigate = useNavigate();
@@ -22,6 +44,8 @@ export default function BuyNowReview() {
 
   const [addresses, setAddresses] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [addressListOpen, setAddressListOpen] = useState(false);
+  const otherAddresses = addresses.filter((a) => a._id !== selectedAddress?._id);
 
   /* 🔥 COUPON STATES */
   const [couponCode, setCouponCode] = useState("");
@@ -67,7 +91,7 @@ export default function BuyNowReview() {
       })()
     : cartSummaryBase;
 
-  const isBelowMinimum = summary.subtotal < 249;
+  const isBelowMinimum = summary.subtotal < 99;
   const savings = summary.discount + couponDiscount;
   const itemLabel = `${summary.unitCount} ${summary.unitCount === 1 ? "item" : "items"}`;
 
@@ -183,8 +207,8 @@ export default function BuyNowReview() {
       return;
     }
 
-    // 1️⃣ TSJFIRST
-    if (code === "TSJFIRST") {
+    // 1️⃣ TSJSFIRST
+    if (code === "TSJSFIRST") {
       if (!isFirstOrder) {
         setCouponMsg({ type: "error", text: "Valid only for first order" });
         return;
@@ -197,8 +221,8 @@ export default function BuyNowReview() {
       }
     }
 
-    // 2️⃣ TSJSSFIRST
-    else if (code === "TSJSSFIRST") {
+    // 2️⃣ FIRST999
+    else if (code === "FIRST999") {
       if (!isFirstOrder) {
         setCouponMsg({ type: "error", text: "Valid only for first order" });
         return;
@@ -222,10 +246,10 @@ export default function BuyNowReview() {
       }
     }
 
-    // 4️⃣ TSJSS15
-    else if (code === "TSJSS15") {
+    // 4️⃣ TSJS10
+    else if (code === "TSJS10") {
       if (summary.subtotal >= 1499) {
-        discount = Math.floor(summary.subtotal * 0.15);
+        discount = Math.floor(summary.subtotal * 0.10);
         freeShip = true;
       } else {
         setCouponMsg({ type: "error", text: "Order must be above ₹1499" });
@@ -262,7 +286,7 @@ export default function BuyNowReview() {
         </h1>
 
         <p className="text-sm md:text-base text-[#777E90] mb-6 md:mb-8">
-          Confirm items and delivery before payment
+          Confirm items and address before payment
         </p>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
@@ -284,25 +308,67 @@ export default function BuyNowReview() {
                 </button>
               ) : (
                 <div className="flex flex-col gap-4">
-                  {addresses.map(addr => (
-                    <div
-                      key={addr._id}
-                      onClick={() => setSelectedAddress(addr)}
-                      className={`border p-4 rounded cursor-pointer ${
-                        selectedAddress?._id === addr._id
-                          ? "border-[#901CDB]"
-                          : "border-[#E6E8EC]"
+                  {/* Only the chosen address shows; the rest sit behind the dropdown. */}
+                  <div className="relative">
+                    <button
+                      type="button"
+                      disabled={otherAddresses.length === 0}
+                      onClick={() => setAddressListOpen((open) => !open)}
+                      aria-haspopup="listbox"
+                      aria-expanded={addressListOpen}
+                      className={`w-full flex items-start justify-between gap-3 text-left border border-[#901CDB] p-4 rounded ${
+                        otherAddresses.length === 0 ? "cursor-default" : "cursor-pointer"
                       }`}
                     >
-                      <p className="font-medium">{addr.fullName}</p>
-                      <p>{addr.phone}</p>
-                      <p>{[addr.house, addr.street].filter(Boolean).join(', ')}</p>
-                      {addr.landmark && <p>Landmark: {addr.landmark}</p>}
-                      <p>
-                        {[addr.city, addr.district, addr.state].filter(Boolean).join(', ')} - {addr.pincode}
-                      </p>
-                    </div>
-                  ))}
+                      <div className="min-w-0">
+                        {selectedAddress ? (
+                          <AddressLines addr={selectedAddress} />
+                        ) : (
+                          <p className="text-[#777E90]">Select delivery address</p>
+                        )}
+                      </div>
+
+                      {otherAddresses.length > 0 && (
+                        <svg
+                          className={`w-5 h-5 mt-1 shrink-0 text-[#901CDB] transition-transform ${
+                            addressListOpen ? "rotate-180" : ""
+                          }`}
+                          viewBox="0 0 20 20"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          aria-hidden="true"
+                        >
+                          <path d="M5 7.5l5 5 5-5" />
+                        </svg>
+                      )}
+                    </button>
+
+                    {addressListOpen && otherAddresses.length > 0 && (
+                      <div
+                        role="listbox"
+                        className="absolute left-0 right-0 top-full mt-2 z-20 max-h-[320px] overflow-y-auto bg-white border border-[#E6E8EC] rounded shadow-lg"
+                      >
+                        {otherAddresses.map((addr) => (
+                          <div
+                            key={addr._id}
+                            role="option"
+                            aria-selected={false}
+                            onClick={() => {
+                              setSelectedAddress(addr);
+                              setAddressMsg("");
+                              setAddressListOpen(false);
+                            }}
+                            className="p-4 cursor-pointer border-b border-[#E6E8EC] last:border-b-0 hover:bg-[#F4F5F6]"
+                          >
+                            <AddressLines addr={addr} />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
 
                   <button
                     onClick={() => navigate('/profile/addresses/new?redirect=checkout')}
@@ -316,9 +382,15 @@ export default function BuyNowReview() {
 
             {/* ITEMS SECTION (UNCHANGED) */}
             <section className="bg-white border border-[#E6E8EC] rounded-lg p-4 md:p-6">
-              <h2 className="text-base md:text-lg font-semibold text-[#141416] mb-3 md:mb-4">
-                Items
-              </h2>
+              <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 mb-3 md:mb-4">
+                <h2 className="text-base md:text-lg font-semibold text-[#141416]">
+                  Items
+                </h2>
+                <p className="text-sm text-[#777E90]">
+                  Expected Delivery:{" "}
+                  <span className="font-medium text-[#141416]">{getExpectedDeliveryDate()}</span>
+                </p>
+              </div>
 
               <div className="flex flex-col gap-4">
                 {cartProducts.map((item) => (
@@ -352,6 +424,11 @@ export default function BuyNowReview() {
                   </div>
                 ))}
               </div>
+
+              <div className="flex justify-between gap-4 mt-4 pt-4 border-t border-[#E6E8EC] font-semibold text-[#141416]">
+                <span>Items Total ({itemLabel})</span>
+                <span>₹ {summary.subtotal.toLocaleString()}</span>
+              </div>
             </section>
           </div>
 
@@ -365,7 +442,7 @@ export default function BuyNowReview() {
 
               <div className="flex justify-between mb-3">
                 <span>Price ({itemLabel})</span>
-                <span>₹ {summary.mrpTotal.toLocaleString()}</span>
+                <span className={summary.discount > 0 ? "line-through text-[#777E90]" : ""}>₹ {summary.mrpTotal.toLocaleString()}</span>
               </div>
 
               <div className="flex justify-between mb-3">
@@ -373,6 +450,11 @@ export default function BuyNowReview() {
                 <span className="text-green-600">
                   - ₹ {summary.discount.toLocaleString()}
                 </span>
+              </div>
+
+              <div className="flex justify-between mb-3 font-medium">
+                <span>Selling Price</span>
+                <span>₹ {summary.subtotal.toLocaleString()}</span>
               </div>
 
               {/* 🔥 COUPON FIELD ADDED */}
@@ -446,7 +528,7 @@ export default function BuyNowReview() {
   }}
   className="w-full py-3 bg-[#901CDB] text-white rounded-lg"
 >
-  Pay Online (3% OFF)
+  Pay Online (₹9 OFF)
 </button>
 
 {/* CASH ON DELIVERY */}
@@ -465,7 +547,7 @@ export default function BuyNowReview() {
   }}
   className="w-full py-3 border border-[#901CDB] text-[#901CDB] rounded-lg"
 >
-  Cash on Delivery (+₹29)
+  Cash on Delivery (+₹12)
 </button>
 <button
   type="button"
@@ -477,7 +559,7 @@ export default function BuyNowReview() {
 
   {isBelowMinimum && (
   <p className="text-red-600 text-sm mb-3">
-    Minimum order amount is ₹249
+    Minimum order amount is ₹99
   </p>
 )}
 

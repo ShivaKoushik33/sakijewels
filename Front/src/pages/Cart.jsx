@@ -4,7 +4,7 @@ import axios from "axios";
 import { ShopContext } from "../context/ShopContext";
 
 // Same rule as MIN_ORDER_SUBTOTAL in Backend/src/utils/pricing.js.
-const MIN_ORDER_SUBTOTAL = 249;
+const MIN_ORDER_SUBTOTAL = 99;
 
 const formatINR = (amount) => `₹${Number(amount || 0).toLocaleString("en-IN")}`;
 const pluralItems = (count) => `${count} ${count === 1 ? "item" : "items"}`;
@@ -276,7 +276,7 @@ export default function Cart() {
 
                         {item.quantity > 1 && (
                           <span className="text-sm text-[#777E90]">
-                            Item total:{" "}
+                            <b>Item total:</b>{" "}
                             <span className="font-semibold text-[#141416]">
                               {formatINR(item.price * item.quantity)}
                             </span>
@@ -314,7 +314,7 @@ export default function Cart() {
               <div className="flex flex-col gap-3 text-sm md:text-base text-[#353945]">
                 <div className="flex justify-between gap-4">
                   <span>Price ({pluralItems(summary.unitCount)})</span>
-                  <span>{formatINR(summary.mrpTotal)}</span>
+                  <span className={summary.discount > 0 ? "line-through text-[#777E90]" : ""}>{formatINR(summary.mrpTotal)}</span>
                 </div>
 
                 {summary.discount > 0 && (
@@ -323,6 +323,11 @@ export default function Cart() {
                     <span className="text-[#34C759]">− {formatINR(summary.discount)}</span>
                   </div>
                 )}
+
+                <div className="flex justify-between gap-4 font-medium text-[#141416]">
+                  <span>Selling Price</span>
+                  <span>{formatINR(summary.subtotal)}</span>
+                </div>
 
                 <div className="flex justify-between gap-4">
                   <span>Delivery charges</span>
@@ -369,7 +374,7 @@ export default function Cart() {
               </button>
 
               <p className="mt-3 text-xs text-center text-[#777E90]">
-                Apply coupons and get 3% off with online payment on the next step.
+                Apply coupons and get ₹9 off with online payment on the next step.
               </p>
             </div>
           </div>

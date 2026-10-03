@@ -205,9 +205,9 @@ export default function EditAddress() {
 
       <ConfirmDialog
         open={askDelete}
-        title="Delete this address?"
+        title="Are you sure you want to delete this address?"
         message="It will be removed from your saved addresses."
-        confirmText="Delete address"
+        confirmText="Delete"
         busy={deleting}
         onConfirm={handleDelete}
         onCancel={() => setAskDelete(false)}

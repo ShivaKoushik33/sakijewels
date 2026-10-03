@@ -343,6 +343,7 @@ export async function getHomepageData() {
 
     const formatReview = (review) => ({
       id: review.id,
+      productId: review.productId,
       name: review.name,
       rating: review.rating,
       stars: review.rating,

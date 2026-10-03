@@ -39,7 +39,7 @@ const Login = ({ setToken }) => {
 
       setToken(token);
       toast.success('Login Successful!');
-      navigate('/add');
+      navigate('/dashboard');
     } catch (error) {
       toast.error(
         error?.response?.data?.message ||

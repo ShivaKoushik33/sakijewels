@@ -41,7 +41,7 @@ export default function OrderCard({ order }) {
           </div>
 
           <div className="text-xs md:text-sm text-[#777E90] mt-0.5">
-            Order ID: {order._id}
+            Order ID: {order.orderNumber || order._id}
           </div>
 
           <div className="text-xs md:text-sm text-[#777E90] mt-0.5">

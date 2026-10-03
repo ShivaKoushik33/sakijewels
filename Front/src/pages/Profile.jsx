@@ -268,9 +268,9 @@ export default function Profile() {
 
       <ConfirmDialog
         open={Boolean(pendingDelete)}
-        title="Delete this address?"
+        title="Are you sure you want to delete this address?"
         message="It will be removed from your saved addresses."
-        confirmText="Delete address"
+        confirmText="Delete"
         busy={Boolean(deletingId)}
         onConfirm={confirmDeleteAddress}
         onCancel={() => setPendingDelete(null)}

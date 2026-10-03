@@ -10,6 +10,9 @@ import Login from './Components/Login';
 import { ToastContainer } from 'react-toastify';
 import Edit from './Pages/Edit';
 import OrderDetails from './Pages/OrderDetails';
+import Dashboard from './Pages/Dashboard';
+import Customers from './Pages/Customers';
+import CustomerDetails from './Pages/CustomerDetails';
 import { isAdminToken } from './utils/token';
 
 export const backendUrl = import.meta.env.VITE_BACKEND_URL;
@@ -44,10 +47,16 @@ function App() {
             <Sidebar />
             <div className='w-[70%] mx-auto ml-[max(5vw, 25px)] my-8  text-gray-600 text-base'>
               <Routes>
-                <Route path='/' element={<Navigate to='/add' replace />} />
+                <Route path='/' element={<Navigate to='/dashboard' replace />} />
+                <Route path='/dashboard' element={<Dashboard token={token} />} />
                 <Route path='/add' element={<Add token={token} />} />
                 <Route path='/list' element={<List token={token} />} />
                 <Route path='/orders' element={<Orders token={token} />} />
+                <Route path='/customers' element={<Customers token={token} />} />
+                <Route
+                  path='/customers/:id'
+                  element={<CustomerDetails token={token} />}
+                />
                 <Route path='/edit/:id' element={<Edit token={token} />} />
                 <Route
                   path='/orders/single/:id'

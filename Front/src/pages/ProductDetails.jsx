@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { getProductDetailsData } from "../services/productDetailsService";
 import RelatedProducts from "../components/product/RelatedProducts";
 import { ShopContext } from "../context/ShopContext";
+import { getExpectedDeliveryDate } from "../utils/helpers";
 import "@fontsource/lato";
 import "@fontsource/roboto";
 import left_arrow from "../assets/images/left_arrow.svg?url";
@@ -268,11 +269,14 @@ function ProductDetails({ id }) {
               )}
 
               {/* Rating Badge - Bottom Left */}
-              {product?.rating && (
+              {/* Only once someone has reviewed it: an unrated product has no score to show. */}
+              {product?.ratingCount > 0 && (
                 <div className="absolute bottom-3 left-3 bg-white bg-opacity-90 backdrop-blur-sm rounded-full px-3 py-2 flex items-center gap-1.5">
                   <span className="text-yellow-500 text-base">★</span>
-                  <span className="text-[#141416] font-semibold text-sm">{product.rating.toFixed(1)}</span>
-                  <span className="text-[#141416] text-xs">({product.reviews_count || 0})</span>
+                  <span className="text-[#141416] font-semibold text-sm">{Number(product.rating || 0).toFixed(1)}</span>
+                  <span className="text-[#141416] text-xs">
+                    ({product.ratingCount})
+                  </span>
                 </div>
               )}
             </div>
@@ -459,13 +463,7 @@ function ProductDetails({ id }) {
                         style={{ fontFamily: "'Lato', sans-serif", fontWeight: 600 }}
                       >
                         Estimated Delivery Time:{" "}
-                        {new Date(
-                          new Date().setDate(new Date().getDate() + 5)
-                        ).toLocaleDateString("en-IN", {
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                        })}
+                        {getExpectedDeliveryDate()}
                       </p>
                     </div>
                 </div>

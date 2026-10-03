@@ -8,6 +8,7 @@ import PaymentIntent from "../models/PaymentIntent.js";
 import razorpay from "../config/razorpay.js";
 import { priceOrder, MIN_ORDER_SUBTOTAL } from "../utils/pricing.js";
 import { placeOrderFromIntent } from "../utils/placeOrderFromIntent.js";
+import { nextOrderNumber } from "../utils/orderNumber.js";
 
 const INTENT_TTL_MINUTES = 60;
 
@@ -451,6 +452,7 @@ export const placeOrderCOD = async (req, res) => {
     const created = await Order.create(
       [
         {
+          orderNumber: await nextOrderNumber("COD"),
           user: user._id,
           items: reserved,
           shippingAddress: toAddressSnapshot(address),
@@ -513,9 +515,15 @@ export const getAllOrders = async (req, res) => {
     const page = Math.max(1, Number(req.query.page) || 1);
     const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 10));
 
+    // One status, or several separated by commas ("PENDING,ACCEPTED") — the
+    // dashboard's "yet to ship" and "cancelled" tiles each cover more than one.
     const filter = {};
     if (typeof status === "string" && status.trim()) {
-      filter.status = status.trim();
+      const statuses = status
+        .split(",")
+        .map((value) => value.trim())
+        .filter(Boolean);
+      filter.status = statuses.length === 1 ? statuses[0] : { $in: statuses };
     }
 
     let sortOption = { createdAt: -1 };
@@ -548,11 +556,33 @@ export const getAllOrders = async (req, res) => {
 
 export const updateOrderStatus = async (req, res) => {
   try {
-    const { status, adminRemark } = req.body;
+    const { status, adminRemark, isPaid } = req.body;
 
     const updates = {};
     if (status !== undefined) updates.status = status;
     if (adminRemark !== undefined) updates.adminRemark = adminRemark;
+
+    // Cash collected at the door is the only payment an admin records by
+    // hand. Online orders are marked paid by Razorpay and stay that way.
+    if (isPaid !== undefined) {
+      if (typeof isPaid !== "boolean") {
+        return res.status(400).json({ message: "Invalid paid value" });
+      }
+
+      const existing = mongoose.isValidObjectId(req.params.id)
+        ? await Order.findById(req.params.id).select("paymentMethod")
+        : null;
+      if (!existing) {
+        return res.status(404).json({ message: "Order not found" });
+      }
+      if (existing.paymentMethod !== "COD") {
+        return res.status(400).json({
+          message: "Only cash on delivery orders can be marked paid by hand",
+        });
+      }
+
+      updates.isPaid = isPaid;
+    }
 
     if (Object.keys(updates).length === 0) {
       return res.status(400).json({ message: "Nothing to update" });

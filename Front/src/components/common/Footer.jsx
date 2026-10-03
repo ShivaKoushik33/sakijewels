@@ -1,21 +1,51 @@
 import { Link } from 'react-router-dom';
 import Logo from '../../assets/images/Logo.svg';
-import insta from '../../assets/images/Insta.svg';
 import Mdot from '../../assets/images/Mdot.svg';
-import instaMain from '../../assets/images/InstaMain.jpeg';
+import {
+  EMAIL_LINK,
+  PHONE_LINK,
+  SHOP_ADDRESS_LINES,
+  SHOP_EMAIL,
+  SHOP_PHONE_DISPLAY,
+  WHATSAPP_LINK,
+} from '../../utils/shopContact';
 
-
-
-// The shop's own contact details, used by the call, mail and chat links.
-const SHOP_PHONE = '9705653066';
-const SHOP_EMAIL = 'support@thesakhijewels.com';
-const WHATSAPP_GREETING = encodeURIComponent(
-  "Hi, I have a question about an order from The Sakhi Jewels."
-);
+// "Follow us on" icons. An empty href shows the icon without a link.
+const SOCIAL_LINKS = [
+  {
+    name: 'Instagram',
+    href: 'https://www.instagram.com/the_sakhijewels?igsh=eXFjeDJhajF2bTBm',
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <rect x="3" y="3" width="18" height="18" rx="5" />
+        <circle cx="12" cy="12" r="4" />
+        <circle cx="17.5" cy="6.5" r="0.6" fill="currentColor" />
+      </svg>
+    ),
+  },
+  {
+    name: 'Facebook',
+    href: '',
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M13.5 21v-7.5h2.6l.4-3h-3V8.6c0-.9.3-1.5 1.6-1.5h1.6V4.4c-.3 0-1.2-.1-2.3-.1-2.3 0-3.900 1.400-3.900 4v2.200H8v3h2.500V21z" />
+      </svg>
+    ),
+  },
+  {
+    name: 'YouTube',
+    href: '',
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M21.6 7.2a2.500 2.500 0 0 0-1.800-1.800C18.200 5 12 5 12 5s-6.200 0-7.800.4A2.500 2.500 0 0 0 2.400 7.200 26 26 0 0 0 2 12a26 26 0 0 0 .4 4.800 2.500 2.500 0 0 0 1.800 1.800C5.800 19 12 19 12 19s6.200 0 7.800-.4a2.500 2.500 0 0 0 1.800-1.800A26 26 0 0 0 22 12a26 26 0 0 0-.4-4.800zM10 15V9l5.200 3z" />
+      </svg>
+    ),
+  },
+];
 
 export default function Footer() {
   return (
-    <footer id="about-us" className="w-full bg-[#FFEED8]">
+    <footer className="w-full bg-[#FFEED8]">
       <div className="max-w-[1440px] mx-auto">
 
         {/* Main Footer */}
@@ -47,15 +77,14 @@ export default function Footer() {
                   <Link to="/cart" className="text-sm md:text-base text-[#353945] hover:text-[#901CDB]">My Cart</Link>
                   <Link to="/profile" className="text-sm md:text-base text-[#353945] hover:text-[#901CDB]">My Profile</Link>
                   <Link to="/#reviews" className="text-sm md:text-base text-[#353945] hover:text-[#901CDB]">Customer Reviews</Link>
-                  <Link to="/#about-us" className="text-sm md:text-base text-[#353945] hover:text-[#901CDB]">About The Sakhi Jewels</Link>
+                  <Link to="/about" className="text-sm md:text-base text-[#353945] hover:text-[#901CDB]">About The Sakhi Jewels</Link>
                 </div>
 
                 {/* Info & Policy */}
                 <div className="flex flex-col gap-3 md:gap-5">
-          
-                  <Link to="/terms" className="text-sm md:text-base text-[#353945] hover:text-[#901CDB]">Info & Policy</Link>
-                  <Link to="/terms" className="text-sm md:text-base text-[#353945] hover:text-[#901CDB]">Shipping & Return</Link>
-                  <Link to="/terms" className="text-sm md:text-base text-[#353945] hover:text-[#901CDB]">FAQ's & Support</Link>
+                  <h4 className="font-semibold text-[#141416]">Info & Policy</h4>
+                  <Link to="/terms#returns" className="text-sm md:text-base text-[#353945] hover:text-[#901CDB]">Shipping & Return</Link>
+                  <Link to="/faq" className="text-sm md:text-base text-[#353945] hover:text-[#901CDB]">FAQ's & Support</Link>
                   <Link to="/terms" className="text-sm md:text-base text-[#353945] hover:text-[#901CDB]">Terms of Service</Link>
                 </div>
 
@@ -68,24 +97,24 @@ export default function Footer() {
                   <div className="text-sm text-[#353945]">
                     <p className="font-semibold">The Sakhi Jewels</p>
                     <p>
-                      1-108-2 kotala kalikiri Mandal<br />
-                      chittoor dist Andhra Pradesh - 517234
+                      {SHOP_ADDRESS_LINES[0]}<br />
+                      {SHOP_ADDRESS_LINES[1]}
                     </p>
                   </div>
                   <p className="text-sm text-[#353945]">
                     Call us:{' '}
-                    <a href={`tel:+91${SHOP_PHONE}`} className="hover:text-[#901CDB]">
-                      +91 97056 53066
+                    <a href={PHONE_LINK} className="hover:text-[#901CDB]">
+                      {SHOP_PHONE_DISPLAY}
                     </a>
                   </p>
                   <p className="text-sm text-[#353945]">
                     Email:{' '}
-                    <a href={`mailto:${SHOP_EMAIL}`} className="hover:text-[#901CDB]">
+                    <a href={EMAIL_LINK} className="hover:text-[#901CDB]">
                       {SHOP_EMAIL}
                     </a>
                   </p>
                   <a
-                    href={`https://wa.me/91${SHOP_PHONE}?text=${WHATSAPP_GREETING}`}
+                    href={WHATSAPP_LINK}
                     target="_blank"
                     rel="noreferrer"
                     className="inline-flex items-center gap-2 text-sm underline text-[#901CDB] hover:text-[#7A16C0]"
@@ -102,12 +131,35 @@ export default function Footer() {
             {/* Social */}
             <div className="flex flex-col gap-4">
               <span className="font-semibold text-sm md:text-base">Follow us on:</span>
-              <img src={instaMain} alt="Instagram" className="w-24 h-24 md:w-28 md:h-28" onClick={() =>
-    window.open(
-      "https://www.instagram.com/the_sakhijewels?igsh=eXFjeDJhajF2bTBm",
-      "_blank"
-    )
-  } />
+              <div className="flex items-center gap-3">
+                {SOCIAL_LINKS.map(({ name, href, icon }) => {
+                  const className =
+                    'w-10 h-10 md:w-11 md:h-11 flex items-center justify-center rounded-full bg-white text-[#901CDB] border border-[#901CDB]/20 transition-colors';
+
+                  // No link yet: show the icon, but nothing to click.
+                  if (!href) {
+                    return (
+                      <span key={name} title={name} aria-label={name} className={className}>
+                        {icon}
+                      </span>
+                    );
+                  }
+
+                  return (
+                    <a
+                      key={name}
+                      href={href}
+                      target="_blank"
+                      rel="noreferrer"
+                      title={name}
+                      aria-label={name}
+                      className={`${className} hover:bg-[#901CDB] hover:text-white`}
+                    >
+                      {icon}
+                    </a>
+                  );
+                })}
+              </div>
             </div>
 
             {/* Copyright */}

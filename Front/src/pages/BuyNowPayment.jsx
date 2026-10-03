@@ -2,6 +2,7 @@ import { useState, useContext, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ShopContext } from '../context/ShopContext';
 import axios from 'axios';
+import { getExpectedDeliveryDate } from '../utils/helpers';
 
 export default function BuyNowPayment() {
   const navigate = useNavigate();
@@ -17,11 +18,12 @@ export default function BuyNowPayment() {
 
   // Charge constants — MUST match backend (order.controller.js).
   const DELIVERY_FEE = 49;
-  const COD_CHARGE = 29;
+  const COD_CHARGE = 12;
+  const PREPAID_DISCOUNT = 9;
 
   const deliveryFee = freeShipping ? 0 : DELIVERY_FEE;
-  // Prepaid discount is 3% of item subtotal only (not delivery/cod).
-  const prepaidDiscount = mode === "online" ? Math.floor(subtotal * 0.03) : 0;
+  // Prepaid discount is a flat amount off the items (not delivery/cod).
+  const prepaidDiscount = mode === "online" ? PREPAID_DISCOUNT : 0;
   const codCharge = mode === "cod" ? COD_CHARGE : 0;
 
   // Coupon + prepaid discounts apply to item subtotal only; fees added after.
@@ -48,12 +50,8 @@ export default function BuyNowPayment() {
       }]
     : getCartProducts().filter((p) => p.stock >= p.quantity);
 
-  // Expected delivery = 7 days from today (order placed now).
-  const deliveryDate = (() => {
-    const d = new Date();
-    d.setDate(d.getDate() + 7);
-    return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
-  })();
+  // Order is placed now, so the date counts from today.
+  const deliveryDate = getExpectedDeliveryDate();
 
 useEffect(() => {
       window.scrollTo(0, 0);
@@ -156,7 +154,7 @@ const handlePayment = async () => {
       // always matches what the server computed.
       amount: razorpayOrder.amount,
       currency: "INR",
-      name: "Saki Jewels",
+      name: "Sakhi Jewels",
       description: "Order Payment",
       order_id: razorpayOrder.id,
 
@@ -314,7 +312,7 @@ const handlePayment = async () => {
 
                 {prepaidDiscount > 0 && (
                   <div className="flex justify-between">
-                    <span className="text-[#777E90]">Prepaid Discount (3%)</span>
+                    <span className="text-[#777E90]">Prepaid Discount</span>
                     <span className="text-green-600">- ₹ {prepaidDiscount.toLocaleString()}</span>
                   </div>
                 )}

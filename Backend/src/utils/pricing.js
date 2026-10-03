@@ -11,19 +11,19 @@
  */
 
 export const DELIVERY_FEE = 49;
-export const COD_CHARGE = 29;
-export const MIN_ORDER_SUBTOTAL = 249;
-export const PREPAID_DISCOUNT_RATE = 0.03; // 3% off items when paying online
+export const COD_CHARGE = 12;
+export const MIN_ORDER_SUBTOTAL = 99;
+export const PREPAID_DISCOUNT = 9; // flat rupees off when paying online
 
 /**
  * Coupon catalogue. `firstOrderOnly` coupons are validated against the
  * customer's real order history, never against a client-supplied flag.
  */
 const COUPONS = {
-  TSJFIRST: { minSubtotal: 599, firstOrderOnly: true, flat: 100 },
-  TSJSSFIRST: { minSubtotal: 999, firstOrderOnly: true, flat: 100, freeShipping: true },
+  TSJSFIRST: { minSubtotal: 599, firstOrderOnly: true, flat: 100 },
+  FIRST999: { minSubtotal: 999, firstOrderOnly: true, flat: 100, freeShipping: true },
   TSJ10: { minSubtotal: 999, percent: 0.1 },
-  TSJSS15: { minSubtotal: 1499, percent: 0.15, freeShipping: true },
+  TSJS10: { minSubtotal: 1499, percent: 0.1, freeShipping: true },
 };
 
 /**
@@ -54,9 +54,9 @@ export const priceOrder = ({ items, coupon, isFirstOrder, paymentMethod }) => {
     }
   }
 
-  // Prepaid incentive applies to the item subtotal only, never to fees.
+  // Prepaid incentive: a flat amount off the items, never off the fees.
   if (paymentMethod === "ONLINE") {
-    discount += Math.floor(subtotal * PREPAID_DISCOUNT_RATE);
+    discount += PREPAID_DISCOUNT;
   }
 
   const codCharge = paymentMethod === "COD" ? COD_CHARGE : 0;

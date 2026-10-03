@@ -10,7 +10,7 @@ import { getOrderReviews, saveReview } from "../../services/reviewService";
  * already left, so the form is always filled with what they last wrote.
  */
 // Long enough for a real opinion, short enough to read on a card.
-const MAX_REVIEW_CHARS = 300;
+const MAX_REVIEW_CHARS = 150;
 
 export default function OrderReviewSection({ order }) {
   const { token } = useContext(ShopContext);

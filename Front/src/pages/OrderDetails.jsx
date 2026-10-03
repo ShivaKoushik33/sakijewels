@@ -3,6 +3,7 @@ import { Link, useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { ShopContext } from '../context/ShopContext';
 import OrderReviewSection from '../components/profile/OrderReviewSection';
+import { getExpectedDeliveryDate } from '../utils/helpers';
 
 const getToneClasses = (status) => {
   switch (status) {
@@ -73,8 +74,9 @@ export default function OrderDetails() {
   }
 
   const addr = order.shippingAddress || {};
+  // ||, not ??: older orders have no saved subtotal and arrive with 0.
   const itemsTotal = Number(
-    order.subtotal ??
+    order.subtotal ||
       (order.items || []).reduce(
         (acc, it) => acc + (it.price || 0) * (it.quantity || 0),
         0
@@ -85,6 +87,15 @@ export default function OrderDetails() {
   const codCharge = Number(order.codCharge || 0);
   const totalAmount = Number(order.totalAmount || 0);
 
+  // Older orders saved only the total, not the delivery fee, COD charge or
+  // discount behind it. Whatever the saved rows do not explain is shown as
+  // one line, so the summary always adds up to the total.
+  const unexplained =
+    Math.round(
+      (totalAmount - (itemsTotal - discount + deliveryFee + codCharge)) * 100
+    ) / 100;
+  const chargesNotRecorded = unexplained !== 0 && deliveryFee === 0;
+
   return (
     <div className="min-h-screen bg-white">
       <div className="max-w-[1440px] mx-auto px-4 sm:px-6 md:px-8 lg:px-[120px] py-6 md:py-10">
@@ -93,9 +104,24 @@ export default function OrderDetails() {
           <button
             type="button"
             onClick={() => navigate(-1)}
-            className="text-sm text-[#901CDB] hover:underline"
+            aria-label="Back"
+            title="Back"
+            className="-ml-2 w-10 h-10 flex items-center justify-center rounded-full text-[#901CDB] hover:bg-[#F5ECFC] transition-colors"
           >
-            &larr; Back
+            <svg
+              width="26"
+              height="26"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M19 12H5" />
+              <path d="M12 19l-7-7 7-7" />
+            </svg>
           </button>
           <Link to="/orders" className="text-sm text-[#901CDB] hover:underline">
             My Orders
@@ -111,17 +137,13 @@ export default function OrderDetails() {
               Order Details
             </h1>
             <p className="text-xs md:text-sm text-[#777E90] mt-1 break-all">
-              Order ID: {order._id}
+              Order ID: {order.orderNumber || order._id}
             </p>
             <p className="text-xs md:text-sm text-[#777E90] mt-0.5">
               Placed on {new Date(order.createdAt).toLocaleString()}
             </p>
             <p className="text-xs md:text-sm text-[#777E90] mt-0.5">
-              Expected Delivery: {(() => {
-                const d = new Date(order.createdAt);
-                d.setDate(d.getDate() + 7);
-                return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
-              })()}
+              Expected Delivery: {getExpectedDeliveryDate(order.createdAt)}
             </p>
           </div>
 
@@ -239,12 +261,32 @@ export default function OrderDetails() {
                 </div>
               )}
 
-              <div className="flex justify-between mb-3 text-sm">
-                <span className="text-[#777E90]">Delivery Fee</span>
-                <span className="text-[#141416]">
-                  {deliveryFee === 0 ? 'FREE' : `₹ ${deliveryFee.toLocaleString()}`}
-                </span>
-              </div>
+              {!chargesNotRecorded && (
+                <div className="flex justify-between mb-3 text-sm">
+                  <span className="text-[#777E90]">Delivery Fee</span>
+                  <span className="text-[#141416]">
+                    {deliveryFee === 0 ? 'FREE' : `₹ ${deliveryFee.toLocaleString()}`}
+                  </span>
+                </div>
+              )}
+
+              {unexplained > 0 && (
+                <div className="flex justify-between mb-3 text-sm">
+                  <span className="text-[#777E90]">Delivery &amp; other charges</span>
+                  <span className="text-[#141416]">
+                    ₹ {unexplained.toLocaleString()}
+                  </span>
+                </div>
+              )}
+
+              {unexplained < 0 && (
+                <div className="flex justify-between mb-3 text-sm">
+                  <span className="text-[#777E90]">Other discount</span>
+                  <span className="text-green-600">
+                    - ₹ {Math.abs(unexplained).toLocaleString()}
+                  </span>
+                </div>
+              )}
 
               {codCharge > 0 && (
                 <div className="flex justify-between mb-3 text-sm">
@@ -359,7 +401,7 @@ export default function OrderDetails() {
 
               {/* Email */}
               <a
-                href="mailto:support@thesakijewels.com"
+                href="mailto:support@thesakhijewels.com"
                 className="flex items-center gap-3 px-4 py-3 border border-[#E6E8EC] rounded-lg hover:bg-[#F4F5F6] transition"
               >
                 <span className="w-9 h-9 flex items-center justify-center rounded-full bg-[#901CDB]/10">

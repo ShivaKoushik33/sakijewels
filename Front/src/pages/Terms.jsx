@@ -1,10 +1,19 @@
 import { useEffect } from "react";
+import { useLocation } from "react-router-dom";
 
 export default function Terms() {
+  const location = useLocation();
 
+  // Footer links point at one policy (/terms#shipping). Runs on every click,
+  // including when this page is already open, so a link never does nothing.
   useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
+    const section = location.hash && document.getElementById(location.hash.slice(1));
+    if (section) {
+      section.scrollIntoView({ behavior: "smooth" });
+    } else {
+      window.scrollTo(0, 0);
+    }
+  }, [location]);
 
   return (
     <div className="bg-[#FAF7FF] min-h-screen py-8 px-4">
@@ -16,7 +25,7 @@ export default function Terms() {
         </h1>
 
         {/* Section */}
-        <section className="mb-6">
+        <section id="returns" className="mb-6 scroll-mt-24 sm:scroll-mt-44">
           <h2 className="text-lg font-semibold text-[#F7B500] mb-2">
             Return, Replacement & Refund Policy
           </h2>
@@ -39,8 +48,8 @@ export default function Terms() {
 
           <h3 className="font-semibold mt-4 text-[#901CDB]">After Verification</h3>
           <ul className="list-disc ml-5 text-gray-700">
-            <li>Replacement within 5 working days</li>
-            <li>Refund within 3 business days</li>
+            <li>Replacement within 7 working days</li>
+            <li>Refund within 5 business days</li>
           </ul>
 
           <h3 className="font-semibold mt-4 text-[#901CDB]">Conditions</h3>
@@ -59,7 +68,7 @@ export default function Terms() {
         </section>
 
         {/* Shipping */}
-        <section className="mb-6">
+        <section id="shipping" className="mb-6 scroll-mt-24 sm:scroll-mt-44">
           <h2 className="text-lg font-semibold text-[#F7B500] mb-2">
             Shipping Policy
           </h2>
@@ -68,12 +77,12 @@ export default function Terms() {
             <li>Processing: 1–3 working days</li>
             <li>Delivery: 3–7 working days</li>
             <li>Shipping: ₹49</li>
-            <li>COD: ₹29 extra</li>
+            <li>COD: ₹12 extra</li>
           </ul>
         </section>
 
         {/* Cancellation */}
-        <section className="mb-6">
+        <section id="cancellation" className="mb-6 scroll-mt-24 sm:scroll-mt-44">
           <h2 className="text-lg font-semibold text-[#F7B500] mb-2">
             Cancellation Policy
           </h2>
@@ -87,7 +96,7 @@ export default function Terms() {
         </section>
 
         {/* Privacy Policy */}
-        <section>
+        <section id="privacy" className="scroll-mt-24 sm:scroll-mt-44">
           <h2 className="text-lg font-semibold text-[#F7B500] mb-2">
             Privacy Policy
           </h2>

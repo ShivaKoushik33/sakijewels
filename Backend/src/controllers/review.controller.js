@@ -3,7 +3,8 @@ import Order from "../models/Order.js";
 import Product from "../models/Product.js";
 import Review from "../models/Review.js";
 
-const MAX_MESSAGE = 1000;
+// Matches the limit on the storefront's review box.
+const MAX_MESSAGE = 150;
 
 // The landing page is a shop front: only confident ratings that actually say
 // something appear there. Every review still counts toward the product rating.

@@ -29,6 +29,28 @@ export const formatDate = (date) => {
 };
 
 /**
+ * Days between an order being placed and its expected delivery.
+ * Every page that shows a delivery date must go through
+ * getExpectedDeliveryDate so the customer sees the same promise everywhere.
+ */
+export const DELIVERY_DAYS = 7;
+
+/**
+ * Expected delivery date for an order
+ * @param {Date|string} [from] - When the order was placed (default: now)
+ * @returns {string} Date such as "10 Oct 2026"
+ */
+export const getExpectedDeliveryDate = (from = new Date()) => {
+  const d = new Date(from);
+  d.setDate(d.getDate() + DELIVERY_DAYS);
+  return d.toLocaleDateString('en-IN', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+};
+
+/**
  * Check if a value is empty
  * @param {*} value - The value to check
  * @returns {boolean} True if empty

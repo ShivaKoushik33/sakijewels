@@ -3,6 +3,7 @@ import Order from "../models/Order.js";
 import PaymentIntent from "../models/PaymentIntent.js";
 import Product from "../models/Product.js";
 import User from "../models/User.js";
+import { nextOrderNumber } from "./orderNumber.js";
 
 /**
  * Turns a paid PaymentIntent into an order, inside one transaction.
@@ -53,6 +54,7 @@ export const placeOrderFromIntent = async ({ intent, paymentId }) => {
     const created = await Order.create(
       [
         {
+          orderNumber: await nextOrderNumber("ONLINE"),
           user: claimed.user,
           items: claimed.items,
           shippingAddress: claimed.shippingAddress,

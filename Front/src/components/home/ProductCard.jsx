@@ -73,12 +73,6 @@ export default function ProductCard({ product }) {
               </div>
             </div>
           )}
-          {/* In-cart badge */}
-          {inCart && (
-            <span className="absolute top-2 right-2 inline-flex items-center gap-1 bg-white/95 text-[#901CDB] text-[10px] md:text-xs font-semibold px-2 py-1 rounded-full shadow-sm">
-              <CheckIcon /> In cart
-            </span>
-          )}
           {outOfStock && (
             <span className="absolute bottom-2 left-2 bg-[#141416]/80 text-white text-[10px] md:text-xs font-semibold uppercase tracking-wider px-2 py-1 rounded-md">
               Out of stock

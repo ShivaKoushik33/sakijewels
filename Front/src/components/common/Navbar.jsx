@@ -355,7 +355,7 @@ const changeLanguage = (langCode, label) => {
                 <Link to="/orders">My Orders</Link>
               </div>
               <div className="flex items-center gap-1 px-[10px] py-[10px]">
-               <Link to="/#about-us">About Us</Link>
+               <Link to="/about">About Us</Link>
               </div>
               <div className="px-[10px] py-[10px]">
                 <Link to="/terms">Terms & Conditions</Link>
@@ -432,7 +432,7 @@ const changeLanguage = (langCode, label) => {
                 </span>
                 My Orders
               </Link>
-              <Link to="/#about-us" onClick={() => toggleMenu(false)} className="flex items-center gap-3 px-5 py-3 text-[15px] font-medium text-[#141416] hover:bg-[#F4F5F6] transition-colors">
+              <Link to="/about" onClick={() => toggleMenu(false)} className="flex items-center gap-3 px-5 py-3 text-[15px] font-medium text-[#141416] hover:bg-[#F4F5F6] transition-colors">
                 <span className="w-8 h-8 flex items-center justify-center rounded-full bg-[#901CDB]/10">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#901CDB" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
                 </span>

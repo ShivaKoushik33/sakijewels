@@ -3,7 +3,8 @@ import axios from "axios";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { backendUrl, currency } from "../App";
 import { toast } from "react-toastify";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import BackButton from "../Components/BackButton";
 
 
 
@@ -11,8 +12,14 @@ const Orders = ({ token }) => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
-  const [status, setStatus] = useState("");
   const [sort, setSort] = useState("DATE_DESC");
+
+  // The status filter lives in the URL so the dashboard tiles can link
+  // straight to a filtered list, and Back from an order returns to it.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const status = searchParams.get("status") || "";
+  const setStatus = (value) =>
+    setSearchParams(value ? { status: value } : {}, { replace: true });
 
   // 🔹 Fetch Orders
   const fetchOrders = async () => {
@@ -51,13 +58,35 @@ const Orders = ({ token }) => {
     }
   });
 
+  // 🔹 Mark a cash on delivery order as paid
+  const updatePaidMutation = useMutation({
+    mutationFn: ({ id }) =>
+      axios.put(
+        `${backendUrl}/api/orders/${id}`,
+        { isPaid: true },
+        { headers: { Authorization: `Bearer ${token}` } }
+      ),
+
+    onSuccess: () => {
+      toast.success("Marked as Paid");
+      queryClient.invalidateQueries(["orders"]);
+    },
+
+    onError: (error) => {
+      toast.error(error.response?.data?.message || "Error updating payment");
+    }
+  });
+
   if (isLoading) return <p className="p-4">Loading Orders...</p>;
 
   return (
     <div className="p-6">
 
       {/* 🔹 Title */}
-      <h2 className="text-2xl font-bold mb-6">Orders Management</h2>
+      <div className="flex items-center gap-3 mb-6">
+        <BackButton />
+        <h2 className="text-2xl font-bold">Orders Management</h2>
+      </div>
 
       {/* 🔹 Filters */}
       <div className="flex gap-4 mb-6">
@@ -71,6 +100,8 @@ const Orders = ({ token }) => {
           className="border p-2"
         >
           <option value="">All Status</option>
+          <option value="PENDING,ACCEPTED,CONFIRMED">YET TO SHIP</option>
+          <option value="REJECTED,REFUNDED">CANCELLED</option>
           <option value="PENDING">PENDING</option>
           <option value="ACCEPTED">ACCEPTED</option>
           <option value="CONFIRMED">CONFIRMED</option>
@@ -116,7 +147,7 @@ const Orders = ({ token }) => {
 
                 <td className="p-3 text-xs text-blue-600 cursor-pointer"
                   onClick={() => navigate(`/orders/single/${order._id}`)}>
-                  {order._id}
+                  {order.orderNumber || order._id}
                 </td>
 
                 <td className="p-3">
@@ -151,7 +182,27 @@ const Orders = ({ token }) => {
                 </td>
 
                 <td className="p-3">
-                  {order.isPaid ? "Yes" : "No"}
+                  {/* Unpaid means cash on delivery: the admin records the
+                      cash once it is collected. Paid orders stay as they are. */}
+                  {order.isPaid ? (
+                    "Yes"
+                  ) : order.paymentMethod === "COD" ? (
+                    <select
+                      value="NO"
+                      onChange={(e) => {
+                        if (e.target.value === "YES") {
+                          updatePaidMutation.mutate({ id: order._id });
+                        }
+                      }}
+                      disabled={updatePaidMutation.isPending}
+                      className="border p-1"
+                    >
+                      <option value="NO">No</option>
+                      <option value="YES">Yes</option>
+                    </select>
+                  ) : (
+                    "No"
+                  )}
                 </td>
 
                 <td className="p-3">

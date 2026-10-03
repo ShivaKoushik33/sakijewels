@@ -26,6 +26,8 @@ import SearchBar from '../components/common/SearchBar';
 import ProtectedRoute from './ProtectedRoute';
 import Terms from '../pages/Terms';
 import NotFound from '../pages/NotFound';
+import About from '../pages/About';
+import Faq from '../pages/Faq';
 export default function AppRoutes() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -53,6 +55,8 @@ export default function AppRoutes() {
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/terms" element={<Terms />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/faq" element={<Faq />} />
           <Route
             path="/orders"
             element={

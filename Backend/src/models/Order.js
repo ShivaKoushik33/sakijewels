@@ -36,6 +36,12 @@ const addressSchema = new mongoose.Schema({
 
 const orderSchema = new mongoose.Schema(
   {
+    // What the customer and the admin see, e.g. "TSJ-261003-C-0042".
+    // See utils/orderNumber.js. _id stays the key for links and lookups.
+    orderNumber: {
+      type: String
+    },
+
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -111,6 +117,13 @@ const orderSchema = new mongoose.Schema(
 orderSchema.index(
   { paymentId: 1 },
   { unique: true, partialFilterExpression: { paymentId: { $type: "string" } } }
+);
+
+// No two orders share a number. Partial so orders placed before order numbers
+// existed (no orderNumber) do not collide with each other.
+orderSchema.index(
+  { orderNumber: 1 },
+  { unique: true, partialFilterExpression: { orderNumber: { $type: "string" } } }
 );
 
 // "My orders" and the admin list both sort by date within a scope.
