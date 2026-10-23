@@ -14,6 +14,8 @@ export default function OrderCard({ order }) {
       case "REJECTED":
       case "CANCELLED":
         return "text-[#FF3B30] border-[#FF3B30]/30 bg-[#FF3B30]/10";
+      case "SHIPPED":
+        return "text-[#901CDB] border-[#901CDB]/30 bg-[#901CDB]/10";
       case "DELIVERED":
         return "text-[#1E4CA6] border-[#1E4CA6]/30 bg-[#1E4CA6]/10";
       default:

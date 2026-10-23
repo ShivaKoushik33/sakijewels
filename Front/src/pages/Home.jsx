@@ -130,7 +130,7 @@ useEffect(() => {
       {/* 2026 Jewellery Essentials */}
       {homepage.essentials && (
         <div  id="essentials" className="scroll-mt-24 sm:scroll-mt-44 my-10 md:my-20">
-          <JewelleryEssentials data={homepage.essentials} />
+          <JewelleryEssentials data={homepage.essentials} variantType={variantType} />
         </div>
       )}
       
@@ -148,7 +148,7 @@ useEffect(() => {
 
       {/* Promo Banner Section */}
       {homepage.promoBanner && (
-        <PromoBannerSection data={homepage.promoBanner} />
+        <PromoBannerSection data={homepage.promoBanner} variantType={variantType} />
       )}
       
       {/* Best Selling Products */}

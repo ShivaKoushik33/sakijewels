@@ -1,6 +1,14 @@
 import { useNavigate } from "react-router-dom";
 
-export default function JewelleryEssentials({ data }) {
+/**
+ * Men's collection box. Each item can carry one picture per side of the
+ * Traditional / Modern switch (`images: { TRADITIONAL, FASHION }`); the one
+ * matching the shopper's choice is shown, or `image` when there is no pair.
+ *
+ * The pictures are full designs with text and category tiles, so they are
+ * shown whole at their own shape rather than cropped into a fixed box.
+ */
+export default function JewelleryEssentials({ data, variantType }) {
   const navigate = useNavigate();
 
   if (!data || !Array.isArray(data) || data.length === 0) return null;
@@ -13,20 +21,24 @@ export default function JewelleryEssentials({ data }) {
         </h2>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:items-center lg:gap-[52px] lg:justify-center gap-4 md:gap-6">
-        {data.map((item) => (
-          <div 
-            key={item.id}
-            onClick={() => navigate(item.type ? `/collections?type=${item.type}` : `/collections`)}
-            className="relative w-full max-w-[363px] mx-auto lg:mx-0 h-[200px] sm:h-[220px] md:h-[240px] lg:w-[363px] rounded-2xl overflow-hidden group cursor-pointer"
-          >
-            <img
-              src={item.image}
-              alt={item.name}
-              className="w-full h-full object-cover"
-            />
-          </div>
-        ))}
+      <div className="flex flex-col items-center gap-4 md:gap-6">
+        {data.map((item) => {
+          const image = item.images?.[variantType] || item.images?.TRADITIONAL || item.image;
+
+          return (
+            <div
+              key={item.id}
+              onClick={() => navigate(item.type ? `/collections?type=${item.type}` : `/collections`)}
+              className="w-full max-w-[1200px] rounded-xl md:rounded-2xl overflow-hidden cursor-pointer"
+            >
+              <img
+                src={image}
+                alt={item.name}
+                className="block w-full h-auto"
+              />
+            </div>
+          );
+        })}
       </div>
     </div>
   );

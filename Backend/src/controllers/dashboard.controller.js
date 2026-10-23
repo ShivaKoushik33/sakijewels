@@ -109,6 +109,7 @@ export const getDashboard = async (req, res) => {
       orders: {
         total: statusCounts.reduce((sum, row) => sum + row.count, 0),
         yetToShip: countFor(YET_TO_SHIP),
+        shipped: countFor(["SHIPPED"]),
         delivered: countFor(["DELIVERED"]),
         cancelled: countFor(CANCELLED),
       },

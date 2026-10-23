@@ -1,13 +1,17 @@
 // Mock homepage data service
 // This simulates a real API call and can be replaced with actual API later
 
+import bannerBrand from '../assets/images/banner_brand.jpeg';
 import bannerWelcome from '../assets/images/banner_welcome.jpeg';
+import bannerMens from '../assets/images/banner_mens.jpeg';
 import bannerCoupons from '../assets/images/banner_coupons.jpeg';
 import bannerPearlRuby from '../assets/images/banner_pearl_ruby.jpeg';
 import { SHOP_PHONE } from '../utils/shopContact';
 import dup_category from '../assets/images/dup_category.png';
-import JewelleryEssentials from '../assets/images/jewelery_essentials.png';
-import productBanner from '../assets/images/product_banner.png';
+import mensTraditional from '../assets/images/mens_traditional.jpeg';
+import mensModern from '../assets/images/mens_modern.jpeg';
+import promoTraditional from '../assets/images/promo_traditional.jpeg';
+import promoModern from '../assets/images/promo_modern.jpeg';
 import pendants from '../assets/images/Pendants_latest.jpeg';
 import MODERN_MINIMUM_NECKLACES from '../assets/images/minimal_LATEST.jpeg';
 
@@ -44,6 +48,13 @@ const CUSTOMISE_WHATSAPP_LINK = `https://wa.me/91${SHOP_PHONE}?text=${encodeURIC
 const mockHero = {
   images: [
     {
+      src: bannerBrand,
+      alt: 'The Sakhi Jewels, jewellery for every story. Traditional elegance and modern charm',
+      to: '/collections',
+      // Keep the peacock logo at the top: trim more from the bottom instead.
+      position: 'center 25%',
+    },
+    {
       src: bannerWelcome,
       alt: 'Welcome to The Sakhi Jewels. Get ₹100 off on your first order above ₹599 with code TSJSFIRST',
       to: '/collections',
@@ -57,6 +68,11 @@ const mockHero = {
       src: bannerPearlRuby,
       alt: 'Pearl and ruby necklaces, customisation available. Message us to create your custom piece',
       href: CUSTOMISE_WHATSAPP_LINK,
+    },
+    {
+      src: bannerMens,
+      alt: "Men's collection available, traditional and modern. Explore men's collection",
+      to: '/collections?type=MENS_COLLECTION',
     },
   ],
 };
@@ -224,7 +240,11 @@ const mockEssentials = [
     id: 2,
     name: 'Mens Collection',
     type: 'MENS_COLLECTION',
-    image: JewelleryEssentials
+    // One picture per side of the Traditional / Modern switch.
+    images: {
+      TRADITIONAL: mensTraditional,
+      FASHION: mensModern,
+    },
   }
 ];
 
@@ -304,8 +324,17 @@ const mockProducts = [
 ];
 
 
+// Offer banner above Best Selling, one per side of the Traditional / Modern
+// switch (Modern is stored as FASHION).
 const mockHomepage = {
-    image: productBanner
+  TRADITIONAL: {
+    src: promoTraditional,
+    alt: 'Special website launching offer: 20% off traditional jewellery',
+  },
+  FASHION: {
+    src: promoModern,
+    alt: 'Special website launching offer: 40% off modern jewellery',
+  },
 };
 
 

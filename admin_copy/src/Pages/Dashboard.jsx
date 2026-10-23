@@ -141,7 +141,7 @@ const Dashboard = ({ token }) => {
           </Link>
         }
       >
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
           <StatCard label="Total Orders" value={orders.total} to="/orders" />
           <StatCard
             label="Yet To Ship"
@@ -149,6 +149,13 @@ const Dashboard = ({ token }) => {
             tone="text-orange-500"
             hint="Pending, accepted or confirmed"
             to="/orders?status=PENDING,ACCEPTED,CONFIRMED"
+          />
+          <StatCard
+            label="Shipped"
+            value={orders.shipped}
+            tone="text-blue-600"
+            hint="On the way to the customer"
+            to="/orders?status=SHIPPED"
           />
           <StatCard
             label="Delivered"

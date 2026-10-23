@@ -29,7 +29,10 @@ export default function HeroBanner({ data }) {
     <img
       src={slide.src}
       alt={slide.alt}
-      className="w-full h-full object-cover object-center"
+      className="w-full h-full object-cover"
+      // A banner whose top matters more (a logo) can move its crop with
+      // `position`, e.g. "center 25%"; the default is the middle.
+      style={{ objectPosition: slide.position || "center" }}
     />
   );
 
