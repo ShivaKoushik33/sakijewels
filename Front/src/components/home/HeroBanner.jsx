@@ -5,9 +5,10 @@ import { Link } from "react-router-dom";
  * Home page carousel. Each slide is { src, alt } plus where it leads:
  * `to` for a page on this site, `href` for an outside link.
  *
- * The banners are made about 3:1, so the frame is 3:1 and each banner fills
- * it edge to edge. A banner of a slightly different shape loses a thin strip
- * at the top and bottom rather than showing empty bands at the sides.
+ * The banners are made about 3:1, so the frame is 3:1 (a little taller,
+ * 5:2, on phones, where 3:1 looks squashed) and each banner fills
+ * it edge to edge, trimming a thin strip off the sides or top and bottom
+ * rather than showing empty bands.
  */
 export default function HeroBanner({ data }) {
   const slides = data?.images || [];
@@ -34,7 +35,7 @@ export default function HeroBanner({ data }) {
 
   return (
     <div className="w-full max-w-[1440px] mx-auto px-3 sm:px-6 md:px-10 lg:px-[121px] pt-4 sm:pt-6 md:pt-[44px]">
-      <div className="w-full max-w-[1200px] mx-auto aspect-[3/1] rounded-xl md:rounded-2xl border border-[#9A9A9A] overflow-hidden relative">
+      <div className="w-full max-w-[1200px] mx-auto aspect-[5/2] sm:aspect-[3/1] rounded-xl md:rounded-2xl border border-[#9A9A9A] overflow-hidden relative">
 
         {/* Slides */}
         <div
