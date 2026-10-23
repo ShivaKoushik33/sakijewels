@@ -101,12 +101,14 @@ const Orders = ({ token }) => {
         >
           <option value="">All Status</option>
           <option value="PENDING,ACCEPTED,CONFIRMED">YET TO SHIP</option>
-          <option value="REJECTED,REFUNDED">CANCELLED</option>
+          <option value="REJECTED,CANCELLED,REFUNDED">ALL CANCELLED</option>
           <option value="PENDING">PENDING</option>
           <option value="ACCEPTED">ACCEPTED</option>
           <option value="CONFIRMED">CONFIRMED</option>
           <option value="DELIVERED">DELIVERED</option>
           <option value="REJECTED">REJECTED</option>
+          <option value="CANCELLED">CANCELLED</option>
+          <option value="REFUNDED">REFUNDED</option>
         </select>
 
         <select
@@ -178,6 +180,8 @@ const Orders = ({ token }) => {
                     <option value="CONFIRMED">CONFIRMED</option>
                     <option value="DELIVERED">DELIVERED</option>
                     <option value="REJECTED">REJECTED</option>
+                    <option value="CANCELLED">CANCELLED</option>
+                    <option value="REFUNDED">REFUNDED</option>
                   </select>
                 </td>
 

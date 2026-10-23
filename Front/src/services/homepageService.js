@@ -1,7 +1,10 @@
 // Mock homepage data service
 // This simulates a real API call and can be replaced with actual API later
 
-import banner from '../assets/images/banner.png';
+import bannerWelcome from '../assets/images/banner_welcome.jpeg';
+import bannerCoupons from '../assets/images/banner_coupons.jpeg';
+import bannerPearlRuby from '../assets/images/banner_pearl_ruby.jpeg';
+import { SHOP_PHONE } from '../utils/shopContact';
 import dup_category from '../assets/images/dup_category.png';
 import JewelleryEssentials from '../assets/images/jewelery_essentials.png';
 import productBanner from '../assets/images/product_banner.png';
@@ -29,16 +32,33 @@ import FASHION_GIFT_HAMPER from '../assets/images/GiftHamper_latest.jpeg';
 
 import api from "./apiService";
 
+// The pearl & ruby banner offers custom pieces; those are arranged on WhatsApp.
+const CUSTOMISE_WHATSAPP_LINK = `https://wa.me/91${SHOP_PHONE}?text=${encodeURIComponent(
+  "Hi, I would like to create a custom pearl / ruby necklace."
+)}`;
 
+
+// Home page carousel, in the order shown. Each banner's own "Shop now" /
+// "Create your custom piece" button is part of the picture, so the whole
+// slide is the link.
 const mockHero = {
-  images:[banner, banner, banner],
-  title: 'Jewelry Store',
-  subtitle: 'WEDDING JEWELRY',
-  offer: {
-    text: 'SPECIAL OFFER',
-    discount: '50% OFF'
-  },
- 
+  images: [
+    {
+      src: bannerWelcome,
+      alt: 'Welcome to The Sakhi Jewels. Get ₹100 off on your first order above ₹599 with code TSJSFIRST',
+      to: '/collections',
+    },
+    {
+      src: bannerCoupons,
+      alt: 'Use code TSJ10 for 10% off above ₹999, or TSJS10 for 10% off and free shipping above ₹1499',
+      to: '/collections',
+    },
+    {
+      src: bannerPearlRuby,
+      alt: 'Pearl and ruby necklaces, customisation available. Message us to create your custom piece',
+      href: CUSTOMISE_WHATSAPP_LINK,
+    },
+  ],
 };
 
 // const mockCategories = [

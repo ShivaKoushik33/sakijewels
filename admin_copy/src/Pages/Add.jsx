@@ -81,8 +81,9 @@ const [discountRate, setDiscountRate] = useState(0);
       setIsLoading(true); // ✅ start loading
 
       const formData = new FormData();
-      const actual = Number(rate);
-const final = Number(finalPrice);
+      // Actual price is optional; blank means no discount.
+      const final = Number(finalPrice);
+      const actual = String(rate).trim() === "" ? final : Number(rate);
 
 if (final > actual) {
   toast.error("Final price cannot be greater than actual price");
@@ -101,7 +102,7 @@ setDiscountRate(calculatedDiscount);
       formData.append("type", type);
       formData.append("variantType",variantType);
       formData.append("description", description);
-      formData.append("rate", actual);
+      if (String(rate).trim() !== "") formData.append("rate", actual);
 formData.append("finalPrice", final);
 formData.append("discountRate", calculatedDiscount);
       formData.append("stock", stock);
@@ -253,13 +254,13 @@ formData.append("discountRate", calculatedDiscount);
       {/* Pricing Section */}
       <div className="flex gap-6">
         <div>
-          <p className="mb-2">Rate (₹)</p>
+          <p className="mb-2">Actual Price / MRP (₹) <span className="text-gray-400">(optional)</span></p>
           <input
             type="number"
             value={rate}
             onChange={(e) => setRate(e.target.value)}
             className="px-3 py-2 border"
-            required
+            placeholder="Leave blank if no discount"
           />
         </div>
 

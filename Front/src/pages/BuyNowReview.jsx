@@ -416,9 +416,11 @@ export default function BuyNowReview() {
                         <span className="font-semibold">
                           ₹{item.price.toLocaleString()}
                         </span>
-                        <span className="line-through text-gray-400">
-                          ₹{item.originalPrice.toLocaleString()}
-                        </span>
+                        {item.originalPrice > item.price && (
+                          <span className="line-through text-gray-400">
+                            ₹{item.originalPrice.toLocaleString()}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>

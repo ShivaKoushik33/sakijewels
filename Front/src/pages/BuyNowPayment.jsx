@@ -154,7 +154,7 @@ const handlePayment = async () => {
       // always matches what the server computed.
       amount: razorpayOrder.amount,
       currency: "INR",
-      name: "Sakhi Jewels",
+      name: "The Sakhi Jewels",
       description: "Order Payment",
       order_id: razorpayOrder.id,
 

@@ -46,6 +46,9 @@ const SORTS = {
 };
 
 /** Upload the multipart files to Cloudinary, always clearing the temp files. */
+// Same limit as the upload middleware (multer.js, files: 4).
+const MAX_PRODUCT_IMAGES = 4;
+
 const uploadImages = async (files) => {
   try {
     return await Promise.all(
@@ -63,6 +66,9 @@ const uploadImages = async (files) => {
     );
   }
 };
+
+const isBlank = (value) =>
+  value === undefined || value === null || String(value).trim() === "";
 
 const toNumber = (value) => {
   if (value === undefined || value === null || value === "") return null;
@@ -92,15 +98,20 @@ export const createProduct = async (req, res) => {
       return res.status(400).json({ message: "At least one image required" });
     }
 
-    const rate = toNumber(req.body.rate);
     const finalPrice = toNumber(req.body.finalPrice);
     const stock = toNumber(req.body.stock);
 
-    if (rate === null || rate <= 0) {
-      return res.status(400).json({ message: "Enter a valid rate" });
-    }
     if (finalPrice === null || finalPrice <= 0) {
       return res.status(400).json({ message: "Enter a valid final price" });
+    }
+
+    // The actual price (MRP) is optional: left blank, the product simply has
+    // no discount and its actual price is its selling price.
+    const rateGiven = !isBlank(req.body.rate);
+    const rate = rateGiven ? toNumber(req.body.rate) : finalPrice;
+
+    if (rate === null || rate <= 0) {
+      return res.status(400).json({ message: "Enter a valid actual price" });
     }
     if (finalPrice > rate) {
       return res
@@ -313,13 +324,6 @@ export const updateProduct = async (req, res) => {
     const finalPrice = toNumber(req.body.finalPrice);
     const stock = toNumber(req.body.stock);
 
-    if (req.body.rate !== undefined) {
-      if (rate === null || rate <= 0) {
-        return res.status(400).json({ message: "Enter a valid rate" });
-      }
-      product.rate = rate;
-    }
-
     if (req.body.finalPrice !== undefined) {
       if (finalPrice === null || finalPrice <= 0) {
         return res.status(400).json({ message: "Enter a valid final price" });
@@ -327,10 +331,22 @@ export const updateProduct = async (req, res) => {
       product.finalPrice = finalPrice;
     }
 
+    if (req.body.rate !== undefined) {
+      if (isBlank(req.body.rate)) {
+        // Cleared: no discount, the actual price is the selling price.
+        product.rate = product.finalPrice;
+      } else {
+        if (rate === null || rate <= 0) {
+          return res.status(400).json({ message: "Enter a valid actual price" });
+        }
+        product.rate = rate;
+      }
+    }
+
     if (product.finalPrice > product.rate) {
       return res
         .status(400)
-        .json({ message: "Final price cannot be higher than the rate" });
+        .json({ message: "Final price cannot be higher than the actual price" });
     }
 
     if (req.body.stock !== undefined) {
@@ -356,20 +372,62 @@ export const updateProduct = async (req, res) => {
       product.isNewArrival = toBoolean(req.body.isNewArrival);
     }
 
-    if (req.files && req.files.length > 0) {
-      const previousImages = product.images || [];
-      product.images = await uploadImages(req.files);
+    // Images. With `keepImages` (a JSON list of the current image URLs to
+    // keep, in order), the admin can remove some images and add new ones:
+    // the result is the kept images followed by the uploads. Without it, any
+    // upload replaces every image, as before.
+    const files = req.files || [];
+    const previousImages = product.images || [];
+    let removedImages = [];
 
-      await Promise.all(
-        previousImages
-          .filter((image) => image.public_id)
-          .map((image) =>
-            cloudinary.uploader.destroy(image.public_id).catch(() => {})
-          )
-      );
+    if (req.body.keepImages !== undefined) {
+      let keepUrls;
+      try {
+        keepUrls = JSON.parse(req.body.keepImages);
+      } catch {
+        keepUrls = null;
+      }
+      if (!Array.isArray(keepUrls)) {
+        return res.status(400).json({ message: "Invalid image list" });
+      }
+
+      // Only images this product already has can be kept.
+      const kept = keepUrls
+        .map((url) => previousImages.find((image) => image.url === url))
+        .filter(Boolean);
+
+      if (kept.length + files.length === 0) {
+        return res.status(400).json({ message: "A product needs at least one image" });
+      }
+      if (kept.length + files.length > MAX_PRODUCT_IMAGES) {
+        return res.status(400).json({
+          message: `A product can have at most ${MAX_PRODUCT_IMAGES} images`,
+        });
+      }
+
+      const uploaded = files.length > 0 ? await uploadImages(files) : [];
+      product.images = [...kept, ...uploaded];
+      removedImages = previousImages.filter((image) => !kept.includes(image));
+    } else if (files.length > 0) {
+      product.images = await uploadImages(files);
+      removedImages = previousImages;
     }
 
     await product.save();
+
+    // Only once the product points at its new images. Best effort: the update
+    // is already saved, so a Cloudinary hiccup must not report it as failed.
+    await Promise.all(
+      removedImages
+        .filter((image) => image.public_id)
+        .map(async (image) => {
+          try {
+            await cloudinary.uploader.destroy(image.public_id);
+          } catch (error) {
+            console.error("Could not delete old product image:", error.message);
+          }
+        })
+    );
 
     res.status(200).json({
       message: "Product updated successfully",

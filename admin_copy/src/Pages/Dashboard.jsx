@@ -160,8 +160,8 @@ const Dashboard = ({ token }) => {
             label="Cancelled"
             value={orders.cancelled}
             tone="text-red-500"
-            hint="Rejected or refunded"
-            to="/orders?status=REJECTED,REFUNDED"
+            hint="Rejected, cancelled or refunded"
+            to="/orders?status=REJECTED,CANCELLED,REFUNDED"
           />
         </div>
       </Section>

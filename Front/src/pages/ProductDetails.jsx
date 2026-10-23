@@ -420,7 +420,7 @@ function ProductDetails({ id }) {
                       ₹{product?.finalPrice?.toLocaleString()}
                     </span>
 
-                    {product?.rate && (
+                    {product?.rate > product?.finalPrice && (
                       <span className="text-sm line-through text-gray-400" style={{ fontFamily: "'Lato', sans-serif" }}>
                         ₹{product.rate.toLocaleString()}
                       </span>

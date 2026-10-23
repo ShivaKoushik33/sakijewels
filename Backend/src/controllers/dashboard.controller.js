@@ -4,7 +4,7 @@ import Product from "../models/Product.js";
 import User from "../models/User.js";
 
 // A cancelled order is not a sale, whichever way it was cancelled.
-const CANCELLED = ["REJECTED", "REFUNDED"];
+const CANCELLED = ["REJECTED", "CANCELLED", "REFUNDED"];
 // Placed but not yet with the customer.
 const YET_TO_SHIP = ["PENDING", "ACCEPTED", "CONFIRMED"];
 

@@ -28,6 +28,9 @@ export default function ProductCard({ product }) {
     stock,
   } = product;
 
+  // Products without an actual price (MRP) have no discount to show.
+  const hasDiscount = originalPrice > price;
+
   const inCart = Boolean(cartItems[id]);
   // Cards that don't receive stock can't know, so they stay purchasable.
   const outOfStock = stock !== undefined && stock <= 0;
@@ -87,11 +90,15 @@ export default function ProductCard({ product }) {
           <div className="flex items-center gap-1.5 md:gap-2.5 flex-wrap">
             <div className="flex items-center gap-1 md:gap-1.25">
               <span className="text-base md:text-lg font-medium text-[#141416]">₹{price.toLocaleString()}</span>
-              <span className="text-xs md:text-sm font-normal text-[#777E90] line-through">₹{originalPrice.toLocaleString()}</span>
+              {hasDiscount && (
+                <span className="text-xs md:text-sm font-normal text-[#777E90] line-through">₹{originalPrice.toLocaleString()}</span>
+              )}
             </div>
-            <div className="bg-[#34C759] inline-flex items-center px-1.5 py-1 rounded-md">
-              <span className="text-[10px] md:text-[11px] font-bold text-white uppercase tracking-wider leading-none">{discount}% OFF</span>
-            </div>
+            {hasDiscount && (
+              <div className="bg-[#34C759] inline-flex items-center px-1.5 py-1 rounded-md">
+                <span className="text-[10px] md:text-[11px] font-bold text-white uppercase tracking-wider leading-none">{discount}% OFF</span>
+              </div>
+            )}
           </div>
           <div className="flex flex-col gap-1 md:gap-2">
             <span className="text-sm md:text-[17px] font-normal text-[#777E90] leading-snug line-clamp-2 hover:text-[#141416]">{name}</span>

@@ -76,7 +76,8 @@ const Edit = ({ token }) => {
       setType(product.type);
       setDescription(product.description);
 
-      setRate(product.rate);
+      // Blank when there is no discount, matching how it was entered.
+      setRate(product.rate > product.finalPrice ? product.rate : "");
       setFinalPrice(product.finalPrice);
       setDiscountRate(product.discountRate);
 
@@ -96,6 +97,29 @@ const Edit = ({ token }) => {
     fetchProduct();
   }, []);
 
+  /* ---------------- IMAGES ---------------- */
+
+  // Kept images plus new ones; same limit as the backend.
+  const MAX_IMAGES = 4;
+  const freeSlots = MAX_IMAGES - existingImages.length - newImages.length;
+
+  const addImages = (fileList) => {
+    const files = Array.from(fileList || []).slice(0, freeSlots);
+    if (files.length === 0) return;
+    setNewImages((prev) => [
+      ...prev,
+      ...files.map((file) => ({ file, preview: URL.createObjectURL(file) })),
+    ]);
+  };
+
+  const removeExistingImage = (url) =>
+    setExistingImages((prev) => prev.filter((img) => img.url !== url));
+
+  const removeNewImage = (preview) => {
+    URL.revokeObjectURL(preview);
+    setNewImages((prev) => prev.filter((img) => img.preview !== preview));
+  };
+
   /* ---------------- AUTO CALCULATE DISCOUNT ---------------- */
 
   useEffect(() => {
@@ -103,7 +127,10 @@ const Edit = ({ token }) => {
       const discount =
         ((Number(rate) - Number(finalPrice)) / Number(rate)) * 100;
 
-      setDiscountRate(Math.round(discount));
+      setDiscountRate(Math.max(0, Math.round(discount)));
+    } else {
+      // No actual price: no discount.
+      setDiscountRate(0);
     }
   }, [rate, finalPrice]);
 
@@ -111,6 +138,11 @@ const Edit = ({ token }) => {
 
   const updateHandler = async (e) => {
     e.preventDefault();
+
+    if (existingImages.length + newImages.length === 0) {
+      toast.error("Add at least one image");
+      return;
+    }
 
     try {
       const formData = new FormData();
@@ -128,11 +160,14 @@ const Edit = ({ token }) => {
       formData.append("isMostGifted", mostGifted);
       formData.append("isNewArrival", newArrival);
 
-      if (newImages.length > 0) {
-        newImages.forEach((img) => {
-          formData.append("images", img);
-        });
-      }
+      // The current images still shown (in order), then any new uploads.
+      formData.append(
+        "keepImages",
+        JSON.stringify(existingImages.map((img) => img.url))
+      );
+      newImages.forEach((img) => {
+        formData.append("images", img.file);
+      });
 
       await axios.put(
         `${backendUrl}/api/products/${id}`,
@@ -155,18 +190,72 @@ const Edit = ({ token }) => {
 
       <h2 className="text-xl font-bold">Edit Product</h2>
 
-      {/* Existing Images */}
+      {/* Images: remove any current image, add new ones, up to 4 in all */}
       <div>
-        <p>Current Images</p>
-        <div className="flex gap-2">
-          {existingImages.map((img, index) => (
-            <img
-              key={index}
-              src={img.url}
-              className="w-16 h-16 object-cover rounded"
-              alt="product"
-            />
+        <p>Images ({existingImages.length + newImages.length}/{MAX_IMAGES})</p>
+        <p className="text-xs text-gray-500 mb-2">
+          The first image is the main one shown in the shop. Removed images are
+          deleted when you press Update Product.
+        </p>
+
+        <div className="flex flex-wrap gap-2">
+          {existingImages.map((img) => (
+            <div key={img.url} className="relative">
+              <img
+                src={img.url}
+                className="w-20 h-20 object-cover rounded border"
+                alt="product"
+              />
+              <button
+                type="button"
+                onClick={() => removeExistingImage(img.url)}
+                aria-label="Remove image"
+                title="Remove image"
+                className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-red-500 text-white text-xs leading-none cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
           ))}
+
+          {newImages.map((img) => (
+            <div key={img.preview} className="relative">
+              <img
+                src={img.preview}
+                className="w-20 h-20 object-cover rounded border-2 border-green-500"
+                alt="new upload"
+              />
+              <span className="absolute bottom-0 left-0 right-0 text-[10px] text-center bg-green-500 text-white rounded-b">
+                New
+              </span>
+              <button
+                type="button"
+                onClick={() => removeNewImage(img.preview)}
+                aria-label="Remove new image"
+                title="Remove image"
+                className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-red-500 text-white text-xs leading-none cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+
+          {freeSlots > 0 && (
+            <label className="w-20 h-20 flex flex-col items-center justify-center border-2 border-dashed rounded text-gray-500 text-xs cursor-pointer hover:bg-gray-50">
+              <span className="text-2xl leading-none">+</span>
+              Add image
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/avif"
+                multiple
+                hidden
+                onChange={(e) => {
+                  addImages(e.target.files);
+                  e.target.value = "";
+                }}
+              />
+            </label>
+          )}
         </div>
       </div>
 
@@ -210,14 +299,18 @@ const Edit = ({ token }) => {
       />
 
       {/* Pricing */}
+      <p className="text-sm text-gray-600 -mb-3">
+        Actual Price / MRP (optional — leave blank if no discount)
+      </p>
       <input
         type="number"
-        placeholder="Actual Price"
+        placeholder="Actual Price (optional)"
         value={rate}
         onChange={(e) => setRate(e.target.value)}
         className="border p-2"
       />
 
+      <p className="text-sm text-gray-600 -mb-3">Selling Price (₹)</p>
       <input
         type="number"
         placeholder="Final Price"
@@ -230,6 +323,7 @@ const Edit = ({ token }) => {
         Discount: {discountRate}%
       </p>
 
+      <p className="text-sm text-gray-600 -mb-3">Stock</p>
       <input
         type="number"
         value={stock}
