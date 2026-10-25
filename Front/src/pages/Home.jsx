@@ -121,7 +121,7 @@ useEffect(() => {
       {homepage.categories && (
         <div id="shop-category" className="scroll-mt-24 sm:scroll-mt-44 w-full max-w-[1440px] mx-auto my-6 md:my-10 px-2 md:px-4">
           <div className="flex flex-col items-center gap-2.5 px-2.5 py-2.5 mb-6 md:mb-10">
-            <h2 className="text-xl md:text-2xl font-semibold text-[#141416] text-center">Shop by Categories</h2>
+            <h2 className="text-xl md:text-2xl font-semibold text-[#141416] text-center">Shop Categories</h2>
           </div>
           <CategorySection data={filteredCategories} />
         </div>
