@@ -35,6 +35,10 @@ const buildProductFilter = (query, { publicOnly }) => {
     filter.variantType = variantType.trim().toUpperCase();
   }
 
+  if (!publicOnly && mongoose.isValidObjectId(query.colorGroup)) {
+    filter.colorGroup = query.colorGroup;
+  }
+
   return filter;
 };
 
@@ -46,8 +50,8 @@ const SORTS = {
 };
 
 /** Upload the multipart files to Cloudinary, always clearing the temp files. */
-// Same limit as the upload middleware (multer.js, files: 4).
-const MAX_PRODUCT_IMAGES = 4;
+// Same limit as the upload middleware (multer.js, files: 6).
+const MAX_PRODUCT_IMAGES = 6;
 
 const uploadImages = async (files) => {
   try {
@@ -89,8 +93,24 @@ const deriveDiscountRate = (rate, finalPrice) => {
   return Math.round(((rate - finalPrice) / rate) * 100);
 };
 
+const cleanColorName = (value) =>
+  typeof value === "string" ? value.trim().replace(/\s+/g, " ").slice(0, 40) : "";
+
+const sameColor = (a, b) => a.toLowerCase() === b.toLowerCase();
+
+const colorTaken = (colorGroup, colorName, excludeId) =>
+  Product.exists({
+    colorGroup,
+    colorName: { $regex: `^${escapeRegex(colorName)}$`, $options: "i" },
+    ...(excludeId ? { _id: { $ne: excludeId } } : {}),
+  });
+
 /**
  * ADMIN - Create Product
+ *
+ * With `colorOf` (an existing product's id) the new product joins that
+ * product's colors. `parentColorName` names the existing product if it has no
+ * color yet.
  */
 export const createProduct = async (req, res) => {
   try {
@@ -122,9 +142,41 @@ export const createProduct = async (req, res) => {
       return res.status(400).json({ message: "Enter a valid stock quantity" });
     }
 
+    const colorName = cleanColorName(req.body.colorName);
+    let parent = null;
+    let parentColorName = "";
+    let colorGroup;
+
+    if (!isBlank(req.body.colorOf)) {
+      if (!mongoose.isValidObjectId(req.body.colorOf)) {
+        return res.status(400).json({ message: "Original product not found" });
+      }
+      parent = await Product.findById(req.body.colorOf);
+      if (!parent) {
+        return res.status(400).json({ message: "Original product not found" });
+      }
+
+      parentColorName = parent.colorName || cleanColorName(req.body.parentColorName);
+      if (!colorName || !parentColorName) {
+        return res.status(400).json({ message: "Enter a color name" });
+      }
+
+      colorGroup = parent.colorGroup || parent._id;
+      if (
+        sameColor(colorName, parentColorName) ||
+        (await colorTaken(colorGroup, colorName))
+      ) {
+        return res
+          .status(400)
+          .json({ message: `This item already has the color "${colorName}"` });
+      }
+    }
+
     const uploadedImages = await uploadImages(req.files);
 
     const product = await Product.create({
+      colorName,
+      colorGroup,
       name: req.body.name,
       type: req.body.type,
       variantType: req.body.variantType,
@@ -140,6 +192,13 @@ export const createProduct = async (req, res) => {
       isMostGifted: toBoolean(req.body.isMostGifted),
       isNewArrival: toBoolean(req.body.isNewArrival),
     });
+
+    if (parent) {
+      await Product.updateOne(
+        { _id: parent._id },
+        { colorGroup, colorName: parentColorName }
+      );
+    }
 
     res.status(201).json({
       message: "Product created successfully",
@@ -200,7 +259,13 @@ export const getProductById = async (req, res) => {
       return res.status(404).json({ message: "Product not found" });
     }
 
-    res.status(200).json(product);
+    const colorVariants = product.colorGroup
+      ? await Product.find({ colorGroup: product.colorGroup, isActive: true })
+          .select("colorName images stock")
+          .sort({ createdAt: 1 })
+      : [];
+
+    res.status(200).json({ ...product.toObject(), colorVariants });
   } catch (error) {
     console.error("getProductById error:", error);
     res.status(500).json({ message: "Could not load product" });
@@ -370,6 +435,21 @@ export const updateProduct = async (req, res) => {
     }
     if (req.body.isNewArrival !== undefined) {
       product.isNewArrival = toBoolean(req.body.isNewArrival);
+    }
+
+    if (req.body.colorName !== undefined) {
+      const colorName = cleanColorName(req.body.colorName);
+      if (product.colorGroup) {
+        if (!colorName) {
+          return res.status(400).json({ message: "Enter a color name" });
+        }
+        if (await colorTaken(product.colorGroup, colorName, product._id)) {
+          return res
+            .status(400)
+            .json({ message: `This item already has the color "${colorName}"` });
+        }
+      }
+      product.colorName = colorName;
     }
 
     // Images. With `keepImages` (a JSON list of the current image URLs to

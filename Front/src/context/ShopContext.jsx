@@ -1,3 +1,4 @@
+import { productLabel } from "../utils/helpers";
 import { createContext, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -200,6 +201,7 @@ const ShopContextProvider = ({ children }) => {
         return {
           ...product,
           id: product._id,
+          name: productLabel(product),
           quantity: cartItems[id],
           image: product.images?.[0]?.url,
           price: product.finalPrice,

@@ -20,8 +20,8 @@ export const PREPAID_DISCOUNT = 9; // flat rupees off when paying online
  * customer's real order history, never against a client-supplied flag.
  */
 const COUPONS = {
-  TSJSFIRST: { minSubtotal: 599, firstOrderOnly: true, flat: 100 },
-  FIRST999: { minSubtotal: 999, firstOrderOnly: true, flat: 100, freeShipping: true },
+  TSJSFIRST: { minSubtotal: 599, firstOrderOnly: true, flat: 100, freeShipping: true },
+  FIRST999: { minSubtotal: 999, firstOrderOnly: true, flat: 100, freeShipping: true, disabled: true },
   TSJ10: { minSubtotal: 999, percent: 0.1 },
   TSJS10: { minSubtotal: 1499, percent: 0.1, freeShipping: true },
 };
@@ -46,7 +46,7 @@ export const priceOrder = ({ items, coupon, isFirstOrder, paymentMethod }) => {
   const code = typeof coupon === "string" ? coupon.trim().toUpperCase() : "";
   const rule = COUPONS[code];
 
-  if (rule && subtotal >= rule.minSubtotal) {
+  if (rule && !rule.disabled && subtotal >= rule.minSubtotal) {
     if (!rule.firstOrderOnly || isFirstOrder) {
       discount += rule.flat ?? Math.floor(subtotal * rule.percent);
       if (rule.freeShipping) deliveryFee = 0;

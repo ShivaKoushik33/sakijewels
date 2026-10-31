@@ -9,6 +9,8 @@ import razorpay from "../config/razorpay.js";
 import { priceOrder, MIN_ORDER_SUBTOTAL } from "../utils/pricing.js";
 import { placeOrderFromIntent } from "../utils/placeOrderFromIntent.js";
 import { nextOrderNumber } from "../utils/orderNumber.js";
+import Setting, { ORDER_EMAIL_KEY } from "../models/Setting.js";
+import { isEmailConfigured, notifyNewOrder } from "../utils/sendOrderEmail.js";
 
 const INTENT_TTL_MINUTES = 60;
 
@@ -50,7 +52,7 @@ const collectItems = async ({ user, buyNow, variantType, session }) => {
 
     items.push({
       product: product._id,
-      name: product.name,
+      name: product.colorName ? `${product.name} - ${product.colorName}` : product.name,
       image: product.images?.[0]?.url,
       price: product.finalPrice,
       quantity,
@@ -78,7 +80,7 @@ const collectItems = async ({ user, buyNow, variantType, session }) => {
 
     items.push({
       product: product._id,
-      name: product.name,
+      name: product.colorName ? `${product.name} - ${product.colorName}` : product.name,
       image: product.images?.[0]?.url,
       price: product.finalPrice,
       quantity,
@@ -489,6 +491,8 @@ export const placeOrderCOD = async (req, res) => {
     await session.commitTransaction();
     committed = true;
 
+    notifyNewOrder(created[0]);
+
     res.status(201).json({
       message: "Order placed successfully (Cash on Delivery)",
       order: created[0],
@@ -507,6 +511,38 @@ export const placeOrderCOD = async (req, res) => {
 /* ------------------------------------------------------------------ *
  * ADMIN
  * ------------------------------------------------------------------ */
+
+export const getOrderNotificationEmail = async (req, res) => {
+  try {
+    const setting = await Setting.findOne({ key: ORDER_EMAIL_KEY });
+    res.json({ email: setting?.value || "", emailConfigured: isEmailConfigured() });
+  } catch (error) {
+    console.error("getOrderNotificationEmail error:", error);
+    res.status(500).json({ message: "Could not load the order email" });
+  }
+};
+
+export const updateOrderNotificationEmail = async (req, res) => {
+  try {
+    const email =
+      typeof req.body.email === "string" ? req.body.email.trim().toLowerCase() : "";
+
+    if (email.length > 254 || !/^[^\s@,;<>]+@[^\s@,;<>]+\.[^\s@,;<>]+$/.test(email)) {
+      return res.status(400).json({ message: "Enter a valid email address" });
+    }
+
+    await Setting.findOneAndUpdate(
+      { key: ORDER_EMAIL_KEY },
+      { value: email },
+      { upsert: true }
+    );
+
+    res.json({ message: "Order email saved", email });
+  } catch (error) {
+    console.error("updateOrderNotificationEmail error:", error);
+    res.status(500).json({ message: "Could not save the order email" });
+  }
+};
 
 export const getAllOrders = async (req, res) => {
   try {

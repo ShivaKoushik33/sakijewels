@@ -4,6 +4,9 @@ import { ShopContext } from '../context/ShopContext';
 import axios from 'axios';
 import { getExpectedDeliveryDate } from '../utils/helpers';
 
+// Also remove `disabled` from FIRST999 in Backend/src/utils/pricing.js to re-enable.
+const FIRST999_ENABLED = false;
+
 function AddressLines({ addr }) {
   return (
     <>
@@ -215,6 +218,7 @@ export default function BuyNowReview() {
       }
       if (summary.subtotal >= 599) {
         discount = 100;
+        freeShip = true;
       } else {
         setCouponMsg({ type: "error", text: "Order must be above ₹599" });
         return;
@@ -222,7 +226,7 @@ export default function BuyNowReview() {
     }
 
     // 2️⃣ FIRST999
-    else if (code === "FIRST999") {
+    else if (FIRST999_ENABLED && code === "FIRST999") {
       if (!isFirstOrder) {
         setCouponMsg({ type: "error", text: "Valid only for first order" });
         return;

@@ -4,6 +4,7 @@ import PaymentIntent from "../models/PaymentIntent.js";
 import Product from "../models/Product.js";
 import User from "../models/User.js";
 import { nextOrderNumber } from "./orderNumber.js";
+import { notifyNewOrder } from "./sendOrderEmail.js";
 
 /**
  * Turns a paid PaymentIntent into an order, inside one transaction.
@@ -105,6 +106,8 @@ export const placeOrderFromIntent = async ({ intent, paymentId }) => {
   } finally {
     session.endSession();
   }
+
+  notifyNewOrder(placedOrder);
 
   return { order: placedOrder, alreadyProcessed: false };
 };

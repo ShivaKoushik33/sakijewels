@@ -25,7 +25,7 @@ const SOCIAL_LINKS = [
   },
   {
     name: 'Facebook',
-    href: '',
+    href: 'https://www.facebook.com/share/194pQ5cGpy/',
     icon: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
         <path d="M13.5 21v-7.5h2.6l.4-3h-3V8.6c0-.9.3-1.5 1.6-1.5h1.6V4.4c-.3 0-1.2-.1-2.3-.1-2.3 0-3.900 1.400-3.900 4v2.200H8v3h2.500V21z" />
@@ -34,7 +34,7 @@ const SOCIAL_LINKS = [
   },
   {
     name: 'YouTube',
-    href: '',
+    href: 'https://www.youtube.com/@the_sakhijewels',
     icon: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
         <path d="M21.6 7.2a2.500 2.500 0 0 0-1.800-1.800C18.200 5 12 5 12 5s-6.200 0-7.800.4A2.500 2.500 0 0 0 2.400 7.200 26 26 0 0 0 2 12a26 26 0 0 0 .4 4.800 2.500 2.500 0 0 0 1.800 1.800C5.800 19 12 19 12 19s6.200 0 7.800-.4a2.500 2.500 0 0 0 1.800-1.800A26 26 0 0 0 22 12a26 26 0 0 0-.4-4.800zM10 15V9l5.200 3z" />

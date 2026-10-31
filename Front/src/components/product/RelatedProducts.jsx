@@ -1,3 +1,4 @@
+import { productLabel } from "../../utils/helpers";
 import { useContext, useMemo } from "react";
 import { ShopContext } from "../../context/ShopContext";
 import ProductCard from "../home/ProductCard";
@@ -31,7 +32,7 @@ const RelatedProducts = ({ currentProduct }) => {
             key={product._id}
             product={{
               id: product._id,
-              name: product.name,
+              name: productLabel(product),
               price: product.finalPrice,
               originalPrice: product.rate,
               discount: product.discountRate,
