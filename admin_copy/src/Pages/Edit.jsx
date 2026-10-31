@@ -3,9 +3,10 @@ import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { backendUrl } from "../App";
 import { toast } from "react-toastify";
+import ColorTabs from "../Components/ColorTabs";
+import ConfirmDialog from "../Components/ConfirmDialog";
 
-const Edit = ({ token }) => {
-  const { id } = useParams();
+const Edit = ({ token, id }) => {
   const navigate = useNavigate();
 
   /* ---------------- CATEGORY MAP ---------------- */
@@ -46,6 +47,10 @@ const Edit = ({ token }) => {
   const [variantType, setVariantType] = useState("TRADITIONAL");
   const [type, setType] = useState(categoryMap.TRADITIONAL[0].value);
   const [description, setDescription] = useState("");
+  const [colorName, setColorName] = useState("");
+  const [colors, setColors] = useState([]);
+  const [pendingDelete, setPendingDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   const [rate, setRate] = useState("");
   const [finalPrice, setFinalPrice] = useState("");
@@ -75,6 +80,7 @@ const Edit = ({ token }) => {
       setVariantType(product.variantType);
       setType(product.type);
       setDescription(product.description);
+      setColorName(product.colorName || "");
 
       // Blank when there is no discount, matching how it was entered.
       setRate(product.rate > product.finalPrice ? product.rate : "");
@@ -88,6 +94,16 @@ const Edit = ({ token }) => {
       setNewArrival(product.isNewArrival);
       setExistingImages(product.images || []);
 
+      if (product.colorGroup) {
+        const siblings = await axios.get(
+          `${backendUrl}/api/products/admin/products?colorGroup=${product.colorGroup}&sort=oldest`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setColors(siblings.data.products);
+      } else {
+        setColors(product.colorName ? [product] : []);
+      }
+
     } catch {
       toast.error("Failed to load product");
     }
@@ -100,7 +116,7 @@ const Edit = ({ token }) => {
   /* ---------------- IMAGES ---------------- */
 
   // Kept images plus new ones; same limit as the backend.
-  const MAX_IMAGES = 4;
+  const MAX_IMAGES = 6;
   const freeSlots = MAX_IMAGES - existingImages.length - newImages.length;
 
   const addImages = (fileList) => {
@@ -151,6 +167,7 @@ const Edit = ({ token }) => {
       formData.append("variantType", variantType);
       formData.append("type", type);
       formData.append("description", description);
+      formData.append("colorName", colorName);
       formData.append("rate", rate);
       formData.append("finalPrice", finalPrice);
       formData.append("discountRate", discountRate);
@@ -183,14 +200,76 @@ const Edit = ({ token }) => {
     }
   };
 
+  /* ---------------- DELETE ---------------- */
+
+  const hasMultipleColors = colors.length > 1;
+
+  const deleteProducts = (ids) =>
+    Promise.allSettled(
+      ids.map((productId) =>
+        axios.delete(`${backendUrl}/api/products/${productId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+      )
+    );
+
+  const confirmDelete = async () => {
+    if (deleting) return;
+    setDeleting(true);
+
+    if (pendingDelete === "color") {
+      const [result] = await deleteProducts([id]);
+      setDeleting(false);
+      setPendingDelete(null);
+
+      if (result.status === "rejected") {
+        toast.error(result.reason.response?.data?.message || "Could not delete color");
+        return;
+      }
+
+      toast.success("Color deleted");
+      const next = colors.find((color) => color._id !== id);
+      navigate(`/edit/${next._id}`, { replace: true });
+      return;
+    }
+
+    const ids = hasMultipleColors ? colors.map((color) => color._id) : [id];
+    const results = await deleteProducts(ids);
+    const failed = results.filter((result) => result.status === "rejected").length;
+    setDeleting(false);
+    setPendingDelete(null);
+
+    if (failed > 0) {
+      toast.error(`Could not delete ${failed} of ${ids.length} colors. Please try again.`);
+      fetchProduct();
+      return;
+    }
+
+    toast.success("Product deleted");
+    navigate("/list", { replace: true });
+  };
+
   /* ---------------- UI ---------------- */
 
   return (
+    <>
     <form onSubmit={updateHandler} className="flex flex-col gap-4 max-w-lg">
 
       <h2 className="text-xl font-bold">Edit Product</h2>
 
-      {/* Images: remove any current image, add new ones, up to 4 in all */}
+      {/* Colors of this product; each tab opens that color for editing */}
+      <ColorTabs
+        tabs={colors.map((color) => ({
+          key: color._id,
+          label: color.colorName || "Unnamed",
+          active: color._id === id,
+          onClick: () => navigate(`/edit/${color._id}`),
+        }))}
+        addLabel={colors.length === 0 ? "Add Color" : "Add New Color"}
+        onAdd={() => navigate(`/add?colorOf=${id}`)}
+      />
+
+      {/* Images: remove any current image, add new ones, up to 6 in all */}
       <div>
         <p>Images ({existingImages.length + newImages.length}/{MAX_IMAGES})</p>
         <p className="text-xs text-gray-500 mb-2">
@@ -262,6 +341,15 @@ const Edit = ({ token }) => {
       <input
         value={name}
         onChange={(e) => setName(e.target.value)}
+        className="border p-2"
+      />
+
+      <p className="text-sm text-gray-600 -mb-3">Color Name</p>
+      <input
+        value={colorName}
+        onChange={(e) => setColorName(e.target.value)}
+        maxLength={40}
+        placeholder="e.g. Ruby Red"
         className="border p-2"
       />
 
@@ -372,8 +460,50 @@ const Edit = ({ token }) => {
         Update Product
       </button>
 
+      <div className="flex gap-3">
+        {hasMultipleColors && (
+          <button
+            type="button"
+            onClick={() => setPendingDelete("color")}
+            className="flex-1 py-2 rounded border border-red-500 text-red-500 cursor-pointer"
+          >
+            Delete Color
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={() => setPendingDelete("product")}
+          className="flex-1 py-2 rounded bg-red-500 text-white cursor-pointer"
+        >
+          Delete Product
+        </button>
+      </div>
+
     </form>
+
+    <ConfirmDialog
+      open={Boolean(pendingDelete)}
+      title={pendingDelete === "color" ? "Delete this color?" : "Delete this product?"}
+      message={
+        pendingDelete === "color"
+          ? `The "${colorName}" color of "${name}" will be removed from the store. The other colors stay. This cannot be undone.`
+          : hasMultipleColors
+          ? `"${name}" and all ${colors.length} of its colors will be removed from the store. This cannot be undone.`
+          : `"${name}" will be removed from the store. This cannot be undone.`
+      }
+      confirmText={pendingDelete === "color" ? "Delete color" : "Delete product"}
+      busy={deleting}
+      onConfirm={confirmDelete}
+      onCancel={() => setPendingDelete(null)}
+    />
+    </>
   );
 };
 
-export default Edit;
+// Keyed so switching color tabs loads that color from fresh state.
+const EditPage = ({ token }) => {
+  const { id } = useParams();
+  return <Edit key={id} token={token} id={id} />;
+};
+
+export default EditPage;

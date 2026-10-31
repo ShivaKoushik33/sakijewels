@@ -48,6 +48,18 @@ const productSchema = new mongoose.Schema(
       required: true
     },
 
+    colorName: {
+      type: String,
+      trim: true,
+      maxlength: 40
+    },
+
+    // Each color is its own product; products sharing this id are one item's colors.
+    colorGroup: {
+      type: mongoose.Schema.Types.ObjectId,
+      index: true
+    },
+
     images: [
       {
         url: { type: String, required: true },

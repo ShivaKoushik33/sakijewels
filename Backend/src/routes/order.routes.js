@@ -7,6 +7,8 @@ import {
   verifyPaymentAndPlaceOrder,
   getSingleOrder,
   placeOrderCOD,
+  getOrderNotificationEmail,
+  updateOrderNotificationEmail,
 } from "../controllers/order.controller.js";
 
 import authMiddleware from "../middlewares/auth.middleware.js";
@@ -20,6 +22,8 @@ router.get("/my-orders", authMiddleware, getUserOrders);
 
 /* ADMIN */
 router.get("/", authMiddleware, adminOnly, getAllOrders);
+router.get("/notification-email", authMiddleware, adminOnly, getOrderNotificationEmail);
+router.put("/notification-email", authMiddleware, adminOnly, updateOrderNotificationEmail);
 router.put("/:id", authMiddleware, adminOnly, updateOrderStatus);
 
 /* Owner or admin — enforced inside the controller */

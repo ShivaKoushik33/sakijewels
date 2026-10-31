@@ -1,14 +1,66 @@
 import { useState, useEffect, useContext } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { getProductDetailsData } from "../services/productDetailsService";
 import RelatedProducts from "../components/product/RelatedProducts";
+import ProductReviews from "../components/product/ProductReviews";
 import { ShopContext } from "../context/ShopContext";
-import { getExpectedDeliveryDate } from "../utils/helpers";
+import { getExpectedDeliveryDate, productLabel } from "../utils/helpers";
 import "@fontsource/lato";
 import "@fontsource/roboto";
 import left_arrow from "../assets/images/left_arrow.svg?url";
 import right_arrow from "../assets/images/right_arrow.svg?url";
 import share from "../assets/images/share.svg?url";
+
+const LEAF_ICON = (
+  <>
+    <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z" />
+    <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12" />
+  </>
+);
+
+const DIAMOND_ICON = (
+  <>
+    <path d="M6 3h12l4 6-10 13L2 9Z" />
+    <path d="M11 3 8 9l4 13 4-13-3-6" />
+    <path d="M2 9h20" />
+  </>
+);
+
+const SPARKLE_ICON = (
+  <>
+    <path d="M10 6c.8 4.2 2.8 6.2 7 7-4.2.8-6.2 2.8-7 7-.8-4.2-2.8-6.2-7-7 4.2-.8 6.2-2.8 7-7Z" />
+    <circle cx="18.5" cy="5.5" r="2" />
+  </>
+);
+
+const DROPS_ICON = (
+  <>
+    <path d="M7 16.3c2.2 0 4-1.83 4-4.05 0-1.16-.57-2.26-1.71-3.19S7.29 6.75 7 5.3c-.29 1.45-1.14 2.84-2.29 3.76S3 11.1 3 12.25c0 2.22 1.8 4.05 4 4.05Z" />
+    <path d="M12.56 6.6A10.97 10.97 0 0 0 14 3.02c.5 2.5 2 4.9 4 6.5s3 3.5 3 5.5a6.98 6.98 0 0 1-11.91 4.97" />
+  </>
+);
+
+const CHECK_ICON = (
+  <>
+    <circle cx="12" cy="12" r="10" />
+    <path d="m8.5 12 2.5 2.5 4.5-5" />
+  </>
+);
+
+const BADGES_BY_VARIANT = {
+  TRADITIONAL: [
+    { label: "Skin-Safe Jewellery", icon: LEAF_ICON },
+    { label: "Verified Base Metal", icon: DIAMOND_ICON },
+    { label: "Gold-Plated Jewellery", icon: SPARKLE_ICON },
+    { label: "Quality Checked", icon: CHECK_ICON },
+  ],
+  FASHION: [
+    { label: "Skin-Safe Jewellery", icon: LEAF_ICON },
+    { label: "Stainless Steel", icon: DIAMOND_ICON },
+    { label: "Waterproof", icon: DROPS_ICON },
+    { label: "Quality Checked", icon: CHECK_ICON },
+  ],
+};
 
 // Keyed by the product id, so opening another product (e.g. from Related
 // Products) starts from fresh state instead of the previous product's image,
@@ -37,6 +89,7 @@ function ProductDetails({ id }) {
   const [quantity, setQuantity] = useState(1);
   const [stockMsg, setStockMsg] = useState("");   // inline stock message
   const [adding, setAdding] = useState(false);
+  const [descriptionOpen, setDescriptionOpen] = useState(true);
 
   const isWishlisted = Boolean(product && isInWishlist(product._id));
   const handleAddToWishlist = () => toggleWishlist(product._id);
@@ -64,7 +117,7 @@ function ProductDetails({ id }) {
     setBuyNowItem({
       productId: product._id,
       quantity: qty,
-      name: product.name,
+      name: productLabel(product),
       image: product.images?.[0]?.url,
       price: product.finalPrice,
       originalPrice: product.rate,
@@ -437,9 +490,105 @@ function ProductDetails({ id }) {
                   </p>
                 </div>
 
+                {/* Colors: each one is its own product page */}
+                {product?.colorVariants?.length > 1 && (
+                  <div className="pb-4">
+                    <p className="text-sm text-[#121212] mb-2" style={{ fontFamily: "'Lato', sans-serif" }}>
+                      Color: <span className="font-semibold">{product.colorName}</span>
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {product.colorVariants.map((variant) => (
+                        <Link
+                          key={variant._id}
+                          to={`/products/${variant._id}`}
+                          aria-current={variant._id === product._id ? "true" : undefined}
+                          className={`w-20 border-2 rounded-[8px] overflow-hidden text-center transition-all duration-200 ${
+                            variant._id === product._id
+                              ? "border-[#4d0f75] shadow-md"
+                              : "border-[#e6e8ec] hover:border-[#d0d0d0]"
+                          }`}
+                        >
+                          <img
+                            src={variant.images?.[0]?.url}
+                            alt=""
+                            className={`w-full h-16 object-cover ${variant.stock > 0 ? "" : "opacity-40"}`}
+                          />
+                          <span className="block px-1 py-1 text-[11px] leading-tight text-[#121212] break-words">
+                            {variant.colorName}
+                          </span>
+                          {variant.stock <= 0 && (
+                            <span className="block pb-1 text-[10px] leading-tight text-gray-500">
+                              Out of stock
+                            </span>
+                          )}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {BADGES_BY_VARIANT[product?.variantType] && (
+                  <ul className="grid grid-cols-4 gap-2 sm:gap-3 pb-5">
+                    {BADGES_BY_VARIANT[product.variantType].map((badge) => (
+                      <li key={badge.label} className="flex flex-col items-center gap-2 text-center">
+                        <span className="flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-[#F3E8FF] text-[#901CDB]">
+                          <svg
+                            width="30"
+                            height="30"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            aria-hidden="true"
+                          >
+                            {badge.icon}
+                          </svg>
+                        </span>
+                        <span
+                          className="text-[11px] sm:text-xs leading-tight text-[#121212]"
+                          style={{ fontFamily: "'Lato', sans-serif" }}
+                        >
+                          {badge.label}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
                 {/* Description */}
                 <div className="space-y-2 pb-4">
-                  <p className="text-gray-700 text-xs md:text-sm leading-relaxed" style={{ fontFamily: "'Roboto', sans-serif" }}>
+                  <button
+                    type="button"
+                    onClick={() => setDescriptionOpen((open) => !open)}
+                    aria-expanded={descriptionOpen}
+                    aria-controls="product-description"
+                    className="flex w-full items-center justify-between py-2 border-t border-[#e6e8ec] text-sm text-[#121212] cursor-pointer"
+                    style={{ fontFamily: "'Lato', sans-serif", fontWeight: 600 }}
+                  >
+                    Description
+                    <svg
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                      className={`transition-transform duration-200 ${descriptionOpen ? "rotate-180" : ""}`}
+                    >
+                      <path d="m6 9 6 6 6-6" />
+                    </svg>
+                  </button>
+                  <p
+                    id="product-description"
+                    hidden={!descriptionOpen}
+                    className="text-gray-700 text-xs md:text-sm leading-relaxed"
+                    style={{ fontFamily: "'Roboto', sans-serif" }}
+                  >
                     {product?.description}
                   </p>
                   <div className="flex items-center gap-2 text-green-600">
@@ -600,6 +749,12 @@ function ProductDetails({ id }) {
           </div>
         </div>
       </div>
+
+      <ProductReviews
+        productId={product._id}
+        rating={product.rating}
+        ratingCount={product.ratingCount}
+      />
 
       {/* Related Products */}
       <div className="border-t border-[#e6e8ec] mt-12 md:mt-16">

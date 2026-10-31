@@ -10,32 +10,98 @@ const shorten = (text = "") =>
     ? `${text.slice(0, MAX_REVIEW_CHARS).trimEnd()}...`
     : text;
 
+const DRAG_START_PX = 5;
+const RESUME_DELAY_MS = 1500;
+
+// One full set of cards, measured: cards and gaps are narrower on phones, so a
+// fixed width would restart the loop at the wrong place.
+const measureLoopWidth = (track) => {
+  const gap = parseFloat(getComputedStyle(track).columnGap) || 0;
+  return (track.scrollWidth + gap) / 2;
+};
+
+const wrap = (value, loopWidth) =>
+  loopWidth > 0 ? ((value % loopWidth) + loopWidth) % loopWidth : 0;
+
 export default function Testimonials({ data }) {
   const trackRef = useRef(null);
   const [translateX, setTranslateX] = useState(0);
+  const translateRef = useRef(0);
+  const pausedUntil = useRef(0);
+  const drag = useRef({ active: false, moved: false, startX: 0, startOffset: 0 });
+  const cardCount = data?.length || 0;
+
+  const moveTo = (value) => {
+    const track = trackRef.current;
+    if (!track) return;
+    translateRef.current = wrap(value, measureLoopWidth(track));
+    setTranslateX(translateRef.current);
+  };
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setTranslateX((prev) => {
-        const track = trackRef.current;
-        if (!track) return prev;
-
-        // One full set of cards, measured: cards and gaps are narrower on
-        // phones, so a fixed width would restart the loop at the wrong place.
-        const gap = parseFloat(getComputedStyle(track).columnGap) || 0;
-        const loopWidth = (track.scrollWidth + gap) / 2;
-
-        return prev + 1 >= loopWidth ? 0 : prev + 1;
-      });
+      if (drag.current.active || Date.now() < pausedUntil.current) return;
+      moveTo(translateRef.current + 1);
     }, 20); // speed control (smaller = faster)
 
     return () => clearInterval(interval);
   }, []);
 
+  // Native listener: React's onWheel is passive, and without preventDefault a
+  // sideways trackpad swipe also triggers the browser's back gesture.
+  useEffect(() => {
+    const track = trackRef.current;
+    if (!track) return undefined;
+
+    const onWheel = (e) => {
+      if (Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return;
+      e.preventDefault();
+      pausedUntil.current = Date.now() + RESUME_DELAY_MS;
+      moveTo(translateRef.current + e.deltaX);
+    };
+
+    track.addEventListener("wheel", onWheel, { passive: false });
+    return () => track.removeEventListener("wheel", onWheel);
+  }, [cardCount]);
+
   if (!data || data.length === 0) return null;
 
   // duplicate array for infinite loop
   const items = [...data, ...data];
+
+  const onPointerDown = (e) => {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    drag.current = {
+      active: true,
+      moved: false,
+      startX: e.clientX,
+      startOffset: translateRef.current,
+    };
+  };
+
+  const onPointerMove = (e) => {
+    if (!drag.current.active) return;
+    const dx = e.clientX - drag.current.startX;
+    if (!drag.current.moved && Math.abs(dx) < DRAG_START_PX) return;
+    if (!drag.current.moved) {
+      drag.current.moved = true;
+      e.currentTarget.setPointerCapture(e.pointerId);
+    }
+    moveTo(drag.current.startOffset - dx);
+  };
+
+  const endDrag = () => {
+    if (!drag.current.active) return;
+    drag.current.active = false;
+    pausedUntil.current = Date.now() + RESUME_DELAY_MS;
+  };
+
+  const onClickCapture = (e) => {
+    if (!drag.current.moved) return;
+    drag.current.moved = false;
+    e.preventDefault();
+    e.stopPropagation();
+  };
 
   return (
     <div className="w-full max-w-[1440px] mx-auto overflow-hidden pb-10 md:pb-16">
@@ -54,11 +120,17 @@ export default function Testimonials({ data }) {
       <div className="overflow-hidden px-3 sm:px-6 md:px-12 lg:px-[124px]">
         <div
           ref={trackRef}
-          className="flex gap-4 md:gap-[43px]"
+          className="flex gap-4 md:gap-[43px] touch-pan-y select-none cursor-grab active:cursor-grabbing"
           style={{
             transform: `translateX(-${translateX}px)`,
             transition: "linear"
           }}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={endDrag}
+          onPointerCancel={endDrag}
+          onClickCapture={onClickCapture}
+          onDragStart={(e) => e.preventDefault()}
         >
           {items.map((testimonial, index) => (
             <div

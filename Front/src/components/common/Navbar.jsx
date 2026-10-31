@@ -66,27 +66,6 @@ const changeLanguage = (langCode, label) => {
 
   return (
     <>
-      {/* Top Promotional Banner - hide on very small screens */}
-      <div className="bg-[#901CDB] h-8 md:h-10 flex items-center justify-center overflow-hidden relative hidden sm:flex">
-        <div className="flex items-center gap-[18px] animate-scroll whitespace-nowrap">
-          <span className="text-xs md:text-sm font-bold bg-gradient-to-r from-[#FBCC8E] via-[#FFECD3] to-[#FBCC8E] bg-clip-text text-transparent">
-            FLAT 50% on Rings and Necklaces
-          </span>
-          <div className="w-[9.9px] h-[9.9px] bg-[#FBCC8E] rounded-full flex-shrink-0"></div>
-          <span className="text-xs md:text-sm font-bold bg-gradient-to-r from-[#FBCC8E] via-[#FFECD3] to-[#FBCC8E] bg-clip-text text-transparent">
-            Exclusive Offers on Traditional Jewellery
-          </span>
-          <div className="w-[9.9px] h-[9.9px] bg-[#FBCC8E] rounded-full flex-shrink-0"></div>
-          <span className="text-xs md:text-sm font-bold bg-gradient-to-r from-[#FBCC8E] via-[#FFECD3] to-[#FBCC8E] bg-clip-text text-transparent">
-            FLAT 50% on Rings and Necklaces
-          </span>
-          <div className="w-[9.9px] h-[9.9px] bg-[#FBCC8E] rounded-full flex-shrink-0"></div>
-          <span className="text-xs md:text-sm font-bold bg-gradient-to-r from-[#FBCC8E] via-[#FFECD3] to-[#FBCC8E] bg-clip-text text-transparent">
-            Exclusive Offers on Traditional Jewellery
-          </span>
-        </div>
-      </div>
-
       {/* Main Navbar */}
       <nav className="bg-white shadow-sm sticky top-0 z-50">
         <div className="relative z-50 bg-white max-w-[1440px] mx-auto px-4 sm:px-6 md:px-10 lg:px-[140px] py-3 md:py-[18px]">

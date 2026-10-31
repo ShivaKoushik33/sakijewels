@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 import User from "../models/User.js";
 import Product from "../models/Product.js";
 
-const WISHLIST_FIELDS = "name rate images rating discountRate finalPrice stock";
+const WISHLIST_FIELDS = "colorName name rate images rating discountRate finalPrice stock";
 const MAX_WISHLIST_ITEMS = 200;
 
 /**

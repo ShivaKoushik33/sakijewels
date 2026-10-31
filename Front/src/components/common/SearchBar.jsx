@@ -22,8 +22,11 @@ const SearchBar = ({ className = "" }) => {
       return;
     }
 
-    const filtered = searchableItems.filter((item) =>
-      item.includes(query.toUpperCase())
+    const upperQuery = query.trim().toUpperCase();
+    const filtered = searchableItems.filter(
+      (item) =>
+        item.includes(upperQuery) ||
+        formatTypeLabel(item).toUpperCase().includes(upperQuery)
     );
 
     setSuggestions(filtered);

@@ -64,3 +64,6 @@ export const isEmpty = (value) => {
     (typeof value === 'object' && Object.keys(value).length === 0)
   );
 };
+
+export const productLabel = (product) =>
+  product?.colorName ? `${product.name} - ${product.colorName}` : product?.name;

@@ -1,10 +1,16 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { assets } from '../assets/assets';
 import axios from 'axios';
 import { backendUrl } from '../App';
 import { toast } from 'react-toastify';
+import ColorTabs from '../Components/ColorTabs';
 
-const Add = ({ token }) => {
+const MAX_IMAGES = 6;
+let lastDraftKey = 0;
+
+const Add = ({ token, colorOf }) => {
+  const navigate = useNavigate();
 //   const categoryMap = {
 //   TRADITIONAL: [
 //     { value: "ONE_GRAM_GOLD_NECKLACES", label: "One Gram Gold Necklaces" },
@@ -55,93 +61,251 @@ const Add = ({ token }) => {
   ]
 };
 
-const [image1, setImage1] = useState(false);
-  const [image2, setImage2] = useState(false);
-  const [image3, setImage3] = useState(false);
-  const [image4, setImage4] = useState(false);
+  const newDraft = (values = {}) => ({
+    key: ++lastDraftKey,
+    colorName: "",
+    images: Array(MAX_IMAGES).fill(false),
+    name: "",
+    variantType: "TRADITIONAL",
+    type: categoryMap.TRADITIONAL[0].value,
+    description: "",
+    rate: "",
+    finalPrice: "",
+    stock: "",
+    isNewArrival: false,
+    ...values,
+  });
 
-  const [name, setName] = useState("");
-  const [type, setType] = useState(categoryMap.TRADITIONAL[0].value);
-  const [variantType , setVariantType] = useState("TRADITIONAL");
-  const [description, setDescription] = useState("");
-  const [rate, setRate] = useState("");
-  const [finalPrice, setFinalPrice] = useState("");
-const [discountRate, setDiscountRate] = useState(0);
-  const [stock, setStock] = useState("");
-  const [isNewArrival, setIsNewArrival] = useState(false);
+  // One unsaved product per color tab.
+  const [drafts, setDrafts] = useState(() => [newDraft()]);
+  const [activeKey, setActiveKey] = useState(null);
+  const active = drafts.find((draft) => draft.key === activeKey) || drafts[0];
+
+  const updateActive = (changes) =>
+    setDrafts((prev) =>
+      prev.map((draft) =>
+        draft.key === active.key ? { ...draft, ...changes } : draft
+      )
+    );
+
+  // Colors already in the database, and the product new colors attach to.
+  const [savedColors, setSavedColors] = useState([]);
+  const [anchorId, setAnchorId] = useState(colorOf);
+
+  const [parent, setParent] = useState(null);
+  const [parentColorName, setParentColorName] = useState("");
+
+  const [askingColor, setAskingColor] = useState(false);
+  const [newColorName, setNewColorName] = useState("");
 
   const [isLoading, setIsLoading] = useState(false); // ✅ Added
+
+  // Start from the original product's details; photos and stock are per color.
+  useEffect(() => {
+    if (!colorOf) return;
+
+    const load = async () => {
+      try {
+        const { data } = await axios.get(`${backendUrl}/api/products/${colorOf}`);
+        setParent(data);
+        setDrafts((prev) =>
+          prev.map((draft) => ({
+            ...draft,
+            name: data.name,
+            variantType: data.variantType,
+            type: data.type,
+            description: data.description,
+            rate: data.rate > data.finalPrice ? data.rate : "",
+            finalPrice: data.finalPrice,
+          }))
+        );
+
+        if (!data.colorGroup) {
+          setSavedColors([data]);
+          return;
+        }
+
+        const siblings = await axios.get(
+          `${backendUrl}/api/products/admin/products?colorGroup=${data.colorGroup}&sort=oldest`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setSavedColors(siblings.data.products);
+      } catch {
+        toast.error("Failed to load the original product");
+      }
+    };
+
+    load();
+  }, [colorOf, token]);
+
+  const isSameColor = (a, b) =>
+    a.trim().toLowerCase() === b.trim().toLowerCase();
+
+  const savedColorNames = () => [
+    ...savedColors.map((color) => color.colorName || ""),
+    ...(parent && !parent.colorName ? [parentColorName] : []),
+  ];
+
+  const onlyUnnamedDraft =
+    drafts.length === 1 && !drafts[0].colorName.trim();
+
+  const confirmNewColor = () => {
+    const colorName = newColorName.trim();
+    if (!colorName) {
+      toast.error("Enter a color name");
+      return;
+    }
+
+    const taken = [
+      ...savedColorNames(),
+      ...drafts.map((draft) => draft.colorName),
+    ].some((existing) => isSameColor(existing, colorName));
+
+    if (taken) {
+      toast.error(`This item already has the color "${colorName}"`);
+      return;
+    }
+
+    if (onlyUnnamedDraft) {
+      updateActive({ colorName });
+    } else {
+      const draft = newDraft({
+        colorName,
+        name: active.name,
+        variantType: active.variantType,
+        type: active.type,
+        description: active.description,
+        rate: active.rate,
+        finalPrice: active.finalPrice,
+      });
+      setDrafts((prev) => [...prev, draft]);
+      setActiveKey(draft.key);
+    }
+
+    setNewColorName("");
+    setAskingColor(false);
+  };
+
+  const removeDraft = (key) => {
+    const remaining = drafts.filter((draft) => draft.key !== key);
+    setDrafts(remaining);
+    if (active.key === key) setActiveKey(remaining[0].key);
+  };
+
+  const draftProblem = (draft) => {
+    const label = draft.colorName.trim();
+    const needsColor = Boolean(anchorId) || drafts.length > 1;
+
+    if (needsColor && !label) return "Enter a color name";
+
+    const prefix = label ? `${label}: ` : "";
+    const final = Number(draft.finalPrice);
+    const actual = String(draft.rate).trim() === "" ? final : Number(draft.rate);
+
+    if (!draft.images.some(Boolean)) return `${prefix}Upload at least one image`;
+    if (!draft.name.trim()) return `${prefix}Enter the product name`;
+    if (!draft.description.trim()) return `${prefix}Enter the description`;
+    if (!(final > 0)) return `${prefix}Enter the final selling price`;
+    if (final > actual) return `${prefix}Final price cannot be greater than actual price`;
+    if (String(draft.stock).trim() === "") return `${prefix}Enter the stock`;
+
+    const duplicate =
+      label &&
+      (savedColorNames().some((name) => isSameColor(name, label)) ||
+        drafts.some(
+          (other) =>
+            other.key !== draft.key && isSameColor(other.colorName, label)
+        ));
+
+    return duplicate ? `This item already has the color "${label}"` : "";
+  };
+
+  const buildFormData = (draft, colorOfId) => {
+    const formData = new FormData();
+    // Actual price is optional; blank means no discount.
+    const final = Number(draft.finalPrice);
+    const actual = String(draft.rate).trim() === "" ? final : Number(draft.rate);
+    const calculatedDiscount =
+      actual > 0 ? Math.round(((actual - final) / actual) * 100) : 0;
+
+    formData.append("name", draft.name);
+    formData.append("type", draft.type);
+    formData.append("variantType", draft.variantType);
+    formData.append("description", draft.description);
+    if (String(draft.rate).trim() !== "") formData.append("rate", actual);
+    formData.append("finalPrice", final);
+    formData.append("discountRate", calculatedDiscount);
+    formData.append("stock", draft.stock);
+    formData.append("isNewArrival", draft.isNewArrival);
+    formData.append("colorName", draft.colorName);
+
+    if (colorOfId) {
+      formData.append("colorOf", colorOfId);
+      formData.append("parentColorName", parentColorName);
+    }
+
+    draft.images.forEach((image) => {
+      if (image) formData.append("images", image);
+    });
+
+    return formData;
+  };
 
   const onSubmitHandler = async (e) => {
     e.preventDefault();
 
     if (isLoading) return; // prevent double click
 
+    for (const draft of drafts) {
+      const problem = draftProblem(draft);
+      if (problem) {
+        setActiveKey(draft.key);
+        toast.error(problem);
+        return;
+      }
+    }
+
+    setIsLoading(true); // ✅ start loading
+
+    // One at a time: the first new product is what the others attach to. On a
+    // failure, saved colors leave the tabs so a retry cannot duplicate them.
+    let anchor = anchorId;
+    let current = null;
+
     try {
-      setIsLoading(true); // ✅ start loading
+      for (let i = 0; i < drafts.length; i++) {
+        current = drafts[i];
 
-      const formData = new FormData();
-      // Actual price is optional; blank means no discount.
-      const final = Number(finalPrice);
-      const actual = String(rate).trim() === "" ? final : Number(rate);
+        const response = await axios.post(
+          backendUrl + "/api/products",
+          buildFormData(current, anchor),
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
 
-if (final > actual) {
-  toast.error("Final price cannot be greater than actual price");
-  setIsLoading(false);
-  return;
-}
+        anchor = anchor || response.data.product._id;
+        setAnchorId(anchor);
 
-const calculatedDiscount =
-  actual > 0
-    ? Math.round(((actual - final) / actual) * 100)
-    : 0;
-
-setDiscountRate(calculatedDiscount);
-
-      formData.append("name", name);
-      formData.append("type", type);
-      formData.append("variantType",variantType);
-      formData.append("description", description);
-      if (String(rate).trim() !== "") formData.append("rate", actual);
-formData.append("finalPrice", final);
-formData.append("discountRate", calculatedDiscount);
-      formData.append("stock", stock);
-      formData.append("isNewArrival", isNewArrival);
-
-      if (image1) formData.append("images", image1);
-      if (image2) formData.append("images", image2);
-      if (image3) formData.append("images", image3);
-      if (image4) formData.append("images", image4);
-
-      const response = await axios.post(
-        backendUrl + "/api/products",
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
+        if (i < drafts.length - 1) {
+          const savedKey = current.key;
+          setDrafts((prev) => prev.filter((draft) => draft.key !== savedKey));
+          setSavedColors((prev) => [...prev, response.data.product]);
         }
-      );
-
-      if (response.status === 201) {
-        setName("");
-        setDescription("");
-        setRate("");
-        setFinalPrice("");
-        setDiscountRate(0);
-        setStock("");
-        setIsNewArrival(false);
-        setImage1(false);
-        setImage2(false);
-        setImage3(false);
-        setImage4(false);
-
-        toast.success(response.data.message);
-      } else {
-        toast.error(response.data.message);
       }
 
+      if (colorOf) {
+        toast.success(drafts.length > 1 ? "Colors added successfully" : "Color added successfully");
+        navigate("/list");
+        return;
+      }
+
+      const blank = newDraft();
+      setDrafts([blank]);
+      setActiveKey(blank.key);
+      setSavedColors([]);
+      setAnchorId(null);
+      toast.success(drafts.length > 1 ? "Product and colors added successfully" : "Product created successfully");
     } catch (error) {
+      setActiveKey(current?.key ?? null);
       toast.error(
         error?.response?.data?.message || "Something went wrong"
       );
@@ -150,22 +314,86 @@ formData.append("discountRate", calculatedDiscount);
     }
   };
 
+  const { rate, finalPrice } = active;
   const discount =
   rate && finalPrice && Number(finalPrice) < Number(rate)
     ? (Math.round(((rate - finalPrice) / rate) * 100)).toFixed(2)
     : 0;
+
+  const tabs = [
+    ...savedColors.map((color) => ({
+      key: color._id,
+      label: color.colorName || parentColorName || "Original",
+      active: false,
+      onClick: () => navigate(`/edit/${color._id}`),
+    })),
+    ...drafts
+      .filter((draft) => draft.colorName.trim() || drafts.length > 1)
+      .map((draft) => ({
+        key: draft.key,
+        label: draft.colorName.trim() || "Unnamed",
+        active: draft.key === active.key,
+        onClick: () => setActiveKey(draft.key),
+        onRemove: drafts.length > 1 ? () => removeDraft(draft.key) : undefined,
+      })),
+  ];
 
   return (
     <form
       onSubmit={onSubmitHandler}
       className='flex flex-col w-full items-start gap-3'
     >
+      {/* Colors of this product */}
+      <ColorTabs
+        tabs={tabs}
+        addLabel={tabs.length === 0 ? "Add Color" : "Add New Color"}
+        onAdd={() => setAskingColor(true)}
+      />
+
+      {askingColor && (
+        <div className="flex flex-wrap items-center gap-2">
+          <input
+            type="text"
+            value={newColorName}
+            onChange={(e) => setNewColorName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                confirmNewColor();
+              }
+            }}
+            maxLength={40}
+            placeholder="Color name, e.g. Red"
+            aria-label="New color name"
+            className="px-3 py-2 border"
+            autoFocus
+          />
+          <button
+            type="button"
+            onClick={confirmNewColor}
+            className="bg-black text-white px-4 py-2 rounded cursor-pointer"
+          >
+            Add
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setAskingColor(false);
+              setNewColorName("");
+            }}
+            className="px-4 py-2 border rounded cursor-pointer"
+          >
+            Cancel
+          </button>
+        </div>
+      )}
+
       {/* Upload Images */}
       <div>
         <p className="mb-2 font-semibold">Upload Images</p>
 
-        <div className="flex gap-3">
-          {[image1, image2, image3, image4].map((img, index) => (
+        <div className="flex flex-wrap gap-3">
+          {active.images.map((img, index) => (
             <label key={index} htmlFor={`image${index}`}>
               <img
                 className="w-24 h-24 object-cover border cursor-pointer"
@@ -182,10 +410,12 @@ formData.append("discountRate", calculatedDiscount);
                 hidden
                 onChange={(e) => {
                   const file = e.target.files[0];
-                  if (index === 0) setImage1(file);
-                  if (index === 1) setImage2(file);
-                  if (index === 2) setImage3(file);
-                  if (index === 3) setImage4(file);
+                  updateActive({
+                    images: active.images.map((image, i) =>
+                      i === index ? file || false : image
+                    ),
+                  });
+                  e.target.value = "";
                 }}
               />
             </label>
@@ -198,24 +428,58 @@ formData.append("discountRate", calculatedDiscount);
         <p className="mb-2">Product Name</p>
         <input
           type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
+          value={active.name}
+          onChange={(e) => updateActive({ name: e.target.value })}
           className="w-full max-w-[500px] px-3 py-2 border"
           required
         />
       </div>
 
-      
+      {/* Color */}
+      <div className="w-full">
+        <p className="mb-2">
+          Color Name{" "}
+          {!colorOf && drafts.length === 1 && (
+            <span className="text-gray-400">(optional)</span>
+          )}
+        </p>
+        <input
+          type="text"
+          value={active.colorName}
+          onChange={(e) => updateActive({ colorName: e.target.value })}
+          maxLength={40}
+          placeholder="e.g. Ruby Red"
+          className="w-full max-w-[500px] px-3 py-2 border"
+          required={Boolean(colorOf) || drafts.length > 1}
+        />
+      </div>
+
+      {parent && !parent.colorName && (
+        <div className="w-full">
+          <p className="mb-2">Color Name of the Original Product</p>
+          <input
+            type="text"
+            value={parentColorName}
+            onChange={(e) => setParentColorName(e.target.value)}
+            maxLength={40}
+            placeholder="e.g. Gold"
+            className="w-full max-w-[500px] px-3 py-2 border"
+            required
+          />
+        </div>
+      )}
 
       {/* Product varinatType */}
       <div>
         <p className="mb-2">Product variant Type</p>
         <select
-  value={variantType}
+  value={active.variantType}
   onChange={(e) => {
     const newVariant = e.target.value;
-    setVariantType(newVariant);
-    setType(categoryMap[newVariant][0].value); // reset type
+    updateActive({
+      variantType: newVariant,
+      type: categoryMap[newVariant][0].value, // reset type
+    });
   }}
   className="px-3 py-2 border"
 >
@@ -228,11 +492,11 @@ formData.append("discountRate", calculatedDiscount);
       <div>
         <p className="mb-2">Product Type</p>
         <select
-  value={type}
-  onChange={(e) => setType(e.target.value)}
+  value={active.type}
+  onChange={(e) => updateActive({ type: e.target.value })}
   className="px-3 py-2 border"
 >
-  {categoryMap[variantType].map((item) => (
+  {categoryMap[active.variantType].map((item) => (
     <option key={item.value} value={item.value}>
       {item.label}
     </option>
@@ -244,8 +508,8 @@ formData.append("discountRate", calculatedDiscount);
       <div className="w-full">
         <p className="mb-2">Description</p>
         <textarea
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
+          value={active.description}
+          onChange={(e) => updateActive({ description: e.target.value })}
           className="w-full max-w-[500px] px-3 py-2 border"
           required
         />
@@ -257,8 +521,8 @@ formData.append("discountRate", calculatedDiscount);
           <p className="mb-2">Actual Price / MRP (₹) <span className="text-gray-400">(optional)</span></p>
           <input
             type="number"
-            value={rate}
-            onChange={(e) => setRate(e.target.value)}
+            value={active.rate}
+            onChange={(e) => updateActive({ rate: e.target.value })}
             className="px-3 py-2 border"
             placeholder="Leave blank if no discount"
           />
@@ -268,8 +532,8 @@ formData.append("discountRate", calculatedDiscount);
   <p className="mb-2">Final Selling Price (₹)</p>
   <input
     type="number"
-    value={finalPrice}
-    onChange={(e) => setFinalPrice(e.target.value)}
+    value={active.finalPrice}
+    onChange={(e) => updateActive({ finalPrice: e.target.value })}
     className="px-3 py-2 border"
     required
   />
@@ -282,8 +546,8 @@ formData.append("discountRate", calculatedDiscount);
           <p className="mb-2">Stock</p>
           <input
             type="number"
-            value={stock}
-            onChange={(e) => setStock(e.target.value)}
+            value={active.stock}
+            onChange={(e) => updateActive({ stock: e.target.value })}
             className="px-3 py-2 border"
             required
           />
@@ -294,8 +558,8 @@ formData.append("discountRate", calculatedDiscount);
       <label className="flex gap-2 items-center">
         <input
           type="checkbox"
-          checked={isNewArrival}
-          onChange={() => setIsNewArrival(prev => !prev)}
+          checked={active.isNewArrival}
+          onChange={() => updateActive({ isNewArrival: !active.isNewArrival })}
         />
         Mark as New Arrival
       </label>
@@ -306,10 +570,23 @@ formData.append("discountRate", calculatedDiscount);
         disabled={isLoading}
         className="bg-black text-white px-6 py-2 rounded disabled:opacity-60"
       >
-        {isLoading ? "Adding..." : "Add Product"}
+        {isLoading
+          ? "Adding..."
+          : drafts.length > 1
+          ? `Add ${drafts.length} Colors`
+          : colorOf
+          ? "Add Color"
+          : "Add Product"}
       </button>
     </form>
   );
 };
 
-export default Add;
+// Keyed so leaving a prefilled "add color" form for plain Add starts blank.
+const AddPage = ({ token }) => {
+  const [searchParams] = useSearchParams();
+  const colorOf = searchParams.get("colorOf");
+  return <Add key={colorOf || "new"} token={token} colorOf={colorOf} />;
+};
+
+export default AddPage;

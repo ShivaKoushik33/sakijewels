@@ -24,7 +24,7 @@ const router = express.Router();
  * 400 for the admin panel instead of a generic server error.
  */
 const handleUpload = (req, res, next) => {
-  upload.array("images", 4)(req, res, (err) => {
+  upload.array("images", 6)(req, res, (err) => {
     if (!err) return next();
 
     if (err instanceof multer.MulterError) {
@@ -32,7 +32,7 @@ const handleUpload = (req, res, next) => {
         err.code === "LIMIT_FILE_SIZE"
           ? "Each image must be 5 MB or smaller"
           : err.code === "LIMIT_FILE_COUNT"
-          ? "You can upload at most 4 images"
+          ? "You can upload at most 6 images"
           : "Image upload failed";
       return res.status(400).json({ message });
     }

@@ -1,3 +1,4 @@
+import { productLabel } from "../utils/helpers";
 // Mock homepage data service
 // This simulates a real API call and can be replaced with actual API later
 
@@ -12,20 +13,20 @@ import mensTraditional from '../assets/images/mens_traditional.jpeg';
 import mensModern from '../assets/images/mens_modern.jpeg';
 import promoTraditional from '../assets/images/promo_traditional.jpeg';
 import promoModern from '../assets/images/promo_modern.jpeg';
-import pendants from '../assets/images/Pendants_latest.jpeg';
+import pendants from '../assets/images/trad_more_categories.jpeg';
 import MODERN_MINIMUM_NECKLACES from '../assets/images/minimal_LATEST.jpeg';
 
 // Traditional category images
-import ONE_GRAM_GOLD_NECKLACES from '../assets/images/trad_one_gram_gold_necklaces.jpeg';
-import PEARLNECKLACES from '../assets/images/trad_pearl_necklaces.jpeg';
-import RUBYNECKLACES from '../assets/images/trad_ruby_necklaces.jpeg';
-import EARINGS_JUMKA_TRAD from '../assets/images/trad_earrings_jumka.jpeg';
+import ONE_GRAM_GOLD_NECKLACES from '../assets/images/trad_necklaces.jpeg';
+import PEARLNECKLACES from '../assets/images/trad_pearl_ruby_jewellery.jpeg';
+import RUBYNECKLACES from '../assets/images/trad_rings.jpeg';
+import EARINGS_JUMKA_TRAD from '../assets/images/trad_jhumkas.jpeg';
 import Bangles from '../assets/images/trad_bangles.jpeg';
 import MANGALASUTRA from '../assets/images/trad_mangalsutra.jpeg';
 
 
 // Fashion category images
-import FASHIONNECKLACES from '../assets/images/fashion_necklaces.jpeg';
+import FASHIONNECKLACES from '../assets/images/fashion_chains.jpeg';
 import FASHION_EARINGS_JUMKA from '../assets/images/fashion_earrings_jumka.jpeg';
 import FASHION_BRACELET_BANGLES from '../assets/images/fashion_bracelet_bangles.jpeg';
 import FASHION_RINGS from '../assets/images/RINGS_LATEST.jpeg';
@@ -56,7 +57,7 @@ const mockHero = {
     },
     {
       src: bannerWelcome,
-      alt: 'Welcome to The Sakhi Jewels. Get ₹100 off on your first order above ₹599 with code TSJSFIRST',
+      alt: 'Welcome to The Sakhi Jewels. Get ₹100 off and free shipping on your first order above ₹599 with code TSJSFIRST',
       to: '/collections',
     },
     {
@@ -135,25 +136,25 @@ export const categoryConfig = [
   // TRADITIONAL
   // =========================
   {
-    name: "One Gram Gold Necklaces",
+    name: "Necklaces",
     type: "ONE_GRAM_GOLD_NECKLACES",
     variantType: "TRADITIONAL",
     image: ONE_GRAM_GOLD_NECKLACES
   },
   {
-    name: "Pearl Necklaces",
+    name: "Pearl & Ruby jewellery",
     type: "PEARL_NECKLACES",
     variantType: "TRADITIONAL",
     image: PEARLNECKLACES
   },
   {
-    name: "Ruby Necklaces",
+    name: "Rings",
     type: "RUBY_NECKLACES",
     variantType: "TRADITIONAL",
     image: RUBYNECKLACES
   },
   {
-    name: "Earrings",
+    name: "Jhumkas",
     type: "EARINGS_JUMKA",
     variantType: "TRADITIONAL",
     image: EARINGS_JUMKA_TRAD
@@ -177,7 +178,7 @@ export const categoryConfig = [
     image: MODERN_MINIMUM_NECKLACES
   },
   {
-    name: "Pendants",
+    name: "More categories",
     type: "PENDANTS",
     variantType: "TRADITIONAL",
     image: pendants
@@ -187,7 +188,7 @@ export const categoryConfig = [
   // FASHION
   // =========================
   {
-    name: "Necklaces",
+    name: "Chains",
     type: "FASHION_NECKLACES",
     variantType: "FASHION",
     image: FASHIONNECKLACES
@@ -379,7 +380,7 @@ export async function getHomepageData() {
 
     const formatProduct = (product) => ({
       id: product._id,
-      name: product.name,
+      name: productLabel(product),
       price: product.finalPrice,
       originalPrice: product.rate,
       discount: product.discountRate,

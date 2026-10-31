@@ -1,3 +1,4 @@
+import { productLabel } from "../utils/helpers";
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useContext } from "react";
@@ -23,7 +24,7 @@ export default function Wishlist() {
         if (cancelled) return;
         const normalizedWishlist = data.map((item) => ({
               id: item._id,
-              name: item.name,
+              name: productLabel(item),
               price: item.finalPrice,
               originalPrice: item.rate,
               discount: item.discountRate,

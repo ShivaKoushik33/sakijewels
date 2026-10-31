@@ -5,6 +5,7 @@ import { backendUrl, currency } from "../App";
 import { toast } from "react-toastify";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import BackButton from "../Components/BackButton";
+import OrderEmailSetting from "../Components/OrderEmailSetting";
 
 
 
@@ -87,6 +88,8 @@ const Orders = ({ token }) => {
         <BackButton />
         <h2 className="text-2xl font-bold">Orders Management</h2>
       </div>
+
+      <OrderEmailSetting token={token} />
 
       {/* 🔹 Filters */}
       <div className="flex gap-4 mb-6">

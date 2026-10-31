@@ -189,7 +189,12 @@ const List = ({ token }) => {
             />
 
             {/* Name */}
-            <p className='truncate'>{product.name}</p>
+            <div className="min-w-0">
+              <p className='truncate'>{product.name}</p>
+              {product.colorName && (
+                <p className="truncate text-xs text-gray-500">Color: {product.colorName}</p>
+              )}
+            </div>
 
             {/* Type */}
             <p className='truncate'>{product.type}</p>
